@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carfixo · Beta</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{--ink:#0B1B2B;--blue:#1E6BFF;--blue2:#0A47C2;--green:#16B364;--gold:#FFB020;
+    --purple:#7C5CFF;--red:#E5484D;--muted:#6B7B8E;--line:#E4EAF2;--mist:#F2F5FA;--soft:#EAF1FF}
+  *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,system-ui,sans-serif;background:var(--mist);color:var(--ink);
+    -webkit-font-smoothing:antialiased;padding-bottom:env(safe-area-inset-bottom)}
+  .wrap{max-width:560px;margin:0 auto;min-height:100vh;background:#fff;display:flex;flex-direction:column}
+  header{display:flex;align-items:center;gap:9px;padding:16px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);z-index:10}
+  .logo{font-size:19px;font-weight:800;letter-spacing:-.4px}.logo b{color:var(--blue)}
+  .betaTag{font-size:9px;font-weight:800;background:var(--gold);color:#5a3d00;padding:3px 8px;border-radius:99px}
+  .hRight{margin-left:auto;display:flex;gap:8px;align-items:center}
+  main{flex:1;padding:18px}
+  h2{font-size:20px;font-weight:800;letter-spacing:-.4px}
+  p.sub{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
+  .label{font-size:10.5px;font-weight:800;color:#39495b;letter-spacing:.4px;text-transform:uppercase;margin:16px 0 7px}
+  input,textarea,select{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:13px;font-size:15px;font-family:inherit;color:var(--ink);background:#fff;-webkit-appearance:none}
+  textarea{min-height:90px;resize:vertical}
+  input:focus,textarea:focus{outline:none;border-color:var(--blue)}
+  .btn{width:100%;height:52px;border:none;border-radius:14px;background:var(--blue);color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;margin-top:14px;transition:transform .12s}
+  .btn:active{transform:scale(.97)}
+  .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+  .btn.green{background:var(--green)}
+  .btn:disabled{opacity:.55}
+  .card{border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:11px;background:#fff}
+  .card.tap{cursor:pointer}.card.tap:active{background:#FAFCFF}
+  .rowTop{display:flex;align-items:center;gap:11px}
+  .ico{width:42px;height:42px;border-radius:12px;background:var(--mist);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+  .tt{font-size:14px;font-weight:700}
+  .mm{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .badge{font-size:9.5px;font-weight:800;padding:4px 9px;border-radius:99px}
+  .b-open{background:#E7F8EF;color:#0E8F4F}.b-blue{background:var(--soft);color:var(--blue2)}
+  .b-grey{background:var(--mist);color:var(--muted)}.b-gold{background:#FFF6E6;color:#B25A00}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:11px;padding-top:11px;border-top:1px solid var(--mist);font-size:12px}
+  .chips{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{padding:9px 13px;border:1.5px solid var(--line);border-radius:99px;font-size:12.5px;font-weight:700;cursor:pointer;background:#fff}
+  .chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .tabs{display:flex;border-top:1px solid var(--line);position:sticky;bottom:0;background:#fff}
+  .tab{flex:1;text-align:center;padding:11px 4px calc(11px + env(safe-area-inset-bottom));font-size:10px;font-weight:700;color:#B4C0CE;cursor:pointer}
+  .tab.on{color:var(--blue)}
+  .tab .ti{font-size:20px;display:block;margin-bottom:2px}
+  .note{background:var(--soft);border-radius:12px;padding:12px;font-size:12px;color:#3a5a9e;line-height:1.5;margin-bottom:14px}
+  .warn{background:#FFF6E6;border:1px solid #FFE6B0;border-radius:12px;padding:12px;font-size:12px;color:#946200;line-height:1.5;margin-bottom:14px}
+  .err{background:#FDECEC;border-radius:12px;padding:12px;font-size:12.5px;color:#B3261E;margin-top:12px;display:none}
+  .empty{text-align:center;padding:40px 20px;color:var(--muted)}
+  .empty .e{font-size:36px}
+  .back{width:36px;height:36px;border-radius:11px;background:var(--mist);border:none;font-size:17px;color:#39495b;cursor:pointer}
+  .offerLine{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#39495b}
+  .total{display:flex;justify-content:space-between;font-size:15px;font-weight:800;border-top:1.5px solid var(--line);padding-top:9px;margin-top:5px}
+  .liRow{display:flex;gap:7px;margin-bottom:7px}
+  .liRow input:last-child{width:86px;text-align:right}
+  .msgs{display:flex;flex-direction:column;gap:7px;margin:12px 0}
+  .msg{max-width:80%;padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.4}
+  .msg.me{align-self:flex-end;background:var(--blue);color:#fff;border-bottom-right-radius:4px}
+  .msg.them{align-self:flex-start;background:var(--mist);border-bottom-left-radius:4px}
+  .msgRow{display:flex;gap:8px}
+  .msgRow input{flex:1}
+  .msgRow button{width:52px;height:48px;border:none;border-radius:12px;background:var(--blue);color:#fff;font-size:16px;cursor:pointer}
+  .kpis{display:flex;gap:9px;margin-bottom:16px}
+  .kpi{flex:1;background:var(--mist);border-radius:13px;padding:12px}
+  .kpi .v{font-size:18px;font-weight:800}.kpi .l{font-size:10px;color:var(--muted);margin-top:2px}
+  code{background:var(--mist);padding:2px 6px;border-radius:6px;font-size:12px}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="logo">car<b>fixo</b></span><span class="betaTag">WEB-BETA</span>
+    <div class="hRight">
+      <button class="back hidden" id="btnBack" onclick="goBack()">‹</button>
+      <button class="back" id="btnOut" onclick="signOut()" style="display:none" title="Abmelden">⎋</button>
+    </div>
+  </header>
+  <main id="main"></main>
+  <div class="tabs hidden" id="tabs"></div>
+</div>
+
+<script>
+"use strict";
+let db = null; let me = null; let myProfile = null; let myWorkshop = null; let view = "setup"; let backTarget = null; let rtChannel = null;
+const CATS = { reparatur:["🔧","Reparatur"], tuning:["🏎️","Tuning"], pflege:["✨","Pflege"], tuev:["📋","TÜV"] };
+const $ = (id) => document.getElementById(id);
+const main = $("main");
+
+function getCfg(){ try{ return JSON.parse(localStorage.getItem("cfx_cfg")||"null"); }catch(e){ return null; } }
+function initClient(){ const cfg = getCfg(); if(!cfg || !window.supabase) return false; db = window.supabase.createClient(cfg.url, cfg.key); return true; }
+
+function renderSetup(){
+  view="setup"; hideTabs(); setBack(null);
+  const cfg = getCfg() || {url:"",key:""};
+  main.innerHTML = `
+    <h2>Beta verbinden</h2>
+    <p class="sub">Trag die Daten deines Supabase-Projekts ein (Dashboard → Settings → API). Es wird nur der <b>öffentliche anon key</b> genutzt – niemals Service-Role oder Secrets. Beides bleibt lokal in deinem Browser.</p>
+    <div class="label">Project URL</div>
+    <input id="sUrl" placeholder="https://xxxx.supabase.co" value="${esc(cfg.url)}" autocapitalize="off" autocorrect="off">
+    <div class="label">Anon / Publishable Key</div>
+    <input id="sKey" placeholder="eyJ… oder sb_publishable_…" value="${esc(cfg.key)}" autocapitalize="off" autocorrect="off">
+    <button class="btn" onclick="saveSetup()">Verbinden</button>
+    <div class="err" id="setupErr"></div>
+    <div class="warn" style="margin-top:16px">⚠️ Wenn hier versehentlich ein <b>service_role</b>-Key eingetragen wird, lehnt die Beta ihn ab – der gehört niemals in ein Frontend.</div>`;
+}
+
+async function saveSetup(){
+  const url = $("sUrl").value.trim().replace(/\/$/,"");
+  const key = $("sKey").value.trim();
+  const err = $("setupErr");
+  err.style.display="none";
+  if(!/^https:\/\/.+\.supabase\.co$/.test(url)){ return showErr(err,"Die URL sieht nicht wie eine Supabase-Projekt-URL aus."); }
+  if(!key){ return showErr(err,"Bitte den anon key eintragen."); }
+  try{
+    const payload = JSON.parse(atob(key.split(".")[1]||""));
+    if(payload && payload.role === "service_role"){ return showErr(err,"Das ist ein service_role-Key – der darf NIE im Frontend landen. Bitte den anon key verwenden."); }
+  }catch(e){}
+  localStorage.setItem("cfx_cfg", JSON.stringify({url,key}));
+  if(!initClient()) return showErr(err,"Supabase-Bibliothek konnte nicht geladen werden (Internet?).");
+  const ok = await db.from("workshops").select("id",{count:"exact",head:true});
+  if(ok.error && /relation .* does not exist/i.test(ok.error.message)){
+    return showErr(err,"Verbunden, aber die Tabellen fehlen. Bitte zuerst schema.sql, rls.sql und auth-trigger.sql im SQL-Editor ausführen.");
+  }
+  route();
+}
+
+function renderLogin(){
+  view="login"; hideTabs(); setBack(null);
+  main.innerHTML = `
+    <h2>Anmelden</h2>
+    <p class="sub">Mit den Testaccounts (E-Mail + Passwort) oder per E-Mail-Code.</p>
+    <div class="label">E-Mail</div>
+    <input id="lEmail" type="email" placeholder="kunde@carfixo-test.de" autocapitalize="off">
+    <div class="label">Passwort</div>
+    <input id="lPass" type="password" placeholder="••••••••">
+    <button class="btn" onclick="loginPassword()">Anmelden</button>
+    <button class="btn ghost" onclick="sendOtp()">Stattdessen Code per E-Mail senden</button>
+    <div id="otpBox" class="hidden">
+      <div class="label">6-stelliger Code</div>
+      <input id="lCode" inputmode="numeric" maxlength="6" placeholder="123456">
+      <button class="btn" onclick="verifyOtp()">Code bestätigen</button>
+    </div>
+    <div class="err" id="loginErr"></div>
+    <p class="sub" style="margin-top:14px">Konto ändern? <a href="#" onclick="renderSetup();return false">Supabase-Verbindung bearbeiten</a></p>`;
+}
+
+async function loginPassword(){
+  const err=$("loginErr"); err.style.display="none";
+  const { error } = await db.auth.signInWithPassword({ email:$("lEmail").value.trim(), password:$("lPass").value });
+  if(error) return showErr(err, error.message);
+  route();
+}
+async function sendOtp(){
+  const err=$("loginErr"); err.style.display="none";
+  const email=$("lEmail").value.trim();
+  if(!email) return showErr(err,"Bitte zuerst die E-Mail eintragen.");
+  const { error } = await db.auth.signInWithOtp({ email, options:{ shouldCreateUser:true } });
+  if(error) return showErr(err, error.message);
+  $("otpBox").classList.remove("hidden");
+}
+async function verifyOtp(){
+  const err=$("loginErr"); err.style.display="none";
+  const { error } = await db.auth.verifyOtp({ email:$("lEmail").value.trim(), token:$("lCode").value.trim(), type:"email" });
+  if(error) return showErr(err, error.message);
+  route();
+}
+async function signOut(){ if(rtChannel){db.removeChannel(rtChannel);rtChannel=null;} await db.auth.signOut(); me=null; myProfile=null; myWorkshop=null; route(); }
+
+async function route(){
+  if(!window.supabase){ main.innerHTML='<div class="warn">Die Supabase-Bibliothek konnte nicht geladen werden. Bitte Internetverbindung prüfen und neu laden.</div>'; return; }
+  if(!getCfg()){ renderSetup(); return; }
+  if(!db) initClient();
+  const { data:{ user } } = await db.auth.getUser();
+  me = user;
+  $("btnOut").style.display = me ? "block" : "none";
+  if(!me){ renderLogin(); return; }
+  const { data:p } = await db.from("profiles").select("*").eq("id", me.id).single();
+  myProfile = p;
+  if(p && (p.role==="workshop_owner" || p.role==="workshop_staff")){
+    const { data:w } = await db.from("workshops").select("*").eq("owner_id", me.id).maybeSingle();
+    myWorkshop = w;
+    renderWorkshopHome();
+  } else {
+    renderMyTenders();
+  }
+}
+function setBack(fn){ backTarget=fn; $("btnBack").classList.toggle("hidden", !fn); }
+function goBack(){ if(backTarget) backTarget(); }
+function hideTabs(){ $("tabs").classList.add("hidden"); }
+function showTabs(active){
+  const t=$("tabs"); t.classList.remove("hidden");
+  t.innerHTML = `
+    <div class="tab ${active==='list'?'on':''}" onclick="renderMyTenders()"><span class="ti">📢</span>Ausschreibungen</div>
+    <div class="tab ${active==='new'?'on':''}" onclick="renderTenderForm()"><span class="ti">＋</span>Neu</div>
+    <div class="tab ${active==='acct'?'on':''}" onclick="renderAccount()"><span class="ti">👤</span>Konto</div>`;
+}
+
+async function renderMyTenders(){
+  view="list"; setBack(null); showTabs("list");
+  main.innerHTML = '<h2>Meine Ausschreibungen</h2><p class="sub">Werkstätten sehen deine Ausschreibung und schicken Angebote.</p><div id="list" style="margin-top:14px"><div class="empty">Lade…</div></div>';
+  const { data, error } = await db.from("requests")
+    .select("id,title,description,category,status,budget_max,created_at,offers(count)")
+    .eq("customer_id", me.id).order("created_at",{ascending:false});
+  const list=$("list");
+  if(error){ list.innerHTML=`<div class="warn">${esc(error.message)}</div>`; return; }
+  if(!data || data.length===0){
+    list.innerHTML='<div class="empty"><div class="e">📢</div><p class="sub">Noch keine Ausschreibung.<br>Erstelle unten deine erste!</p></div>'; return;
+  }
+  list.innerHTML = data.map(r=>{
+    const c=CATS[r.category]||CATS.reparatur;
+    const n=(r.offers&&r.offers[0]&&r.offers[0].count)||0;
+    const st = r.status==='open' ? '<span class="badge b-open">Aktiv</span>'
+      : r.status==='booked' ? '<span class="badge b-grey">Gebucht</span>'
+      : r.status==='offers_received' ? '<span class="badge b-blue">Angebote da</span>'
+      : '<span class="badge b-gold">'+esc(r.status)+'</span>';
+    return `<div class="card tap" onclick="openTender('${r.id}')">
+      <div class="rowTop"><div class="ico">${c[0]}</div>
+        <div style="flex:1"><div class="tt">${esc(r.title||r.description||c[1])}</div>
+        <div class="mm">${new Date(r.created_at).toLocaleDateString("de-DE")}${r.budget_max?' · Budget bis '+Math.round(r.budget_max)+' €':''}</div></div>${st}</div>
+      <div class="foot"><span>${n===0?'Noch keine Angebote':n+' Angebot'+(n>1?'e':'')}</span><b style="color:var(--blue)">Ansehen →</b></div>
+    </div>`;
+  }).join("");
+}
+
+let selCat="reparatur";
+function renderTenderForm(){
+  view="new"; setBack(null); showTabs("new"); selCat="reparatur";
+  main.innerHTML = `
+    <h2>Ausschreibung erstellen</h2>
+    <div class="note" style="margin-top:10px">📢 Beschreib, was du brauchst – Werkstätten mit freien Kapazitäten melden sich mit Angeboten.</div>
+    <div class="label">Titel</div>
+    <input id="tTitle" placeholder="z.B. Ölwechsel + Inspektion, Golf 7" maxlength="80">
+    <div class="label">Kategorie</div>
+    <div class="chips" id="tCats">${Object.entries(CATS).map(([k,v])=>`<span class="chip ${k===selCat?'on':''}" data-k="${k}" onclick="pickCat('${k}')">${v[0]} ${v[1]}</span>`).join("")}</div>
+    <div class="label">Was soll gemacht werden?</div>
+    <textarea id="tDesc" placeholder="Fahrzeug, Problem/Wunsch, Zeitraum…"></textarea>
+    <div class="label">Budget in € (optional)</div>
+    <input id="tBudget" inputmode="numeric" placeholder="z.B. 250">
+    <button class="btn" id="tGo" onclick="createTender()">Ausschreibung veröffentlichen</button>
+    <div class="err" id="tErr"></div>`;
+}
+function pickCat(k){ selCat=k; document.querySelectorAll("#tCats .chip").forEach(c=>c.classList.toggle("on",c.dataset.k===k)); }
+async function createTender(){
+  const err=$("tErr"); err.style.display="none";
+  const title=$("tTitle").value.trim(), desc=$("tDesc").value.trim();
+  if(!title||!desc) return showErr(err,"Bitte Titel und Beschreibung ausfüllen.");
+  $("tGo").disabled=true;
+  const budget=parseFloat(($("tBudget").value||"").replace(",","."))||null;
+  const { error } = await db.from("requests").insert({
+    customer_id: me.id, category: selCat, title, description: desc,
+    budget_max: budget, status:"open", service_preference:"both",
+  });
+  $("tGo").disabled=false;
+  if(error) return showErr(err,error.message);
+  renderMyTenders();
+}
+
+async function openTender(id){
+  setBack(renderMyTenders); hideTabs();
+  main.innerHTML='<div class="empty">Lade…</div>';
+  const { data:r } = await db.from("requests").select("*").eq("id",id).single();
+  if(!r){ renderMyTenders(); return; }
+  const c=CATS[r.category]||CATS.reparatur;
+  main.innerHTML = `
+    <h2>${esc(r.title||c[1])}</h2>
+    <p class="sub">${esc(r.description||"")}</p>
+    <p class="mm" style="margin-top:6px">${c[0]} ${c[1]}${r.budget_max?' · Budget bis '+Math.round(r.budget_max)+' €':''} · Status: ${esc(r.status)}</p>
+    <div class="label">Angebote <span id="liveDot" style="color:var(--green)">● live</span></div>
+    <div id="offers"><div class="empty">Lade…</div></div>
+    <div class="label">Chat zur Ausschreibung</div>
+    <div class="msgs" id="msgs"></div>
+    <div class="msgRow"><input id="msgIn" placeholder="Nachricht…"><button onclick="sendMsg('${r.id}')">➤</button></div>`;
+  await loadOffers(r);
+  await loadMsgs(r.id);
+  if(rtChannel) db.removeChannel(rtChannel);
+  rtChannel = db.channel("t:"+r.id)
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"offers",filter:"request_id=eq."+r.id},()=>loadOffers(r))
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"request_id=eq."+r.id},()=>loadMsgs(r.id))
+    .subscribe();
+}
+async function loadOffers(r){
+  const { data } = await db.from("offers").select("*, workshops(name,rating_avg,rating_count,service_mode,is_verified)")
+    .eq("request_id", r.id).order("total_price");
+  const box=$("offers"); if(!box) return;
+  if(!data||data.length===0){ box.innerHTML='<div class="empty"><div class="e">⏳</div><p class="sub">Noch keine Angebote – Werkstätten wurden informiert.</p></div>'; return; }
+  box.innerHTML = data.map(o=>{
+    const w=o.workshops||{};
+    const items=(o.line_items||[]).map(li=>`<div class="offerLine"><span>${esc(li.label)}</span><span>${li.price} €</span></div>`).join("");
+    const mobile=(w.service_mode==='mobile'||w.service_mode==='both')?'<span class="badge b-open">🚗 Kommt zu dir</span>':'';
+    const accepted=o.status==='accepted';
+    return `<div class="card">
+      <div class="rowTop"><div class="ico">🔧</div>
+        <div style="flex:1"><div class="tt">${esc(w.name||"Werkstatt")}</div>
+        <div class="mm">★ ${w.rating_avg??"–"} · ${w.rating_count??0} Bew. ${w.is_verified?'· ✓ verifiziert':''}</div></div>
+        <b style="font-size:17px">${Math.round(o.total_price)} €</b></div>
+      ${items?'<div style="margin-top:9px">'+items+'</div>':''}
+      ${o.message?'<p class="mm" style="margin-top:7px">💬 '+esc(o.message)+'</p>':''}
+      <div class="foot">${mobile||'<span></span>'}
+        ${accepted?'<span class="badge b-blue">Angenommen ✓</span>':`<button class="btn green" style="width:auto;height:40px;margin:0;padding:0 16px;font-size:13px" onclick="acceptOffer('${o.id}','${r.id}','${o.workshop_id}',${o.total_price})">Annehmen (Test)</button>`}
+      </div></div>`;
+  }).join("");
+}
+async function acceptOffer(offerId, requestId, workshopId, total){
+  if(!confirm("Angebot annehmen? (Beta: ohne echte Zahlung – Stripe wird erst in der App getestet)")) return;
+  const vat = total - total/1.19;
+  await db.from("offers").update({status:"accepted"}).eq("id",offerId);
+  await db.from("requests").update({status:"booked"}).eq("id",requestId);
+  const { error } = await db.from("bookings").insert({
+    offer_id:offerId, customer_id:me.id, workshop_id:workshopId,
+    total_price:total, vat_amount:Number(vat.toFixed(2)), status:"confirmed", payment_status:"none",
+  });
+  if(error) alert("Buchung: "+error.message); else openTender(requestId);
+}
+
+async function loadMsgs(requestId){
+  const { data } = await db.from("messages").select("*").eq("request_id",requestId).order("created_at");
+  const box=$("msgs"); if(!box) return;
+  box.innerHTML=(data||[]).map(m=>`<div class="msg ${m.sender_id===me.id?'me':'them'}">${esc(m.body||"")}</div>`).join("")||'<p class="mm">Noch keine Nachrichten.</p>';
+  box.scrollTop=box.scrollHeight;
+}
+async function sendMsg(requestId){
+  const inp=$("msgIn"); const body=inp.value.trim(); if(!body) return;
+  inp.value="";
+  const { error } = await db.from("messages").insert({request_id:requestId, sender_id:me.id, body});
+  if(error) alert(error.message); else loadMsgs(requestId);
+}
+
+function renderAccount(){
+  view="acct"; setBack(null); showTabs("acct");
+  main.innerHTML=`
+    <h2>Konto</h2>
+    <div class="card" style="margin-top:14px"><div class="rowTop"><div class="ico">👤</div>
+      <div><div class="tt">${esc(me.email||"")}</div><div class="mm">Rolle: ${esc(myProfile?.role||"customer")}</div></div></div></div>
+    <div class="note">Diese Web-Beta testet den Kern-Loop (Ausschreibung → Angebot → Annahme → Chat). Zahlung (Stripe), Push und Kamera folgen in der echten App.</div>
+    <button class="btn ghost" onclick="signOut()">Abmelden</button>`;
+}
+
+async function renderWorkshopHome(){
+  view="ws"; setBack(null); hideTabs();
+  if(!myWorkshop){
+    main.innerHTML=`<h2>Werkstatt fehlt</h2><div class="warn" style="margin-top:12px">Dieses Konto hat die Rolle Werkstatt, aber noch keinen Betrieb in der Tabelle <code>workshops</code>. Lege ihn per SQL an.</div>`;
+    return;
+  }
+  main.innerHTML = `
+    <h2>${esc(myWorkshop.name)}</h2>
+    <p class="sub">Offene Ausschreibungen in deinen Kategorien – live.</p>
+    <div class="kpis" style="margin-top:14px">
+      <div class="kpi"><div class="v" id="kLeads">–</div><div class="l">Offene Anfragen</div></div>
+      <div class="kpi"><div class="v">★ ${myWorkshop.rating_avg??0}</div><div class="l">${myWorkshop.rating_count??0} Bewertungen</div></div>
+    </div>
+    <div id="leads"><div class="empty">Lade…</div></div>`;
+  await loadLeads();
+  if(rtChannel) db.removeChannel(rtChannel);
+  rtChannel = db.channel("leads")
+    .on("postgres_changes",{event:"*",schema:"public",table:"requests"},()=>loadLeads())
+    .subscribe();
+}
+async function loadLeads(){
+  const { data, error } = await db.from("requests").select("*").eq("status","open").order("created_at",{ascending:false});
+  const box=$("leads"); if(!box) return;
+  if(error){ box.innerHTML=`<div class="warn">${esc(error.message)}</div>`; return; }
+  $("kLeads")&&($("kLeads").textContent=(data||[]).length);
+  if(!data||data.length===0){ box.innerHTML='<div class="empty"><div class="e">📭</div><p class="sub">Keine offenen Ausschreibungen. Neue erscheinen automatisch.</p></div>'; return; }
+  box.innerHTML=data.map(r=>{
+    const c=CATS[r.category]||CATS.reparatur;
+    return `<div class="card tap" onclick="openLead('${r.id}')">
+      <div class="rowTop"><div class="ico">${c[0]}</div>
+        <div style="flex:1"><div class="tt">${esc(r.title||r.description||c[1])}</div>
+        <div class="mm">${c[1]}${r.budget_max?' · Budget bis '+Math.round(r.budget_max)+' €':''} · ${new Date(r.created_at).toLocaleDateString("de-DE")}</div></div>
+        <span class="badge b-blue">Angebot →</span></div></div>`;
+  }).join("");
+}
+async function openLead(id){
+  setBack(renderWorkshopHome); hideTabs();
+  const { data:r } = await db.from("requests").select("*").eq("id",id).single();
+  if(!r){ renderWorkshopHome(); return; }
+  main.innerHTML = `
+    <h2>Angebot abgeben</h2>
+    <div class="card" style="margin-top:12px;background:var(--mist);border:none">
+      <div class="tt">${esc(r.title||"Anfrage")}</div>
+      <p class="mm" style="margin-top:5px">${esc(r.description||"")}</p>
+      ${r.budget_max?'<p class="mm" style="margin-top:5px">💶 Kundenbudget: bis '+Math.round(r.budget_max)+' €</p>':''}
+    </div>
+    <div class="label">Positionen</div>
+    <div id="liBox">
+      <div class="liRow"><input placeholder="z.B. Diagnose" class="liL"><input placeholder="€" inputmode="numeric" class="liP"></div>
+      <div class="liRow"><input placeholder="z.B. Arbeitszeit" class="liL"><input placeholder="€" inputmode="numeric" class="liP"></div>
+    </div>
+    <button class="btn ghost" style="height:44px" onclick="addLine()">＋ Position</button>
+    <div class="label">Nachricht (optional)</div>
+    <textarea id="oMsg" placeholder="z.B. Termin diese Woche möglich…" style="min-height:64px"></textarea>
+    <button class="btn" id="oGo" onclick="sendOffer('${r.id}')">Angebot senden</button>
+    <div class="err" id="oErr"></div>
+    <div class="label">Rückfragen an den Kunden</div>
+    <div class="msgs" id="msgs"></div>
+    <div class="msgRow"><input id="msgIn" placeholder="Nachricht…"><button onclick="sendMsg('${r.id}')">➤</button></div>`;
+  loadMsgs(r.id);
+}
+function addLine(){ const d=document.createElement("div"); d.className="liRow"; d.innerHTML='<input placeholder="Position" class="liL"><input placeholder="€" inputmode="numeric" class="liP">'; $("liBox").appendChild(d); }
+async function sendOffer(requestId){
+  const err=$("oErr"); err.style.display="none";
+  const labels=[...document.querySelectorAll(".liL")].map(i=>i.value.trim());
+  const prices=[...document.querySelectorAll(".liP")].map(i=>parseFloat((i.value||"").replace(",",".")));
+  const items=[];
+  labels.forEach((l,i)=>{ if(l && prices[i]>0) items.push({label:l, price:prices[i]}); });
+  if(items.length===0) return showErr(err,"Mindestens eine Position mit Preis angeben.");
+  const total=items.reduce((s,x)=>s+x.price,0);
+  $("oGo").disabled=true;
+  const { error } = await db.from("offers").insert({
+    request_id:requestId, workshop_id:myWorkshop.id, line_items:items,
+    total_price:total, vat_rate:19, message:$("oMsg").value.trim()||null, status:"sent",
+  });
+  $("oGo").disabled=false;
+  if(error) return showErr(err,error.message.includes("duplicate")?"Du hast zu dieser Ausschreibung schon ein Angebot abgegeben.":error.message);
+  alert("Angebot gesendet ✅ – der Kunde sieht es sofort.");
+  renderWorkshopHome();
+}
+
+function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+function showErr(el,msg){ el.textContent=msg; el.style.display="block"; }
+
+route();
+</script>
+</body>
+</html>
