@@ -38,13 +38,15 @@ function priceLevelTxt(n) { return n ? "€".repeat(n) : ""; }
 const routes = {
   "login": vLogin, "register": vRegister,
   "search": vSearch, "workshop": vWorkshopProfile, "new-request": vNewRequest,
+  "diagnose": vDiagnose, "notfall": vNotfall, "vergleich": vCompare,
   "requests": vRequests, "request": vRequestDetail,
-  "vehicles": vVehicles, "reminders": vReminders, "account": vAccount,
+  "vehicles": vVehicles, "vehicle": vVehicleRecord, "reminders": vReminders, "account": vAccount,
   "ws/dashboard": vWsDashboard, "ws/leads": vWsLeads, "ws/lead": vWsLead,
   "ws/jobs": vWsJobs, "ws/calendar": vWsCalendar, "ws/profile": vWsProfile,
 };
-const CUSTOMER_NAV = [["search", "🔍", "Suche"], ["requests", "📢", "Aufträge"], ["vehicles", "🚗", "Fahrzeuge"], ["reminders", "🔔", "Erinnerungen"]];
+const CUSTOMER_NAV = [["search", "🔍", "Suche"], ["diagnose", "🤖", "Diagnose"], ["requests", "📢", "Aufträge"], ["vehicles", "🚗", "Fahrzeuge"], ["reminders", "🔔", "Erinnerungen"]];
 const WS_NAV = [["ws/dashboard", "📊", "Dashboard"], ["ws/leads", "📢", "Anfragen"], ["ws/jobs", "🗂️", "Aufträge"], ["ws/calendar", "📅", "Kalender"], ["ws/profile", "🏪", "Profil"]];
+const ANON_NAV = [["search", "🔍", "Suche"], ["diagnose", "🤖", "KI-Diagnose"], ["notfall", "🚨", "Notfall"]];
 
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, "");
@@ -78,7 +80,7 @@ async function route() {
 
 function renderNav(active) {
   const isWs = myProfile?.role === "workshop_owner" || myProfile?.role === "workshop_staff";
-  const items = me ? (isWs ? WS_NAV : CUSTOMER_NAV) : [["search", "🔍", "Suche"]];
+  const items = me ? (isWs ? WS_NAV : CUSTOMER_NAV) : ANON_NAV;
   const nav = items.map(([r, ic, label]) =>
     `<a href="#/${r}" class="${active === r ? "on" : ""}">${label}</a>`).join("");
   $("topNav").innerHTML = nav + (me
@@ -228,22 +230,53 @@ async function signOut() {
 }
 
 // ============================================================
-// SUCHE (öffentlich)
+// SUCHE (öffentlich) – Standort / Adresse / Radius
 // ============================================================
-let searchState = { world: "", cat: "", service: "", brand: "", district: "", mode: "", minRating: 0, sort: "rating", view: "list" };
-let allWorkshops = null, searchMap = null;
+let searchState = {
+  world: "", cat: "", service: "", brand: "", radius: 25,
+  openNow: false, pickup: false, replacement: false, mobile: false,
+  minRating: 0, sort: "rating", shown: 12,
+};
+let searchOrigin = null, searchOriginLabel = "";   // [lat,lng] – Standort des Kunden
+let allWorkshops = null, searchMap = null, compareSet = [];
 
 async function vSearch() {
   const s = searchState;
   main.innerHTML = `
   <div class="pageHead">
     <div><h1>Werkstatt-Suche</h1>
-    <div class="sub">Finde Werkstätten, Tuning-Betriebe, Aufbereiter und Prüfstellen in Köln – gefiltert nach dem, was dein Auto braucht.</div></div>
-    ${me && !myWorkshop ? `<div class="right"><a class="btn sm" href="#/new-request">＋ Ausschreibung erstellen</a></div>` : ""}
+    <div class="sub">Werkstätten, Tuning, Aufbereitung und Prüfstellen in deiner Nähe – nach Entfernung, Leistung und Bewertung gefiltert.</div></div>
+    ${me && !myWorkshop ? `<div class="right"><a class="btn sm" href="#/new-request">＋ Ausschreibung</a></div>` : ""}
   </div>
+
+  <div class="card" style="margin-bottom:16px;border-color:rgba(124,92,255,.35);background:linear-gradient(120deg,rgba(124,92,255,.1),var(--panel))">
+    <div class="cardHead">
+      <div class="ico icoPurple" style="width:48px;height:48px;font-size:22px">🤖</div>
+      <div style="flex:1"><div class="tt">Nicht sicher, was dein Auto hat?</div>
+      <div class="mm">Beschreibe das Problem, wähle Warnleuchten oder lade ein Foto hoch – die KI-Diagnose gibt dir eine unverbindliche Ersteinschätzung mit Preisorientierung.</div></div>
+      <a class="btn sm" href="#/diagnose">KI-Diagnose starten</a>
+    </div>
+  </div>
+
   <div class="searchGrid">
     <div class="filterBox card">
-      <div class="tt">Filter</div>
+      <div class="tt">Standort &amp; Umkreis</div>
+      <div class="btnRow" style="margin-top:10px">
+        <button class="btn ghost sm" id="locBtn">📍 Mein Standort</button>
+      </div>
+      <div class="split" style="margin-top:10px">
+        <input id="locAddr" placeholder="Adresse oder Ort eingeben…" value="${esc(searchOriginLabel && !searchOriginLabel.startsWith("📍") ? searchOriginLabel : "")}">
+        <button class="btn sm" id="locGo" style="flex:0 0 auto">Suchen</button>
+      </div>
+      <select id="fDistrict" style="margin-top:8px">${opt("… oder Kölner Stadtteil wählen", Object.keys(DISTRICTS), "")}</select>
+      <p class="mm" id="locInfo" style="margin-top:7px">${searchOrigin ? "📍 " + esc(searchOriginLabel) : "Kein Standort gesetzt – Entfernungen ab Kölner Zentrum."}</p>
+      <div class="label">Umkreis</div>
+      <div class="chips" id="fRadius">
+        ${RADIUS_STEPS.map(r => `<span class="chip ${s.radius === r ? "on" : ""}" data-r="${r}">${r} km</span>`).join("")}
+        <span class="chip ${!s.radius ? "on" : ""}" data-r="">Alle</span>
+      </div>
+
+      <div class="tt" style="margin-top:20px">Filter</div>
       <div class="label">Bereich</div>
       <div class="chips" id="fWorlds">
         <span class="chip ${!s.world ? "on" : ""}" data-w="">Alle</span>
@@ -255,10 +288,11 @@ async function vSearch() {
       <select id="fService"></select>
       <div class="label">Fahrzeugmarke</div>
       <select id="fBrand">${opt("Alle Marken", Object.keys(BRANDS), s.brand)}</select>
-      <div class="label">Stadtteil (für Entfernung)</div>
-      <select id="fDistrict">${opt("Alle / Kölner Zentrum", Object.keys(DISTRICTS), s.district)}</select>
-      <div class="label">Service-Art</div>
-      <select id="fMode"><option value="">Egal</option><option value="mobile" ${s.mode === "mobile" ? "selected" : ""}>Mobiler Service möglich</option></select>
+      <div class="label">Ausstattung</div>
+      <label class="inline"><input type="checkbox" id="fOpen" ${s.openNow ? "checked" : ""}> Jetzt geöffnet</label>
+      <label class="inline"><input type="checkbox" id="fPickup" ${s.pickup ? "checked" : ""}> Hol- &amp; Bringservice</label>
+      <label class="inline"><input type="checkbox" id="fReplace" ${s.replacement ? "checked" : ""}> Ersatzwagen</label>
+      <label class="inline"><input type="checkbox" id="fMobile" ${s.mobile ? "checked" : ""}> Mobile Werkstatt</label>
       <div class="label">Mindestbewertung</div>
       <select id="fRating"><option value="0">Alle</option><option value="4" ${s.minRating == 4 ? "selected" : ""}>★ 4,0+</option><option value="4.5" ${s.minRating == 4.5 ? "selected" : ""}>★ 4,5+</option></select>
       <div class="label">Sortierung</div>
@@ -273,37 +307,90 @@ async function vSearch() {
       <div class="mapWrap" style="margin-bottom:14px"><div id="map"></div></div>
       <div id="resultMeta" class="mm" style="margin-bottom:10px"></div>
       <div id="results"><div class="sk" style="height:110px"></div></div>
+      <div id="moreBox" style="text-align:center;margin-top:12px"></div>
     </div>
-  </div>`;
+  </div>
+  <div id="compareBar"></div>`;
 
   fillCatSelect();
+
+  // Standort-Quellen
+  $("locBtn").onclick = () => {
+    if (!navigator.geolocation) return toast("Standort wird von diesem Gerät nicht unterstützt.");
+    $("locBtn").disabled = true; $("locBtn").textContent = "📍 Suche Standort…";
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setSearchOrigin([pos.coords.latitude, pos.coords.longitude], "📍 Dein Standort"); $("locBtn").disabled = false; $("locBtn").textContent = "📍 Mein Standort"; },
+      () => { toast("Standort nicht verfügbar – bitte Adresse eingeben."); $("locBtn").disabled = false; $("locBtn").textContent = "📍 Mein Standort"; },
+      { timeout: 8000 });
+  };
+  $("locGo").onclick = geocodeAddress;
+  $("locAddr").onkeydown = (e) => { if (e.key === "Enter") geocodeAddress(); };
+  $("fDistrict").onchange = () => {
+    const d = DISTRICTS[$("fDistrict").value];
+    if (d) setSearchOrigin(d, "Köln-" + $("fDistrict").value);
+  };
+  document.querySelectorAll("#fRadius .chip").forEach(c => c.onclick = () => {
+    searchState.radius = c.dataset.r ? +c.dataset.r : 0;
+    document.querySelectorAll("#fRadius .chip").forEach(x => x.classList.toggle("on", x === c));
+    searchState.shown = 12; applyFilters();
+  });
+
   document.querySelectorAll("#fWorlds .chip").forEach(c => c.onclick = () => {
     searchState.world = c.dataset.w; searchState.cat = ""; searchState.service = "";
     document.querySelectorAll("#fWorlds .chip").forEach(x => x.classList.toggle("on", x === c));
-    fillCatSelect(); applyFilters();
+    fillCatSelect(); searchState.shown = 12; applyFilters();
   });
-  ["fCat", "fService", "fBrand", "fDistrict", "fMode", "fRating", "fSort"].forEach(id => $(id).onchange = () => {
+  ["fCat", "fService", "fBrand", "fRating", "fSort", "fOpen", "fPickup", "fReplace", "fMobile"].forEach(id => $(id).onchange = () => {
     searchState.cat = $("fCat").value; searchState.service = $("fService").value;
-    searchState.brand = $("fBrand").value; searchState.district = $("fDistrict").value;
-    searchState.mode = $("fMode").value; searchState.minRating = parseFloat($("fRating").value) || 0;
+    searchState.brand = $("fBrand").value;
+    searchState.minRating = parseFloat($("fRating").value) || 0;
     searchState.sort = $("fSort").value;
+    searchState.openNow = $("fOpen").checked; searchState.pickup = $("fPickup").checked;
+    searchState.replacement = $("fReplace").checked; searchState.mobile = $("fMobile").checked;
     if (id === "fCat") { searchState.service = ""; fillServiceSelect(); }
-    applyFilters();
+    searchState.shown = 12; applyFilters();
   });
-  $("fReset").onclick = () => { searchState = { world: "", cat: "", service: "", brand: "", district: "", mode: "", minRating: 0, sort: "rating", view: "list" }; vSearch(); };
+  $("fReset").onclick = () => {
+    searchState = { world: "", cat: "", service: "", brand: "", radius: 25, openNow: false, pickup: false, replacement: false, mobile: false, minRating: 0, sort: "rating", shown: 12 };
+    vSearch();
+  };
 
   // Karte
-  searchMap = L.map("map", { scrollWheelZoom: false }).setView(CITY_CENTER, 12);
+  searchMap = L.map("map", { scrollWheelZoom: false }).setView(searchOrigin || CITY_CENTER, 12);
   L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>', maxZoom: 19,
   }).addTo(searchMap);
+  searchMap.on("click", (e) => setSearchOrigin([e.latlng.lat, e.latlng.lng], "Karten-Position"));
 
   if (!allWorkshops) {
-    const { data, error } = await sb.from("workshops").select("*").eq("is_verified", true).order("rating_avg", { ascending: false });
+    const { data, error } = await sb.from("workshops").select("*").eq("is_verified", true).order("rating_avg", { ascending: false }).limit(200);
     if (error) { $("results").innerHTML = `<div class="warn">${esc(error.message)}</div>`; return; }
     allWorkshops = data || [];
   }
   applyFilters();
+}
+function setSearchOrigin(ll, label) {
+  searchOrigin = ll; searchOriginLabel = label;
+  const info = $("locInfo");
+  if (info) info.textContent = "📍 " + label;
+  if (searchMap) searchMap.setView(ll, 12);
+  toast("Standort gesetzt: " + label);
+  applyFilters();
+}
+// Nominatim (OpenStreetMap) – funktioniert deutschlandweit
+async function geocodeAddress() {
+  const q = $("locAddr").value.trim();
+  if (!q) return toast("Bitte eine Adresse oder einen Ort eingeben.");
+  $("locGo").disabled = true; $("locGo").textContent = "…";
+  try {
+    const res = await fetch("https://nominatim.openstreetmap.org/search?format=json&countrycodes=de&limit=1&q=" + encodeURIComponent(q), { headers: { "Accept-Language": "de" } });
+    const data = await res.json();
+    if (!data || !data[0]) toast("Adresse nicht gefunden – bitte genauer eingeben.");
+    else setSearchOrigin([+data[0].lat, +data[0].lon], data[0].display_name.split(",").slice(0, 2).join(","));
+  } catch (e) {
+    toast("Adresssuche gerade nicht erreichbar.");
+  }
+  $("locGo").disabled = false; $("locGo").textContent = "Suchen";
 }
 function fillCatSelect() {
   const w = WORLDS.find(x => x.key === searchState.world);
@@ -319,53 +406,90 @@ function fillServiceSelect() {
 }
 let mapMarkers = [];
 function applyFilters() {
+  if (!$("results") || !allWorkshops) return;
   const s = searchState;
-  const origin = s.district ? DISTRICTS[s.district] : CITY_CENTER;
+  const origin = searchOrigin || CITY_CENTER;
   const w = WORLDS.find(x => x.key === s.world);
-  let list = (allWorkshops || []).filter(ws => {
+  let list = allWorkshops.filter(ws => {
     if (w && !ws.categories.some(c => w.cats.includes(c))) return false;
     if (s.cat && !ws.categories.includes(s.cat)) return false;
     if (s.service && !(ws.services || []).includes(s.service)) return false;
     if (s.brand && (ws.brands || []).length > 0 && !ws.brands.includes(s.brand)) return false;
-    if (s.mode === "mobile" && ws.service_mode === "stationary") return false;
+    if (s.mobile && ws.service_mode === "stationary") return false;
+    if (s.pickup && !ws.pickup_service) return false;
+    if (s.replacement && !ws.replacement_car) return false;
+    if (s.openNow && isOpenNow(ws.opening_hours) === false) return false;
     if (s.minRating && (Number(ws.rating_avg) || 0) < s.minRating) return false;
     return true;
   }).map(ws => ({ ...ws, _dist: distKm(origin, [ws.lat, ws.lng]) }));
 
-  if (s.sort === "distance") list.sort((a, b) => (a._dist ?? 99) - (b._dist ?? 99));
+  if (s.radius) list = list.filter(ws => ws._dist == null || ws._dist <= s.radius);
+
+  if (s.sort === "distance") list.sort((a, b) => (a._dist ?? 999) - (b._dist ?? 999));
   else if (s.sort === "price") list.sort((a, b) => (a.price_level || 2) - (b.price_level || 2));
   else list.sort((a, b) => (b.rating_avg || 0) - (a.rating_avg || 0) || (b.rating_count || 0) - (a.rating_count || 0));
 
-  $("resultMeta").textContent = `${list.length} ${list.length === 1 ? "Betrieb" : "Betriebe"} gefunden`;
+  $("resultMeta").textContent = `${list.length} ${list.length === 1 ? "Betrieb" : "Betriebe"}${s.radius ? ` im Umkreis von ${s.radius} km` : ""}${searchOrigin ? " um " + searchOriginLabel : ""}`;
+  const visible = list.slice(0, s.shown);
   $("results").innerHTML = list.length === 0
-    ? `<div class="empty"><div class="e">🔍</div>Keine Betriebe für diese Filter.<br>Tipp: Erstelle eine <a href="#/new-request" style="color:var(--blue2)">Ausschreibung</a> – Betriebe melden sich bei dir.</div>`
-    : list.map(ws => wsCardHtml(ws)).join("");
+    ? `<div class="empty"><div class="e">🔍</div>Keine Betriebe für diese Filter.<br>Tipp: Radius vergrößern oder eine <a href="#/new-request" style="color:var(--blue2)">Ausschreibung</a> erstellen – Betriebe melden sich bei dir.</div>`
+    : visible.map(ws => wsCardHtml(ws)).join("");
+  $("moreBox").innerHTML = list.length > s.shown
+    ? `<button class="btn ghost sm" onclick="searchState.shown+=12;applyFilters()">Mehr anzeigen (${list.length - s.shown} weitere)</button>` : "";
 
   // Karte aktualisieren
   mapMarkers.forEach(m => searchMap.removeLayer(m));
   mapMarkers = [];
-  list.forEach(ws => {
+  if (searchOrigin) {
+    const om = L.circleMarker(searchOrigin, { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: .9 }).addTo(searchMap);
+    om.bindPopup("Dein Standort");
+    mapMarkers.push(om);
+  }
+  visible.forEach(ws => {
     if (ws.lat == null || ws.lng == null) return;
     const icon = L.divIcon({ className: "", html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(135deg,#2E77FF,#0A47C2);box-shadow:0 6px 16px rgba(30,107,255,.5);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:12px">${CATS[ws.categories[0]]?.icon || "🔧"}</span></div>`, iconSize: [30, 30], iconAnchor: [15, 30] });
     const m = L.marker([ws.lat, ws.lng], { icon }).addTo(searchMap);
-    m.bindPopup(`<b>${esc(ws.name)}</b><br><span style="color:#FFB020">${stars(ws.rating_avg)}</span> ${ws.rating_avg ?? "–"} · ${esc(ws.district || "")}<br><a href="#/workshop/${ws.id}" style="color:#4D8DFF;font-weight:700">Profil ansehen →</a>`);
+    m.bindPopup(`<b>${esc(ws.name)}</b><br><span style="color:#FFB020">${stars(ws.rating_avg)}</span> ${ws.rating_avg ?? "–"} · ${esc(ws.district || ws.city || "")}<br><a href="#/workshop/${ws.id}" style="color:#4D8DFF;font-weight:700">Profil ansehen →</a>`);
     mapMarkers.push(m);
   });
   if (mapMarkers.length) searchMap.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.25));
+  renderCompareBar();
 }
 function wsCardHtml(ws) {
   const d = ws._dist;
+  const open = isOpenNow(ws.opening_hours);
+  const inCompare = compareSet.includes(ws.id);
   return `<div class="card tap" style="margin-bottom:12px" onclick="go('workshop/${ws.id}')">
     <div class="wsCard">
       <div class="wsAv">${esc(initials(ws.name))}</div>
       <div style="flex:1;min-width:0">
-        <div class="tt">${esc(ws.name)} ${ws.is_verified ? '<span class="badge b-green" style="vertical-align:2px">✓ verifiziert</span>' : ""}</div>
+        <div class="tt">${esc(ws.name)} ${ws.is_verified ? '<span class="badge b-green" style="vertical-align:2px">✓ verifiziert</span>' : ""}
+          ${open === true ? '<span class="badge b-green" style="vertical-align:2px">Geöffnet</span>' : open === false ? '<span class="badge b-grey" style="vertical-align:2px">Geschlossen</span>' : ""}</div>
         <div class="ratingLine">${stars(ws.rating_avg)}<span class="cnt">${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${ws.rating_count || 0} Bewertungen</span></div>
-        <div class="mm">📍 ${esc(ws.district || ws.city || "Köln")}${d != null ? ` · ${d.toFixed(1).replace(".", ",")} km` : ""}${ws.service_mode !== "stationary" ? " · 🚐 mobil" : ""}${ws.price_level ? " · " + priceLevelTxt(ws.price_level) : ""}${ws.hourly_rate ? ` · ab ${Math.round(ws.hourly_rate)} €/h` : ""}</div>
+        <div class="mm">📍 ${esc(ws.district || ws.city || "")}${d != null ? ` · ${d.toFixed(1).replace(".", ",")} km` : ""}${ws.service_mode !== "stationary" ? " · 🚐 mobil" : ""}${ws.pickup_service ? " · 🔁 Hol/Bring" : ""}${ws.replacement_car ? " · 🚗 Ersatzwagen" : ""}${ws.price_level ? " · " + priceLevelTxt(ws.price_level) : ""}</div>
         <div class="chips" style="margin-top:9px">${ws.categories.slice(0, 4).map(c => `<span class="pill">${CATS[c]?.icon || ""} ${CATS[c]?.name || c}</span>`).join("")}</div>
       </div>
+      <button class="btn ghost sm" style="flex-shrink:0" onclick="event.stopPropagation();toggleCompare('${ws.id}')">${inCompare ? "✓ Im Vergleich" : "⇄ Vergleichen"}</button>
     </div>
   </div>`;
+}
+function toggleCompare(id) {
+  const i = compareSet.indexOf(id);
+  if (i >= 0) compareSet.splice(i, 1);
+  else {
+    if (compareSet.length >= 3) return toast("Maximal 3 Werkstätten vergleichbar.");
+    compareSet.push(id);
+  }
+  applyFilters();
+}
+function renderCompareBar() {
+  const bar = $("compareBar");
+  if (!bar) return;
+  bar.innerHTML = compareSet.length < 2 ? "" : `
+    <div style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:60;background:var(--panel2);border:1px solid var(--line2);border-radius:99px;padding:9px 10px 9px 18px;display:flex;gap:12px;align-items:center;box-shadow:0 18px 50px rgba(0,0,0,.5)">
+      <span style="font-size:13px;font-weight:700">${compareSet.length} Werkstätten ausgewählt</span>
+      <a class="btn sm" href="#/vergleich">Vergleichen →</a>
+    </div>`;
 }
 
 // ============================================================
@@ -389,6 +513,7 @@ async function vWorkshopProfile(id) {
       <div class="ratingLine" style="margin-top:4px">${stars(ws.rating_avg)}<span class="cnt">${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${ws.rating_count || 0} Bewertungen · 📍 ${esc(ws.district || ws.city || "Köln")}</span></div>
     </div>
     <div class="right">
+      <button class="btn ghost sm" id="wsFav">🤍 Merken</button>
       <button class="btn" id="wsAsk">Anfrage stellen</button>
     </div>
   </div>
@@ -441,6 +566,14 @@ async function vWorkshopProfile(id) {
     if (myWorkshop) return toast("Als Betrieb kannst du keine Anfragen stellen.");
     go("new-request?ws=" + ws.id);
   };
+  $("wsFav").onclick = () => toggleFavorite(ws.id, $("wsFav"));
+  if (me) {
+    sb.from("favorites").select("workshop_id").eq("user_id", me.id).eq("workshop_id", ws.id).maybeSingle()
+      .then(({ data }) => { if (data && $("wsFav")) $("wsFav").textContent = "❤️ Gemerkt"; });
+  }
+  // Vertrauenssignale: abgeschlossene Aufträge
+  sb.from("reviews").select("id", { count: "exact", head: true }).eq("workshop_id", ws.id)
+    .then(({ count }) => { /* Anzahl über Bewertungen sichtbar */ });
   if (ws.lat != null && ws.lng != null) {
     const m = L.map("wsMap", { scrollWheelZoom: false, dragging: false, zoomControl: false }).setView([ws.lat, ws.lng], 14);
     L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { maxZoom: 19 }).addTo(m);
@@ -452,13 +585,24 @@ async function vWorkshopProfile(id) {
 // NEUE ANFRAGE / AUSSCHREIBUNG (Kunde)
 // ============================================================
 let nrCat = "reparatur", nrServices = [], nrFiles = [], nrTargetWs = null;
+const PARTS_OPTIONS = [
+  ["werkstatt", "Werkstatt soll passende Teile wählen"],
+  ["original", "Nur Originalteile (OEM)"],
+  ["marke", "Marken-Ersatzteile (z.B. Bosch, ATE)"],
+  ["guenstig", "Günstigste passende Teile"],
+  ["gebraucht_ok", "Gebrauchte Teile erlaubt"],
+  ["nachhaltig", "Generalüberholte / nachhaltige Teile bevorzugt"],
+  ["selbst", "Ich bringe die Teile selbst mit"],
+];
 async function vNewRequest(_p, query) {
   if (!requireAuth()) return;
-  nrCat = "reparatur"; nrServices = []; nrFiles = []; nrTargetWs = null;
+  nrCat = query.cat && CATS[query.cat] ? query.cat : "reparatur";
+  nrServices = query.service ? [query.service] : [];
+  nrFiles = []; nrTargetWs = null;
   if (query.ws) {
     const { data: ws } = await sb.from("workshops").select("id,name,categories").eq("id", query.ws).maybeSingle();
     nrTargetWs = ws;
-    if (ws && ws.categories?.length) nrCat = ws.categories[0];
+    if (ws && ws.categories?.length && !query.cat) nrCat = ws.categories[0];
   }
   const { data: cars } = await sb.from("vehicles").select("*").eq("owner_id", me.id).order("created_at");
   if (!cars || cars.length === 0) {
@@ -475,29 +619,38 @@ async function vNewRequest(_p, query) {
   ${nrTargetWs ? `<div class="note">📩 Direktanfrage an <b>${esc(nrTargetWs.name)}</b> – nur dieser Betrieb sieht deine Anfrage und kann dir ein Angebot machen.</div>` : ""}
   <div class="grid2" style="align-items:start">
     <div class="card">
-      <div class="label" style="margin-top:0">Fahrzeug</div>
+      <div class="label" style="margin-top:0">Fahrzeug *</div>
       <select id="nCar">${cars.map((c, i) => `<option value="${c.id}" ${i === 0 ? "selected" : ""}>${esc(carLabel(c))}</option>`).join("")}</select>
-      <div class="label">Kategorie</div>
+      <div class="label">Kategorie *</div>
       <div class="catGrid" id="nCats">${Object.entries(CATS).map(([k, v]) => `
         <div class="catCard ${k === nrCat ? "on" : ""}" data-k="${k}"><span class="ce">${v.icon}</span><span class="cn">${v.name}</span></div>`).join("")}</div>
       <div class="label">Gewünschte Leistungen (optional)</div>
       <div class="chips" id="nServices"></div>
-      <div class="label">Titel</div>
-      <input id="nTitle" placeholder="z.B. Bremsen vorne erneuern" maxlength="80">
-      <div class="label">Beschreibung</div>
-      <textarea id="nDesc" placeholder="Was ist das Problem? Was soll gemacht werden?"></textarea>
+      <div id="nPriceHint"></div>
+      <div class="label">Titel *</div>
+      <input id="nTitle" placeholder="z.B. Bremsen vorne erneuern" maxlength="80" value="${esc(query.title || "")}">
+      <div class="label">Beschreibung *</div>
+      <textarea id="nDesc" placeholder="Was ist das Problem? Was soll gemacht werden?">${esc(query.desc || "")}</textarea>
       <div class="uploadTile" style="margin-top:12px" onclick="$('nFile').click()">
-        <div class="ico icoPurple">🤖</div>
-        <div><div class="tt" style="font-size:12.5px">KI-Analyse (Beta) &amp; Fotos</div>
-        <div class="mm">Fotos hochladen und Beschreibung analysieren lassen</div></div>
+        <div class="ico icoPurple">📷</div>
+        <div><div class="tt" style="font-size:12.5px">Fotos vom Problem (optional)</div>
+        <div class="mm">Bis zu 4 Bilder – hilft Betrieben bei der Einschätzung</div></div>
       </div>
       <input type="file" id="nFile" accept="image/*" multiple class="hidden">
       <div class="thumbs" id="nThumbs"></div>
-      <button class="btn ghost sm" style="margin-top:10px" id="nAnalyze">🤖 Beschreibung analysieren</button>
+      <button class="btn ghost sm" style="margin-top:10px" id="nAnalyze">🤖 Beschreibung analysieren (Beta)</button>
       <div id="nAiOut"></div>
     </div>
     <div class="card">
-      <div class="label" style="margin-top:0">Budget in € (optional)</div>
+      <div class="label" style="margin-top:0">Dringlichkeit</div>
+      <div class="seg" style="margin:4px 0 0" id="nUrgency">
+        <div data-u="normal" class="${(query.urgency || "normal") === "normal" ? "on" : ""}">Normal</div>
+        <div data-u="dringend" class="${query.urgency === "dringend" ? "on" : ""}">⚡ Dringend</div>
+        <div data-u="notfall" class="${query.urgency === "notfall" ? "on" : ""}">🚨 Notfall</div>
+      </div>
+      <div class="label">Teile-Wunsch</div>
+      <select id="nParts">${PARTS_OPTIONS.map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select>
+      <div class="label">Budget in € (optional)</div>
       <input id="nBudget" inputmode="numeric" placeholder="z.B. 250">
       <div class="label">Ort</div>
       <div class="split">
@@ -507,7 +660,7 @@ async function vNewRequest(_p, query) {
       <input id="nZip" inputmode="numeric" maxlength="5" placeholder="PLZ (optional)" style="margin-top:8px">
       <p class="mm" style="margin-top:6px;font-size:11px">Deine genaue Adresse wird Betrieben nie öffentlich angezeigt.</p>
       <div class="label">Wunschtermin (optional)</div>
-      <input id="nDate" type="date">
+      <input id="nDate" type="date" min="${new Date().toISOString().slice(0, 10)}">
       <label class="inline"><input type="checkbox" id="nFlex"> Termin flexibel</label>
       <label class="inline"><input type="checkbox" id="nAsap"> So schnell wie möglich</label>
       <div class="label">Service-Art</div>
@@ -518,6 +671,7 @@ async function vNewRequest(_p, query) {
       </select>
       <button class="btn wide" style="margin-top:20px" id="nGo">${nrTargetWs ? "Anfrage senden" : "Ausschreibung veröffentlichen"}</button>
       <div class="err" id="nErr"></div>
+      <p class="mm" style="margin-top:10px;font-size:11px">Die Reparaturleistung und Rechnung werden durch die ausgewählte Werkstatt erbracht – Carfixo vermittelt.</p>
     </div>
   </div>`;
   renderNrServices();
@@ -526,6 +680,16 @@ async function vNewRequest(_p, query) {
     document.querySelectorAll("#nCats .catCard").forEach(x => x.classList.toggle("on", x === c));
     renderNrServices();
   });
+  // Dringlichkeit
+  document.querySelectorAll("#nUrgency div").forEach(d => d.onclick = () => {
+    document.querySelectorAll("#nUrgency div").forEach(x => x.classList.toggle("on", x === d));
+  });
+  // „Termin flexibel" / „ASAP" / Datum schließen sich sinnvoll aus
+  $("nAsap").onchange = () => {
+    if ($("nAsap").checked) { $("nDate").value = ""; $("nFlex").checked = false; }
+  };
+  $("nFlex").onchange = () => { if ($("nFlex").checked) $("nAsap").checked = false; };
+  $("nDate").onchange = () => { if ($("nDate").value) $("nAsap").checked = false; };
   $("nFile").onchange = handleNrFiles;
   $("nAnalyze").onclick = runAiAnalyze;
   $("nGo").onclick = () => submitRequest(cars);
@@ -538,20 +702,35 @@ function renderNrServices() {
     const i = nrServices.indexOf(s);
     if (i >= 0) nrServices.splice(i, 1); else nrServices.push(s);
     c.classList.toggle("on");
+    renderNrPriceHint();
   });
+  renderNrPriceHint();
+}
+// Unverbindliche Preisorientierung zu den gewählten Leistungen
+function renderNrPriceHint() {
+  const box = $("nPriceHint");
+  if (!box) return;
+  const carSel = $("nCar");
+  const car = window._nrCars?.find?.(c => c.id === carSel?.value) || null;
+  const hints = nrServices.map(s => ({ s, r: priceRange(s, car) })).filter(x => x.r);
+  box.innerHTML = hints.length === 0 ? "" : `
+    <div class="note" style="margin-top:10px">💶 <b>Unverbindliche Preisorientierung:</b><br>
+    ${hints.map(h => `${esc(h.s)}: häufig <b>${h.r.lo}–${h.r.hi} €</b>${h.r.note ? " (" + esc(h.r.note) + ")" : ""}`).join("<br>")}
+    <br><span style="font-size:11px;opacity:.8">Der endgültige Preis hängt von Fahrzeug, Region und Befund ab und wird von der Werkstatt festgelegt.</span></div>`;
 }
 function handleNrFiles() {
   const files = [...$("nFile").files].slice(0, 4 - nrFiles.length);
   files.forEach(f => { if (f.size < 8 * 1024 * 1024) nrFiles.push(f); });
-  $("nThumbs").innerHTML = nrFiles.map(f => `<img src="${URL.createObjectURL(f)}" alt="">`).join("");
+  $("nThumbs").innerHTML = nrFiles.map(f => `<img src="${URL.createObjectURL(f)}" loading="lazy" alt="">`).join("");
 }
 function runAiAnalyze() {
   const hits = aiAnalyze($("nTitle").value + " " + $("nDesc").value);
   $("nAiOut").innerHTML = hits.length === 0
     ? `<div class="warn" style="margin-top:12px">🤖 Keine eindeutige Einschätzung möglich – beschreibe das Problem etwas genauer (Geräusch, Warnlampe, wann tritt es auf?).</div>`
-    : `<div class="note" style="margin-top:12px"><b>🤖 KI-Einschätzung (Beta – ersetzt keine Diagnose):</b><br>${hits.map((h, i) => `
-        <div style="margin-top:8px">• <b>${esc(h.guess)}</b> <span class="badge ${h.conf === "hoch" ? "b-green" : "b-gold"}">${h.conf}e Wahrscheinlichkeit</span><br>
-        <a href="#" data-ai="${i}" style="color:var(--blue2);font-size:12px;font-weight:700">→ Kategorie „${CATS[h.cat].name}" + „${esc(h.service)}" übernehmen</a></div>`).join("")}</div>`;
+    : `<div class="note" style="margin-top:12px"><b>🤖 Unverbindliche Ersteinschätzung (Beta):</b><br>${hits.map((h, i) => `
+        <div style="margin-top:8px">• Mögliche Ursache: <b>${esc(h.guess)}</b> <span class="badge ${h.conf === "hoch" ? "b-green" : "b-gold"}">${h.conf}e Wahrscheinlichkeit</span><br>
+        <a href="#" data-ai="${i}" style="color:var(--blue2);font-size:12px;font-weight:700">→ Kategorie „${CATS[h.cat].name}" + „${esc(h.service)}" übernehmen</a></div>`).join("")}
+      <br><span style="font-size:11px;opacity:.8">Empfohlene Prüfung durch eine Fachwerkstatt – dies ist keine verbindliche Diagnose.</span></div>`;
   document.querySelectorAll("[data-ai]").forEach(a => a.onclick = (e) => {
     e.preventDefault();
     const h = hits[+a.dataset.ai];
@@ -562,12 +741,21 @@ function runAiAnalyze() {
   });
 }
 async function submitRequest(cars) {
+  window._nrCars = cars;
   const err = $("nErr"); err.style.display = "none";
   const title = $("nTitle").value.trim(), desc = $("nDesc").value.trim();
-  if (!title || !desc) return showErr(err, "Bitte Titel und Beschreibung ausfüllen.");
+  if (!$("nCar").value) return showErr(err, "Bitte ein Fahrzeug wählen.");
+  if (!title) return showErr(err, "Bitte einen Titel angeben.");
+  if (!desc || desc.length < 10) return showErr(err, "Bitte das Problem kurz beschreiben (mind. 10 Zeichen).");
+  const budget = ($("nBudget").value || "").trim();
+  if (budget && !(parseFloat(budget.replace(",", ".")) > 0)) return showErr(err, "Das Budget muss eine Zahl sein.");
+  const zip = $("nZip").value.trim();
+  if (zip && !/^\d{5}$/.test(zip)) return showErr(err, "Die PLZ muss 5 Ziffern haben.");
   const carId = $("nCar").value;
   const car = cars.find(c => c.id === carId);
+  const urgency = document.querySelector("#nUrgency div.on")?.dataset.u || "normal";
   $("nGo").disabled = true;
+  $("nGo").textContent = "Wird veröffentlicht…";
   // Fotos hochladen
   const attachments = [];
   for (const f of nrFiles) {
@@ -581,14 +769,16 @@ async function submitRequest(cars) {
   const { data: req, error } = await sb.from("requests").insert({
     customer_id: me.id, vehicle_id: carId, vehicle_label: car ? carLabel(car) : null,
     category: nrCat, title, description: desc,
-    budget_max: parseFloat(($("nBudget").value || "").replace(",", ".")) || null,
+    budget_max: parseFloat(budget.replace(",", ".")) || null,
     extras: { leistungen: nrServices }, attachments,
-    city: "Köln", district: $("nDistrict").value || null, zip: $("nZip").value.trim() || null,
+    urgency, parts_preference: $("nParts").value,
+    city: "Köln", district: $("nDistrict").value || null, zip: zip || null,
     preferred_date: $("nDate").value || null, date_flexible: $("nFlex").checked, asap: $("nAsap").checked,
     status: "open", service_preference: $("nMode").value,
     type: nrTargetWs ? "direct" : "open", workshop_id: nrTargetWs ? nrTargetWs.id : null,
   }).select().single();
   $("nGo").disabled = false;
+  $("nGo").textContent = nrTargetWs ? "Anfrage senden" : "Ausschreibung veröffentlichen";
   if (error) return showErr(err, error.message);
   toast(nrTargetWs ? "Anfrage gesendet ✓" : "Ausschreibung veröffentlicht ✓");
   go("request/" + req.id);
@@ -719,15 +909,17 @@ async function loadOffers(r) {
     box.innerHTML = `<div class="empty" style="padding:22px"><div class="e">⏳</div>Noch keine Angebote.<br><span class="mm">Passende Betriebe sehen deine Anfrage und melden sich hier.</span></div>`;
     return;
   }
+  window._offers = data;
   const minPrice = Math.min(...data.filter(o => o.status !== "withdrawn").map(o => Number(o.total_price)));
   box.innerHTML = data.map(o => {
     const w = o.workshops || {};
-    const items = (o.line_items || []).map(li => `<div class="offerLine"><span>${esc(li.label)}</span><span>${fmtEur(li.price)}</span></div>`).join("");
+    const p = o.pricing || {};
+    const items = (o.line_items || []).map(li => `<div class="offerLine"><span>${esc(li.label)}${li.meta ? ` <span class="mm">(${esc(li.meta)})</span>` : ""}</span><span>${fmtEur(li.price)}</span></div>`).join("");
     const best = Number(o.total_price) === minPrice && data.length > 1;
     const st = o.status === "accepted" ? '<span class="badge b-green">Angenommen ✓</span>'
       : o.status === "declined" ? '<span class="badge b-grey">Abgelehnt</span>'
       : o.status === "withdrawn" ? '<span class="badge b-grey">Zurückgezogen</span>'
-      : r.status === "open" ? `<button class="btn green sm" onclick="acceptOffer('${o.id}','${r.id}')">Annehmen</button>` : "";
+      : r.status === "open" ? `<button class="btn green sm" onclick="openCheckout('${o.id}','${r.id}')">Zahlungspflichtig buchen</button>` : "";
     return `<div class="card" style="margin-bottom:11px;${best ? "border-color:rgba(43,213,138,.45)" : ""};position:relative">
       ${best ? '<span class="badge b-green" style="position:absolute;top:-9px;right:14px">Bester Preis</span>' : ""}
       <div class="cardHead">
@@ -736,38 +928,180 @@ async function loadOffers(r) {
           <div class="tt"><a href="#/workshop/${w.id}" style="color:inherit">${esc(w.name || "Werkstatt")}</a>${w.is_verified ? " ✓" : ""}</div>
           <div class="ratingLine">${stars(w.rating_avg)}<span class="cnt">${w.rating_avg > 0 ? Number(w.rating_avg).toLocaleString("de-DE") : "Neu"} · ${w.rating_count || 0} Bew.${w.district ? " · 📍 " + esc(w.district) : ""}</span></div>
         </div>
-        <div style="text-align:right"><b style="font-size:19px">${fmtEur(o.total_price)}</b><div class="mm">inkl. MwSt.</div></div>
+        <div style="text-align:right"><b style="font-size:19px">${fmtEur(o.total_price)}</b><div class="mm">inkl. MwSt. · ${o.is_fixed_price === false ? "Kostenschätzung" : "Festpreis"}</div></div>
       </div>
       ${items ? `<div style="margin-top:10px">${items}</div>` : ""}
+      ${p.labor_hours ? `<div class="mm" style="margin-top:6px">🔧 Arbeitszeit: ${p.labor_hours} h × ${fmtEur(p.hourly_rate || 0)}</div>` : ""}
       ${o.message ? `<p class="mm" style="margin-top:8px">💬 ${esc(o.message)}</p>` : ""}
       <div class="foot"><span class="mm">${fmtDate(o.created_at)}</span>${st}</div>
     </div>`;
   }).join("");
 }
-async function acceptOffer(offerId, requestId) {
-  if (!confirm("Dieses Angebot verbindlich annehmen? Alle anderen Angebote werden automatisch abgelehnt.")) return;
-  const { error } = await sb.rpc("accept_offer", { p_offer_id: offerId });
-  if (error) toast("Annahme fehlgeschlagen: " + error.message);
-  else { toast("Angebot angenommen ✓"); vRequestDetail(requestId); }
+
+// ---------- Buchungsübersicht + Testzahlung (Stripe folgt zum Launch) ----------
+function openCheckout(offerId, requestId) {
+  const o = (window._offers || []).find(x => x.id === offerId);
+  if (!o) return;
+  const w = o.workshops || {};
+  const net = Number(o.total_price) / 1.19;
+  openModal(`
+    <h2 style="font-size:20px;font-weight:800">Buchungsübersicht</h2>
+    <div class="note" style="margin-top:12px">🧪 <b>Beta-Testmodus:</b> Zahlungen sind in der Beta noch nicht aktiv. Es wird nichts berechnet – der komplette Ablauf funktioniert trotzdem.</div>
+    <div class="card" style="margin-top:8px;padding:14px">
+      <div class="offerLine"><span>Werkstatt</span><span><b>${esc(w.name || "")}</b></span></div>
+      ${(o.line_items || []).map(li => `<div class="offerLine"><span>${esc(li.label)}</span><span>${fmtEur(li.price)}</span></div>`).join("")}
+      <div class="offerLine"><span>davon MwSt. (19 %)</span><span>${fmtEur(o.total_price - net)}</span></div>
+      <div class="offerLine total"><span>Gesamt (${o.is_fixed_price === false ? "Kostenschätzung" : "Festpreis"})</span><span>${fmtEur(o.total_price)}</span></div>
+    </div>
+    <p class="mm" style="margin-top:10px;font-size:11px">
+      Mit der Buchung nimmst du das Angebot verbindlich an; alle anderen Angebote werden abgelehnt.
+      ${o.is_fixed_price === false ? "Bei einer Kostenschätzung kann sich der Preis nach Diagnose ändern – Zusatzarbeiten benötigen deine Freigabe." : ""}
+      Stornierungsbedingungen: kostenfrei bis 24 h vor Termin (Platzhalter, final vor Launch).
+      Die Reparaturleistung und Rechnung werden durch die ausgewählte Werkstatt erbracht.</p>
+    <div class="btnRow">
+      <button class="btn green" id="ckGo">🧪 Testbuchung abschließen</button>
+      <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
+    </div>
+    <div class="err" id="ckErr"></div>`);
+  $("ckGo").onclick = async () => {
+    $("ckGo").disabled = true; $("ckGo").textContent = "Wird gebucht…";
+    const { data: bkId, error } = await sb.rpc("accept_offer", { p_offer_id: offerId });
+    if (error) { $("ckGo").disabled = false; $("ckGo").textContent = "🧪 Testbuchung abschließen"; return showErr($("ckErr"), error.message); }
+    await sb.from("bookings").update({ payment_status: "test_payment_confirmed" }).eq("id", bkId);
+    closeModal();
+    toast("Testbuchung bestätigt ✓");
+    vRequestDetail(requestId);
+  };
 }
+
+const PAY_LABELS = {
+  none: ["Keine Zahlung", "b-grey"], payment_pending: ["Zahlung ausstehend", "b-gold"],
+  payment_authorized: ["Zahlung autorisiert", "b-blue"], payment_paid: ["Bezahlt", "b-green"],
+  payment_failed: ["Zahlung fehlgeschlagen", "b-red"], payment_refunded: ["Erstattet", "b-purple"],
+  payment_cancelled: ["Zahlung storniert", "b-grey"], test_payment_confirmed: ["🧪 Testzahlung bestätigt", "b-green"],
+  pending: ["Ausstehend", "b-gold"], paid: ["Bezahlt", "b-green"], refunded: ["Erstattet", "b-purple"],
+};
+const CANCEL_REASONS = ["Termin passt nicht mehr", "Problem hat sich erledigt", "Anderes Angebot gewählt", "Preis zu hoch", "Werkstatt nicht erreichbar", "Sonstiges"];
+
+function bookingTimeline(status) {
+  if (status === "cancelled") return `<div class="warn" style="margin:12px 0 0">Dieser Auftrag wurde storniert.</div>`;
+  const idx = BK_FLOW.indexOf(status === "approval_needed" ? "in_progress" : status);
+  return `<div style="display:flex;gap:4px;margin-top:14px;overflow-x:auto;padding-bottom:4px">
+    ${BK_FLOW.map((k, i) => `
+      <div style="flex:1;min-width:74px;text-align:center">
+        <div style="height:4px;border-radius:2px;background:${i <= idx ? "var(--green)" : "rgba(255,255,255,.1)"}"></div>
+        <div style="font-size:9px;font-weight:700;margin-top:5px;color:${i <= idx ? "var(--ink)" : "var(--muted)"}">${BK_STATUS[k][0]}</div>
+      </div>`).join("")}
+  </div>${status === "approval_needed" ? '<div class="warn" style="margin-top:10px">⚠️ Die Werkstatt wartet auf deine Freigabe für Zusatzarbeiten – siehe unten.</div>' : ""}`;
+}
+
 async function loadBookingBox(r) {
   const { data: bk } = await sb.from("bookings")
-    .select("*, offers!inner(request_id,total_price,workshops(id,name,phone))")
+    .select("*, offers!inner(request_id,total_price,is_fixed_price,workshops(id,name,phone))")
     .eq("offers.request_id", r.id).eq("customer_id", me.id).maybeSingle();
   const box = $("bookingBox"); if (!box || !bk) return;
   const s = BK_STATUS[bk.status] || ["?", "b-grey"];
+  const pay = PAY_LABELS[bk.payment_status] || PAY_LABELS.none;
   const w = bk.offers?.workshops || {};
-  const { data: rev } = await sb.from("reviews").select("id,rating").eq("booking_id", bk.id).maybeSingle();
+  const active = !["completed", "cancelled"].includes(bk.status);
+  const [{ data: rev }, { data: approvals }] = await Promise.all([
+    sb.from("reviews").select("id,rating").eq("booking_id", bk.id).maybeSingle(),
+    sb.from("approvals").select("*").eq("booking_id", bk.id).order("created_at", { ascending: false }),
+  ]);
   box.innerHTML = `
   <div class="card" style="border-color:rgba(30,107,255,.4);margin-bottom:14px">
     <div class="cardHead"><div class="ico icoGreen">✅</div>
-      <div style="flex:1"><div class="tt">Gebucht bei: <a href="#/workshop/${w.id}" style="color:var(--blue2)">${esc(w.name || "Werkstatt")}</a></div>
-      <div class="mm">Preis: <b>${fmtEur(bk.total_price)}</b>${bk.scheduled_at ? " · Termin: " + fmtDateTime(bk.scheduled_at) : ""}${w.phone ? " · 📞 " + esc(w.phone) : ""}</div></div>
+      <div style="flex:1"><div class="tt">Buchung ${esc(bk.booking_no || "")} · <a href="#/workshop/${w.id}" style="color:var(--blue2)">${esc(w.name || "Werkstatt")}</a></div>
+      <div class="mm">Preis: <b>${fmtEur(bk.total_price)}</b> (${bk.offers?.is_fixed_price === false ? "Schätzung" : "Festpreis"})${bk.scheduled_at ? " · Termin: " + fmtDateTime(bk.scheduled_at) : ""}${w.phone ? " · 📞 " + esc(w.phone) : ""}</div>
+      <div style="margin-top:6px"><span class="badge ${pay[1]}">${pay[0]}</span> ${bk.no_show ? `<span class="badge b-red">${bk.no_show === "customer" ? "Als nicht erschienen markiert" : "Werkstatt nicht erschienen"}</span>` : ""}</div></div>
       <span class="badge ${s[1]}">${s[0]}</span></div>
+    ${bookingTimeline(bk.status)}
+    ${bk.proposed_date && bk.reschedule_by === "workshop" ? `
+      <div class="note" style="margin-top:12px">📅 Die Werkstatt schlägt einen neuen Termin vor: <b>${fmtDateTime(bk.proposed_date)}</b>
+      <div class="btnRow"><button class="btn green sm" onclick="acceptProposedDate('${bk.id}','${r.id}')">Termin annehmen</button></div></div>` : ""}
+    ${(approvals || []).map(a => approvalCardHtml(a, r.id)).join("")}
     ${bk.status === "completed" && !rev ? `<button class="btn wide" style="margin-top:14px" onclick="openReviewModal('${bk.id}','${w.id}','${esc(w.name)}','${r.id}')">⭐ Jetzt bewerten</button>` : ""}
     ${bk.status === "completed" && rev ? `<div class="okBox" style="margin-bottom:0;margin-top:14px">Deine Bewertung: <span style="color:var(--gold)">${stars(rev.rating)}</span> – danke!</div>` : ""}
-    ${!["completed", "cancelled"].includes(bk.status) ? `<button class="btn green wide" style="margin-top:14px" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag als abgeschlossen bestätigen</button>` : ""}
+    ${active ? `
+    <div class="btnRow">
+      ${["ready_for_pickup"].includes(bk.status) || true ? `<button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>` : ""}
+      <button class="btn ghost sm" onclick="openReschedule('${bk.id}','${r.id}')">📅 Termin verschieben</button>
+      <button class="btn red sm" onclick="openCancel('${bk.id}','${r.id}')">Stornieren</button>
+    </div>` : ""}
+    <p class="mm" style="margin-top:12px;font-size:11px">Die Reparaturleistung, Rechnung und Gewährleistung werden durch die ausgewählte Werkstatt erbracht.</p>
   </div>`;
+}
+function approvalCardHtml(a, reqId) {
+  const items = (a.line_items || []).map(li => `<div class="offerLine"><span>${esc(li.label)}</span><span>${fmtEur(li.price)}</span></div>`).join("");
+  return `<div class="card" style="margin-top:12px;padding:14px;border-color:${a.status === "requested" ? "rgba(255,176,32,.5)" : a.status === "approved" ? "rgba(43,213,138,.4)" : "var(--line)"}">
+    <div class="cardHead"><div class="ico icoGold" style="width:34px;height:34px;font-size:15px">🔧</div>
+      <div style="flex:1"><div class="tt" style="font-size:13px">Zusatzarbeit: ${esc(a.title)}</div>
+      <div class="mm">${fmtDate(a.created_at)} · Zusatzkosten: <b>${fmtEur(a.extra_cost)}</b></div></div>
+      <span class="badge ${a.status === "requested" ? "b-gold" : a.status === "approved" ? "b-green" : "b-red"}">${a.status === "requested" ? "Freigabe angefragt" : a.status === "approved" ? "Freigegeben ✓" : "Abgelehnt"}</span></div>
+    ${a.description ? `<p class="mm" style="margin-top:8px">${esc(a.description)}</p>` : ""}
+    ${items ? `<div style="margin-top:8px">${items}</div>` : ""}
+    ${(a.photos || []).length ? `<div class="thumbs">${a.photos.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" loading="lazy" alt="Foto"></a>`).join("")}</div>` : ""}
+    ${a.status === "requested" ? `
+    <div class="btnRow">
+      <button class="btn green sm" onclick="decideApproval('${a.id}','approved','${reqId}')">✓ Freigeben (${fmtEur(a.extra_cost)})</button>
+      <button class="btn red sm" onclick="decideApproval('${a.id}','declined','${reqId}')">Ablehnen</button>
+    </div>
+    <p class="mm" style="margin-top:8px;font-size:11px">Ohne deine Zustimmung wird die Zusatzarbeit nicht ausgeführt. Rückfragen? Nutze den Chat.</p>` : ""}
+  </div>`;
+}
+async function decideApproval(id, status, reqId) {
+  if (status === "declined" && !confirm("Zusatzarbeit wirklich ablehnen?")) return;
+  const { error } = await sb.from("approvals").update({ status, decided_at: new Date().toISOString() }).eq("id", id);
+  if (error) return toast(error.message);
+  await sb.from("messages").insert({ request_id: reqId, sender_id: me.id, kind: "system", body: status === "approved" ? "✅ Zusatzarbeit freigegeben" : "❌ Zusatzarbeit abgelehnt" });
+  toast(status === "approved" ? "Freigegeben ✓" : "Abgelehnt.");
+  vRequestDetail(reqId);
+}
+function openReschedule(bkId, reqId) {
+  openModal(`
+    <h2 style="font-size:19px;font-weight:800">Termin verschieben</h2>
+    <p class="mm" style="margin-top:6px">Schlage einen neuen Wunschtermin vor – die Werkstatt bestätigt ihn.</p>
+    <div class="label">Neuer Wunschtermin</div>
+    <input type="datetime-local" id="rsDt" min="${new Date().toISOString().slice(0, 16)}">
+    <div class="btnRow">
+      <button class="btn" id="rsGo">Vorschlag senden</button>
+      <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
+    </div>`);
+  $("rsGo").onclick = async () => {
+    const v = $("rsDt").value;
+    if (!v) return toast("Bitte Termin wählen.");
+    const { error } = await sb.from("bookings").update({ proposed_date: new Date(v).toISOString(), reschedule_by: "customer" }).eq("id", bkId);
+    if (error) return toast(error.message);
+    await sb.from("messages").insert({ request_id: reqId, sender_id: me.id, kind: "system", body: "📅 Neuer Terminvorschlag vom Kunden: " + fmtDateTime(v) });
+    closeModal(); toast("Terminvorschlag gesendet 📅");
+    vRequestDetail(reqId);
+  };
+}
+async function acceptProposedDate(bkId, reqId) {
+  const { data: bk } = await sb.from("bookings").select("proposed_date").eq("id", bkId).maybeSingle();
+  if (!bk?.proposed_date) return;
+  const { error } = await sb.from("bookings").update({ scheduled_at: bk.proposed_date, proposed_date: null, reschedule_by: null, status: "ready" }).eq("id", bkId);
+  if (error) return toast(error.message);
+  toast("Neuer Termin bestätigt ✓");
+  vRequestDetail(reqId);
+}
+function openCancel(bkId, reqId) {
+  openModal(`
+    <h2 style="font-size:19px;font-weight:800">Buchung stornieren</h2>
+    <div class="note" style="margin-top:10px">Stornierung in der Beta kostenlos. Später gilt: kostenfrei bis 24 h vor Termin (Platzhalter).</div>
+    <div class="label">Grund</div>
+    <select id="ccReason">${CANCEL_REASONS.map(x => `<option>${x}</option>`).join("")}</select>
+    <div class="btnRow">
+      <button class="btn red" id="ccGo">Verbindlich stornieren</button>
+      <button class="btn ghost" onclick="closeModal()">Zurück</button>
+    </div>`);
+  $("ccGo").onclick = async () => {
+    $("ccGo").disabled = true;
+    const { error } = await sb.from("bookings").update({ status: "cancelled", cancel_reason: $("ccReason").value, cancelled_by: "customer", payment_status: "payment_cancelled" }).eq("id", bkId);
+    if (error) { $("ccGo").disabled = false; return toast(error.message); }
+    closeModal(); toast("Buchung storniert.");
+    vRequestDetail(reqId);
+  };
 }
 async function completeBooking(bkId, reqId) {
   if (!confirm("Auftrag wirklich als abgeschlossen bestätigen?")) return;
@@ -855,6 +1189,7 @@ async function loadVehicles() {
         ${v.registration_doc ? `<div class="mm">📄 Fahrzeugschein hinterlegt</div>` : ""}
         </div></div>
       <div class="foot">
+        <a class="btn sm" href="#/vehicle/${v.id}">🗂️ Fahrzeugakte</a>
         <button class="btn ghost sm" onclick='openVehicleForm(${JSON.stringify(v.id)})'>Bearbeiten</button>
         <button class="btn red sm" onclick='deleteVehicle(${JSON.stringify(v.id)})'>Löschen</button>
       </div>
@@ -1109,6 +1444,10 @@ async function vAccount() {
         <button class="btn ghost sm" style="margin-top:12px" id="premToggle">${myProfile?.is_premium ? "Premium deaktivieren" : "Premium aktivieren (Beta: kostenlos)"}</button>
       </div>`}
       ${myProfile?.role === "admin" ? `<div class="card" style="margin-bottom:14px"><div class="tt">🛡️ Admin</div><a class="btn ghost sm" style="margin-top:12px" href="admin.html">Admin-Bereich öffnen</a></div>` : ""}
+      ${!isWs ? `<div class="card" style="margin-bottom:14px">
+        <div class="tt">❤️ Meine Favoriten</div>
+        <div id="favList" style="margin-top:8px"><div class="sk" style="height:40px"></div></div>
+      </div>` : ""}
       <div class="card">
         <div class="tt">Abmelden</div>
         <p class="mm" style="margin-top:6px">Du kannst dich jederzeit wieder anmelden.</p>
@@ -1123,6 +1462,16 @@ async function vAccount() {
     toast("Gespeichert ✓");
     renderNav("account");
   };
+  if ($("favList")) {
+    const { data: favs } = await sb.from("favorites").select("workshop_id, workshops(id,name,district,rating_avg,rating_count)").eq("user_id", me.id);
+    $("favList").innerHTML = (favs || []).length === 0
+      ? '<p class="mm">Noch keine Favoriten – merke dir Werkstätten über 🤍 im Profil oder in der Suche.</p>'
+      : favs.map(f => {
+        const w = f.workshops || {};
+        return `<div class="offerLine"><span><a href="#/workshop/${w.id}" style="color:var(--ink);font-weight:700">${esc(w.name || "")}</a> <span class="mm">${esc(w.district || "")} · ★ ${w.rating_avg > 0 ? Number(w.rating_avg).toLocaleString("de-DE") : "Neu"}</span></span>
+          <a href="#/new-request?ws=${w.id}" style="color:var(--blue2);font-weight:700;font-size:12px">Erneut anfragen →</a></div>`;
+      }).join("");
+  }
   const pt = $("premToggle");
   if (pt) pt.onclick = async () => {
     const nv = !myProfile.is_premium;
@@ -1273,13 +1622,18 @@ async function vWsLead(id) {
   main.innerHTML = `<div class="sk" style="height:220px"></div>`;
   const { data: r } = await sb.from("requests").select("*").eq("id", id).maybeSingle();
   if (!r) { main.innerHTML = `<div class="warn">Anfrage nicht gefunden (evtl. bereits vergeben).</div>`; return; }
-  const { data: myOffer } = await sb.from("offers").select("*").eq("request_id", id).eq("workshop_id", myWorkshop.id).maybeSingle();
+  const [{ data: myOffer }, { data: templates }] = await Promise.all([
+    sb.from("offers").select("*").eq("request_id", id).eq("workshop_id", myWorkshop.id).maybeSingle(),
+    sb.from("offer_templates").select("*").eq("workshop_id", myWorkshop.id).order("name"),
+  ]);
+  window._oTemplates = templates || [];
   const c = CATS[r.category] || { icon: "🔧", name: r.category };
+  const partsLabel = (PARTS_OPTIONS.find(p => p[0] === r.parts_preference) || [])[1];
   main.innerHTML = `
   <div class="pageHead">
     <div class="ico" style="width:52px;height:52px;font-size:23px">${c.icon}</div>
     <div style="flex:1"><h1>${esc(r.title)}</h1>
-    <div class="sub">🚗 ${esc(r.vehicle_label || "k.A.")} · ${c.name}${r.type === "direct" ? " · 📩 Direktanfrage an dich" : ""}</div></div>
+    <div class="sub">🚗 ${esc(r.vehicle_label || "k.A.")} · ${c.name}${r.type === "direct" ? " · 📩 Direktanfrage an dich" : ""}${r.urgency === "notfall" ? ' · <span class="badge b-red">🚨 NOTFALL</span>' : r.urgency === "dringend" ? ' · <span class="badge b-gold">⚡ Dringend</span>' : ""}</div></div>
   </div>
   <div class="grid2" style="align-items:start">
     <div>
@@ -1288,33 +1642,23 @@ async function vWsLead(id) {
         <p class="mm" style="margin-top:8px;font-size:13px">${esc(r.description)}</p>
         <div class="chips" style="margin-top:10px">
           ${(r.extras?.leistungen || []).map(s => `<span class="pill">${esc(s)}</span>`).join("")}
+          ${partsLabel ? `<span class="pill">🔩 ${esc(partsLabel)}</span>` : ""}
           ${r.budget_max ? `<span class="pill">💶 Budget bis ${fmtEur(r.budget_max)}</span>` : ""}
           ${r.district ? `<span class="pill">📍 ${esc(r.district)}${r.zip ? " (" + esc(r.zip) + ")" : ""}</span>` : ""}
           ${r.asap ? `<span class="pill">⚡ ASAP</span>` : ""}
           ${r.preferred_date ? `<span class="pill">📅 ${fmtDate(r.preferred_date)}</span>` : ""}
           ${r.service_preference === "mobile" ? `<span class="pill">🚐 Mobiler Service gewünscht</span>` : ""}
         </div>
-        ${(r.attachments || []).length ? `<div class="thumbs">${r.attachments.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt="Foto"></a>`).join("")}</div>` : ""}
+        ${(r.attachments || []).length ? `<div class="thumbs">${r.attachments.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" loading="lazy" alt="Foto"></a>`).join("")}</div>` : ""}
       </div>
       <div class="card" id="offerBox">
         ${myOffer ? `
           <div class="tt">Dein Angebot <span class="badge ${myOffer.status === "accepted" ? "b-green" : myOffer.status === "declined" ? "b-grey" : "b-blue"}">${myOffer.status === "accepted" ? "Angenommen ✓" : myOffer.status === "declined" ? "Abgelehnt" : "Gesendet"}</span></div>
-          <div style="margin-top:10px">${(myOffer.line_items || []).map(li => `<div class="offerLine"><span>${esc(li.label)}</span><span>${fmtEur(li.price)}</span></div>`).join("")}
-          <div class="offerLine total"><span>Gesamt inkl. MwSt.</span><span>${fmtEur(myOffer.total_price)}</span></div></div>
+          <div style="margin-top:10px">${(myOffer.line_items || []).map(li => `<div class="offerLine"><span>${esc(li.label)}${li.meta ? ` <span class="mm">(${esc(li.meta)})</span>` : ""}</span><span>${fmtEur(li.price)}</span></div>`).join("")}
+          <div class="offerLine total"><span>Gesamt inkl. MwSt. (${myOffer.is_fixed_price === false ? "Schätzung" : "Festpreis"})</span><span>${fmtEur(myOffer.total_price)}</span></div></div>
           ${myOffer.message ? `<p class="mm" style="margin-top:8px">💬 ${esc(myOffer.message)}</p>` : ""}`
         : r.status !== "open" ? `<div class="tt">Diese Anfrage ist nicht mehr offen.</div>`
-        : `
-          <div class="tt">Angebot senden</div>
-          <div class="label">Positionen</div>
-          <div id="liBox">
-            <div class="split" style="margin-bottom:8px"><input placeholder="z.B. Bremsbeläge vorne (Material)" class="liL"><input placeholder="€" inputmode="decimal" class="liP" style="max-width:110px"></div>
-            <div class="split" style="margin-bottom:8px"><input placeholder="z.B. Arbeitszeit" class="liL"><input placeholder="€" inputmode="decimal" class="liP" style="max-width:110px"></div>
-          </div>
-          <button class="btn ghost sm" id="liAdd">＋ Position</button>
-          <div class="label">Nachricht an den Kunden (optional)</div>
-          <textarea id="oMsg" placeholder="z.B. Termin diese Woche möglich, Originalteile inklusive…" style="min-height:64px"></textarea>
-          <button class="btn wide" style="margin-top:14px" id="oGo">Angebot verbindlich senden</button>
-          <div class="err" id="oErr"></div>`}
+        : offerFormHtml()}
       </div>
     </div>
     <div class="card">
@@ -1323,15 +1667,7 @@ async function vWsLead(id) {
       <div class="msgRow"><input id="msgIn" placeholder="Nachricht schreiben…"><button id="msgGo">➤</button></div>
     </div>
   </div>`;
-  if ($("liAdd")) {
-    $("liAdd").onclick = () => {
-      const d = document.createElement("div");
-      d.className = "split"; d.style.marginBottom = "8px";
-      d.innerHTML = '<input placeholder="Position" class="liL"><input placeholder="€" inputmode="decimal" class="liP" style="max-width:110px">';
-      $("liBox").appendChild(d);
-    };
-    $("oGo").onclick = () => sendOffer(r.id);
-  }
+  if ($("oGo")) bindOfferForm(r.id);
   $("msgGo").onclick = () => sendMsg(r.id);
   $("msgIn").onkeydown = (e) => { if (e.key === "Enter") sendMsg(r.id); };
   await loadMsgs(r.id);
@@ -1340,21 +1676,138 @@ async function vWsLead(id) {
     .subscribe();
   rtChannels.push(ch);
 }
+
+// ---------- Strukturierte Angebotskalkulation ----------
+const PART_KINDS = ["Original (OEM)", "Marken-Ersatzteil", "Aftermarket", "Gebraucht", "Generalüberholt"];
+function offerFormHtml() {
+  const tpl = window._oTemplates || [];
+  return `
+    <div class="tt">Angebot kalkulieren</div>
+    ${tpl.length ? `<div class="label">Vorlage laden</div>
+    <div class="split"><select id="oTpl">${opt("Vorlage wählen…", tpl.map(t => t.name), "")}</select>
+    <button class="btn ghost sm" id="oTplDel" style="flex:0 0 auto" title="Gewählte Vorlage löschen">🗑</button></div>` : ""}
+    <div class="label">Arbeitszeit</div>
+    <div class="split">
+      <input id="oHours" inputmode="decimal" placeholder="Stunden, z.B. 1,5">
+      <input id="oRate" inputmode="decimal" placeholder="Stundensatz €" value="${esc(myWorkshop.hourly_rate || "")}">
+    </div>
+    <div class="label">Teile</div>
+    <div id="oParts"></div>
+    <button class="btn ghost sm" id="oPartAdd">＋ Teil hinzufügen</button>
+    <div class="label">Material / Kleinteile / Zusatzkosten €</div>
+    <input id="oMat" inputmode="decimal" placeholder="z.B. 15">
+    <div class="label">Preisart</div>
+    <div class="seg" style="margin:4px 0 0" id="oFixed">
+      <div data-f="1" class="on">Festpreis</div>
+      <div data-f="0">Kostenschätzung (nach Diagnose)</div>
+    </div>
+    <div class="card" style="margin-top:14px;padding:13px" id="oSum"></div>
+    <div class="label">Nachricht an den Kunden (optional)</div>
+    <textarea id="oMsg" placeholder="z.B. Termin diese Woche möglich, 12 Monate Garantie auf Teile…" style="min-height:64px"></textarea>
+    <label class="inline"><input type="checkbox" id="oSaveTpl"> Als Vorlage speichern</label>
+    <input id="oTplName" placeholder="Name der Vorlage, z.B. Bremsen vorne" class="hidden" style="margin-top:8px">
+    <button class="btn wide" style="margin-top:14px" id="oGo">Angebot verbindlich senden</button>
+    <div class="err" id="oErr"></div>`;
+}
+function partRowHtml(p = {}) {
+  return `<div class="card oPartRow" style="padding:11px;margin-bottom:8px">
+    <div class="split">
+      <input class="opName" placeholder="Teil, z.B. Bremsbeläge vorne" value="${esc(p.name || "")}">
+      <input class="opNo" placeholder="Teilenr. (opt.)" value="${esc(p.no || "")}" style="max-width:110px">
+    </div>
+    <div class="split" style="margin-top:8px">
+      <select class="opKind">${PART_KINDS.map(k => `<option ${p.kind === k ? "selected" : ""}>${k}</option>`).join("")}</select>
+      <input class="opQty" inputmode="numeric" placeholder="Menge" value="${esc(p.qty || 1)}" style="max-width:70px">
+      <input class="opPrice" inputmode="decimal" placeholder="€/Stück" value="${esc(p.price || "")}" style="max-width:100px">
+      <select class="opWarr" style="max-width:130px">${["Keine Garantie","6 Monate","12 Monate","24 Monate"].map(k => `<option ${p.warr === k ? "selected" : ""}>${k}</option>`).join("")}</select>
+      <button class="btn red sm" style="flex:0 0 auto" onclick="this.closest('.oPartRow').remove();calcOfferSum()">✕</button>
+    </div>
+  </div>`;
+}
+function bindOfferForm(requestId) {
+  $("oParts").innerHTML = partRowHtml();
+  const recalcIds = ["oHours", "oRate", "oMat"];
+  recalcIds.forEach(i => $(i).oninput = calcOfferSum);
+  $("oParts").oninput = calcOfferSum;
+  $("oPartAdd").onclick = () => { $("oParts").insertAdjacentHTML("beforeend", partRowHtml()); calcOfferSum(); };
+  document.querySelectorAll("#oFixed div").forEach(d => d.onclick = () => {
+    document.querySelectorAll("#oFixed div").forEach(x => x.classList.toggle("on", x === d));
+    calcOfferSum();
+  });
+  $("oSaveTpl").onchange = () => $("oTplName").classList.toggle("hidden", !$("oSaveTpl").checked);
+  const tplSel = $("oTpl");
+  if (tplSel) {
+    tplSel.onchange = () => {
+      const t = (window._oTemplates || []).find(x => x.name === tplSel.value);
+      if (!t) return;
+      const p = t.pricing || {};
+      $("oHours").value = p.labor_hours ?? "";
+      $("oRate").value = p.hourly_rate ?? myWorkshop.hourly_rate ?? "";
+      $("oMat").value = p.materials ?? "";
+      $("oParts").innerHTML = (p.parts || []).map(partRowHtml).join("") || partRowHtml();
+      document.querySelectorAll("#oFixed div").forEach(x => x.classList.toggle("on", x.dataset.f === (t.is_fixed_price === false ? "0" : "1")));
+      calcOfferSum();
+      toast("Vorlage geladen: " + t.name);
+    };
+    $("oTplDel").onclick = async () => {
+      const t = (window._oTemplates || []).find(x => x.name === tplSel.value);
+      if (!t) return toast("Bitte zuerst eine Vorlage wählen.");
+      await sb.from("offer_templates").delete().eq("id", t.id);
+      toast("Vorlage gelöscht.");
+      vWsLead(requestId);
+    };
+  }
+  calcOfferSum();
+  $("oGo").onclick = () => sendOffer(requestId);
+}
+function collectOffer() {
+  const hours = parseFloat(($("oHours").value || "").replace(",", ".")) || 0;
+  const rate = parseFloat(($("oRate").value || "").replace(",", ".")) || 0;
+  const mat = parseFloat(($("oMat").value || "").replace(",", ".")) || 0;
+  const parts = [...document.querySelectorAll(".oPartRow")].map(row => ({
+    name: row.querySelector(".opName").value.trim(),
+    no: row.querySelector(".opNo").value.trim(),
+    kind: row.querySelector(".opKind").value,
+    qty: parseInt(row.querySelector(".opQty").value, 10) || 1,
+    price: parseFloat((row.querySelector(".opPrice").value || "").replace(",", ".")) || 0,
+    warr: row.querySelector(".opWarr").value,
+  })).filter(p => p.name && p.price > 0);
+  const labor = Math.round(hours * rate * 100) / 100;
+  const partsSum = parts.reduce((s, p) => s + p.qty * p.price, 0);
+  const total = Math.round((labor + partsSum + mat) * 100) / 100;
+  const fixed = document.querySelector("#oFixed div.on")?.dataset.f !== "0";
+  return { hours, rate, mat, parts, labor, partsSum, total, fixed };
+}
+function calcOfferSum() {
+  const box = $("oSum"); if (!box) return;
+  const o = collectOffer();
+  box.innerHTML = `
+    ${o.labor > 0 ? `<div class="offerLine"><span>Arbeitszeit ${o.hours} h × ${fmtEur(o.rate)}</span><span>${fmtEur(o.labor)}</span></div>` : ""}
+    ${o.parts.map(p => `<div class="offerLine"><span>${esc(p.name)} (${p.qty}× · ${esc(p.kind)}${p.warr !== "Keine Garantie" ? " · " + esc(p.warr) : ""})</span><span>${fmtEur(p.qty * p.price)}</span></div>`).join("")}
+    ${o.mat > 0 ? `<div class="offerLine"><span>Material / Zusatzkosten</span><span>${fmtEur(o.mat)}</span></div>` : ""}
+    <div class="offerLine"><span>davon MwSt. (19 %)</span><span>${fmtEur(o.total - o.total / 1.19)}</span></div>
+    <div class="offerLine total"><span>Gesamt inkl. MwSt. (${o.fixed ? "Festpreis" : "Schätzung"})</span><span>${fmtEur(o.total)}</span></div>`;
+}
 async function sendOffer(requestId) {
   const err = $("oErr"); err.style.display = "none";
-  const labels = [...document.querySelectorAll(".liL")].map(i => i.value.trim());
-  const prices = [...document.querySelectorAll(".liP")].map(i => parseFloat((i.value || "").replace(",", ".")));
-  const items = [];
-  labels.forEach((l, i) => { if (l && prices[i] > 0) items.push({ label: l, price: prices[i] }); });
-  if (items.length === 0) return showErr(err, "Mindestens eine Position mit Preis angeben.");
-  const total = items.reduce((s, x) => s + x.price, 0);
-  $("oGo").disabled = true;
+  const o = collectOffer();
+  if (o.total <= 0) return showErr(err, "Bitte Arbeitszeit und/oder mindestens ein Teil mit Preis angeben.");
+  const line_items = [];
+  if (o.labor > 0) line_items.push({ label: "Arbeitszeit", meta: `${o.hours} h × ${Math.round(o.rate)} €`, price: o.labor });
+  o.parts.forEach(p => line_items.push({ label: p.name, meta: `${p.qty}× · ${p.kind}${p.warr !== "Keine Garantie" ? " · Garantie " + p.warr : ""}${p.no ? " · Nr. " + p.no : ""}`, price: Math.round(p.qty * p.price * 100) / 100 }));
+  if (o.mat > 0) line_items.push({ label: "Material / Zusatzkosten", price: o.mat });
+  const pricing = { labor_hours: o.hours, hourly_rate: o.rate, parts: o.parts, materials: o.mat };
+  $("oGo").disabled = true; $("oGo").textContent = "Wird gesendet…";
+  if ($("oSaveTpl").checked && $("oTplName").value.trim()) {
+    await sb.from("offer_templates").insert({ workshop_id: myWorkshop.id, name: $("oTplName").value.trim(), line_items, pricing, is_fixed_price: o.fixed });
+  }
   const { error } = await sb.from("offers").insert({
     request_id: requestId, workshop_id: myWorkshop.id,
-    line_items: items, total_price: total, vat_rate: 19,
+    line_items, pricing, is_fixed_price: o.fixed,
+    total_price: o.total, vat_rate: 19,
     message: $("oMsg").value.trim() || null, status: "sent",
   });
-  $("oGo").disabled = false;
+  $("oGo").disabled = false; $("oGo").textContent = "Angebot verbindlich senden";
   if (error) return showErr(err, String(error.message).includes("duplicate") ? "Du hast hier schon ein Angebot abgegeben." : error.message);
   toast("Angebot gesendet ✓");
   vWsLead(requestId);
@@ -1366,7 +1819,7 @@ async function sendOffer(requestId) {
 async function vWsJobs() {
   if (needWorkshop()) return;
   main.innerHTML = `
-  <div class="pageHead"><div><h1>Aufträge</h1><div class="sub">Gebuchte Aufträge – Status pflegen, Termin setzen, mit dem Kunden chatten.</div></div>
+  <div class="pageHead"><div><h1>Aufträge</h1><div class="sub">Status pflegen, Termine setzen, Zusatzarbeiten freigeben lassen, mit dem Kunden chatten.</div></div>
   <div class="right"><a class="btn ghost sm" href="#/ws/calendar">📅 Kalender</a></div></div>
   <div id="jobList"><div class="sk" style="height:110px"></div></div>`;
   await loadWsJobs();
@@ -1382,18 +1835,26 @@ async function loadWsJobs() {
     const r = b.offers?.requests || {};
     const c = CATS[r.category] || { icon: "🔧", name: r.category || "" };
     const s = BK_STATUS[b.status] || ["?", "b-grey"];
+    const pay = PAY_LABELS[b.payment_status] || PAY_LABELS.none;
     const cust = b.profiles?.full_name || b.profiles?.email || "Kunde";
+    const active = !["completed", "cancelled"].includes(b.status);
     return `<div class="card" style="margin-bottom:12px">
       <div class="cardHead"><div class="ico">${c.icon}</div>
-        <div style="flex:1;min-width:0"><div class="tt">${esc(r.title || "Auftrag")}</div>
-        <div class="mm">👤 ${esc(cust)}${b.profiles?.phone ? " · 📞 " + esc(b.profiles.phone) : ""} · <b>${fmtEur(b.total_price)}</b></div>
-        <div class="mm">🚗 ${esc(r.vehicle_label || "k.A.")}${b.scheduled_at ? " · 📅 " + fmtDateTime(b.scheduled_at) : " · 📅 kein Termin"}</div></div>
+        <div style="flex:1;min-width:0"><div class="tt">${esc(b.booking_no || "")} · ${esc(r.title || "Auftrag")}</div>
+        <div class="mm">👤 ${esc(cust)}${b.profiles?.phone ? " · 📞 " + esc(b.profiles.phone) : ""} · <b>${fmtEur(b.total_price)}</b> · <span class="badge ${pay[1]}">${pay[0]}</span></div>
+        <div class="mm">🚗 ${esc(r.vehicle_label || "k.A.")}${b.scheduled_at ? " · 📅 " + fmtDateTime(b.scheduled_at) : " · 📅 kein Termin"}${b.no_show ? " · 🚫 No-Show (" + (b.no_show === "customer" ? "Kunde" : "Werkstatt") + ")" : ""}</div>
+        ${b.proposed_date && b.reschedule_by === "customer" ? `<div class="note" style="margin:8px 0 0;padding:8px 10px">📅 Kunde schlägt vor: <b>${fmtDateTime(b.proposed_date)}</b> <a href="#" onclick="wsAcceptProposed('${b.id}');return false" style="color:var(--green);font-weight:800">Annehmen ✓</a></div>` : ""}
+        </div>
         <span class="badge ${s[1]}">${s[0]}</span></div>
       <div class="foot">
+        ${active ? `
         <select style="width:auto;flex:1;min-width:150px;padding:9px" onchange="setJobStatus('${b.id}',this.value)">
           ${Object.entries(BK_STATUS).map(([k, v]) => `<option value="${k}" ${k === b.status ? "selected" : ""}>${v[0]}</option>`).join("")}
         </select>
         <button class="btn ghost sm" onclick="setJobDate('${b.id}','${b.scheduled_at || ""}')">📅 Termin</button>
+        <button class="btn ghost sm" onclick="openApprovalForm('${b.id}','${b.customer_id}','${b.offers?.request_id}')">🔧 Zusatzfreigabe</button>
+        <button class="btn ghost sm" onclick="markNoShow('${b.id}')">🚫 Nicht erschienen</button>
+        <button class="btn red sm" onclick="wsCancelJob('${b.id}')">Absagen</button>` : ""}
         <button class="btn ghost sm" onclick="go('ws/lead/${b.offers?.request_id}')">💬 Chat</button>
       </div>
     </div>`;
@@ -1401,7 +1862,7 @@ async function loadWsJobs() {
 }
 async function setJobStatus(id, status) {
   const { error } = await sb.from("bookings").update({ status }).eq("id", id);
-  if (error) toast(error.message); else { toast("Status aktualisiert ✓"); loadWsJobs(); }
+  if (error) toast(error.message); else { toast("Status aktualisiert ✓ – der Kunde sieht die Änderung im Auftrag."); loadWsJobs(); }
 }
 function setJobDate(id, current) {
   const cur = current ? new Date(current).toISOString().slice(0, 16) : "";
@@ -1416,10 +1877,103 @@ function setJobDate(id, current) {
   $("jobDtGo").onclick = async () => {
     const v = $("jobDt").value;
     if (!v) return toast("Bitte Datum wählen.");
-    const { error } = await sb.from("bookings").update({ scheduled_at: new Date(v).toISOString(), status: "ready" }).eq("id", id);
+    const { error } = await sb.from("bookings").update({ scheduled_at: new Date(v).toISOString(), status: "ready", proposed_date: null, reschedule_by: null }).eq("id", id);
     if (error) return toast(error.message);
     closeModal(); toast("Termin gesetzt 📅");
     if ($("jobList")) loadWsJobs(); else vWsCalendar();
+  };
+}
+async function wsAcceptProposed(id) {
+  const { data: bk } = await sb.from("bookings").select("proposed_date").eq("id", id).maybeSingle();
+  if (!bk?.proposed_date) return;
+  const { error } = await sb.from("bookings").update({ scheduled_at: bk.proposed_date, proposed_date: null, reschedule_by: null, status: "ready" }).eq("id", id);
+  if (error) return toast(error.message);
+  toast("Termin bestätigt ✓");
+  loadWsJobs();
+}
+async function markNoShow(id) {
+  if (!confirm("Kunden als nicht erschienen markieren? Der Fall wird im Auftrag gespeichert und der Kunde informiert.")) return;
+  const { error } = await sb.from("bookings").update({ no_show: "customer" }).eq("id", id);
+  if (error) return toast(error.message);
+  toast("No-Show vermerkt.");
+  loadWsJobs();
+}
+function wsCancelJob(id) {
+  openModal(`
+    <h2 style="font-size:19px;font-weight:800">Auftrag absagen</h2>
+    <div class="label">Grund</div>
+    <select id="wcReason">${["Kapazität reicht nicht", "Teile nicht lieferbar", "Fahrzeug nicht reparabel", "Kunde nicht erreichbar", "Sonstiges"].map(x => `<option>${x}</option>`).join("")}</select>
+    <div class="btnRow">
+      <button class="btn red" id="wcGo">Verbindlich absagen</button>
+      <button class="btn ghost" onclick="closeModal()">Zurück</button>
+    </div>`);
+  $("wcGo").onclick = async () => {
+    const { error } = await sb.from("bookings").update({ status: "cancelled", cancel_reason: $("wcReason").value, cancelled_by: "workshop", payment_status: "payment_cancelled" }).eq("id", id);
+    if (error) return toast(error.message);
+    closeModal(); toast("Auftrag abgesagt.");
+    loadWsJobs();
+  };
+}
+// ---------- Zusatzfreigabe anfordern ----------
+let apFiles = [];
+function openApprovalForm(bookingId, customerId, requestId) {
+  apFiles = [];
+  openModal(`
+    <h2 style="font-size:19px;font-weight:800">Zusatzfreigabe anfordern</h2>
+    <p class="mm" style="margin-top:6px">Beschreibe die nötige Zusatzarbeit – der Kunde muss zustimmen, bevor du sie ausführst.</p>
+    <div class="label">Titel *</div>
+    <input id="apTitle" placeholder="z.B. Bremsscheiben ebenfalls verschlissen">
+    <div class="label">Begründung</div>
+    <textarea id="apDesc" placeholder="Was wurde festgestellt? Warum ist die Zusatzarbeit nötig?"></textarea>
+    <div class="label">Positionen (Arbeitszeit / Teile)</div>
+    <div id="apItems">
+      <div class="split" style="margin-bottom:8px"><input class="apL" placeholder="z.B. Bremsscheiben vorne"><input class="apP" inputmode="decimal" placeholder="€" style="max-width:100px"></div>
+    </div>
+    <button class="btn ghost sm" id="apAdd">＋ Position</button>
+    <div class="label">Fotos (optional)</div>
+    <div class="uploadTile" onclick="$('apFile').click()">
+      <div class="ico icoGold">📷</div>
+      <div><div class="tt" style="font-size:12.5px">Befund fotografieren</div><div class="mm">Bilder helfen dem Kunden bei der Entscheidung</div></div>
+    </div>
+    <input type="file" id="apFile" accept="image/*,video/*" multiple class="hidden">
+    <div class="thumbs" id="apThumbs"></div>
+    <div class="btnRow">
+      <button class="btn" id="apGo">Freigabe anfordern</button>
+      <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
+    </div>
+    <div class="err" id="apErr"></div>`);
+  $("apAdd").onclick = () => $("apItems").insertAdjacentHTML("beforeend", '<div class="split" style="margin-bottom:8px"><input class="apL" placeholder="Position"><input class="apP" inputmode="decimal" placeholder="€" style="max-width:100px"></div>');
+  $("apFile").onchange = () => {
+    [...$("apFile").files].slice(0, 4 - apFiles.length).forEach(f => { if (f.size < 20 * 1024 * 1024) apFiles.push(f); });
+    $("apThumbs").innerHTML = apFiles.map(f => f.type.startsWith("video") ? `<span class="pill">🎬 ${esc(f.name)}</span>` : `<img src="${URL.createObjectURL(f)}" loading="lazy" alt="">`).join("");
+  };
+  $("apGo").onclick = async () => {
+    const err = $("apErr"); err.style.display = "none";
+    const title = $("apTitle").value.trim();
+    if (!title) return showErr(err, "Bitte einen Titel angeben.");
+    const items = [];
+    document.querySelectorAll(".apL").forEach((l, i) => {
+      const p = parseFloat((document.querySelectorAll(".apP")[i].value || "").replace(",", "."));
+      if (l.value.trim() && p > 0) items.push({ label: l.value.trim(), price: p });
+    });
+    if (items.length === 0) return showErr(err, "Mindestens eine Position mit Preis angeben.");
+    $("apGo").disabled = true; $("apGo").textContent = "Wird gesendet…";
+    const photos = [];
+    for (const f of apFiles) {
+      const path = `${me.id}/approval_${Date.now()}_${f.name.replace(/[^\w.\-]/g, "_")}`;
+      const { error: upErr } = await sb.storage.from("attachments").upload(path, f);
+      if (!upErr) photos.push(sb.storage.from("attachments").getPublicUrl(path).data.publicUrl);
+    }
+    const extra = items.reduce((s, x) => s + x.price, 0);
+    const { error } = await sb.from("approvals").insert({
+      booking_id: bookingId, workshop_id: myWorkshop.id, customer_id: customerId,
+      title, description: $("apDesc").value.trim() || null, photos, line_items: items, extra_cost: extra,
+    });
+    if (error) { $("apGo").disabled = false; $("apGo").textContent = "Freigabe anfordern"; return showErr(err, error.message); }
+    await sb.from("bookings").update({ status: "approval_needed" }).eq("id", bookingId);
+    if (requestId) await sb.from("messages").insert({ request_id: requestId, sender_id: me.id, kind: "system", body: `🔧 Zusatzfreigabe angefordert: ${title} (+${fmtEur(extra)})` });
+    closeModal(); toast("Freigabe angefordert – der Kunde wurde informiert.");
+    loadWsJobs();
   };
 }
 
@@ -1636,6 +2190,341 @@ async function saveWsProfile(getPriceLevel) {
   Object.assign(myWorkshop, row);
   allWorkshops = null;
   toast("Profil gespeichert ✓");
+}
+
+// ============================================================
+// KI-DIAGNOSE (Hauptfunktion, öffentlich – Beta, regelbasiert)
+// ============================================================
+let dgLights = [], dgSounds = [], dgFiles = [];
+async function vDiagnose() {
+  dgLights = []; dgSounds = []; dgFiles = [];
+  if (!allWorkshops) {
+    sb.from("workshops").select("*").eq("is_verified", true).limit(200)
+      .then(({ data }) => { allWorkshops = data || []; });
+  }
+  let cars = [];
+  if (me && !myWorkshop) {
+    const { data } = await sb.from("vehicles").select("*").eq("owner_id", me.id).order("created_at");
+    cars = data || [];
+  }
+  window._dgCars = cars;
+  main.innerHTML = `
+  <div class="pageHead"><div>
+    <h1>🤖 KI-Diagnose <span class="badge b-purple">Beta</span></h1>
+    <div class="sub">Beschreibe das Problem deines Autos – du bekommst eine <b>unverbindliche Ersteinschätzung</b> mit möglichen Ursachen, Preisorientierung und passenden Werkstätten. Ersetzt keine Prüfung durch eine Fachwerkstatt.</div>
+  </div></div>
+  <div class="grid2" style="align-items:start">
+    <div class="card">
+      <div class="label" style="margin-top:0">Fahrzeug ${cars.length ? "" : "(optional – ohne Login allgemein)"}</div>
+      ${cars.length
+        ? `<select id="dgCar">${cars.map((c, i) => `<option value="${c.id}" ${i === 0 ? "selected" : ""}>${esc(carLabel(c))}</option>`).join("")}</select>`
+        : `<div class="split"><select id="dgMake">${opt("Marke (optional)", Object.keys(BRANDS), "")}</select><select id="dgPs">${opt("PS (optional)", PS_LIST, "")}</select></div>
+           ${me ? "" : '<p class="mm" style="margin-top:6px">Tipp: <a href="#/login" style="color:var(--blue2)">Anmelden</a> und Fahrzeug speichern – dann wird die Einschätzung genauer.</p>'}`}
+      <div class="label">Was ist das Problem? *</div>
+      <textarea id="dgDesc" placeholder="z.B. Beim Bremsen quietscht es vorne laut, besonders wenn es kalt ist…"></textarea>
+      <div class="label">Leuchtet eine Warnleuchte?</div>
+      <div class="chips" id="dgLights">${WARNING_LIGHTS.map(w => `<span class="chip" data-k="${w.k}">${w.icon} ${w.name}</span>`).join("")}</div>
+      <div class="label">Hörst du ein Geräusch?</div>
+      <div class="chips" id="dgSounds">${SOUNDS.map(s => `<span class="chip" data-k="${s.k}">${s.name}</span>`).join("")}</div>
+      <div class="label">Foto / Video (optional)</div>
+      <div class="uploadTile" onclick="$('dgFile').click()">
+        <div class="ico icoPurple">📷</div>
+        <div><div class="tt" style="font-size:12.5px">Schaden fotografieren oder filmen</div>
+        <div class="mm">Bilder werden mit deiner Anfrage an Betriebe übergeben</div></div>
+      </div>
+      <input type="file" id="dgFile" accept="image/*,video/*" multiple class="hidden">
+      <div class="thumbs" id="dgThumbs"></div>
+      <div class="label">Wie dringend ist es?</div>
+      <div class="seg" style="margin:4px 0 0" id="dgUrgency">
+        <div data-u="normal" class="on">Kann warten</div>
+        <div data-u="dringend">⚡ Diese Woche</div>
+        <div data-u="notfall">🚨 Sofort / Notfall</div>
+      </div>
+      <button class="btn wide" style="margin-top:18px" id="dgGo">Einschätzung anzeigen</button>
+      <div class="err" id="dgErr"></div>
+    </div>
+    <div id="dgResult">
+      <div class="card" style="text-align:center;padding:40px 24px">
+        <div style="font-size:42px">🤖</div>
+        <div class="tt" style="margin-top:10px">Deine Ersteinschätzung erscheint hier</div>
+        <p class="mm" style="margin-top:6px">Je genauer deine Beschreibung, desto besser die Einschätzung. Bei roten Warnleuchten: besser sofort anhalten und prüfen lassen.</p>
+      </div>
+    </div>
+  </div>`;
+  ["dgLights", "dgSounds"].forEach(boxId => document.querySelectorAll(`#${boxId} .chip`).forEach(c => c.onclick = () => {
+    const arr = boxId === "dgLights" ? dgLights : dgSounds;
+    const i = arr.indexOf(c.dataset.k);
+    if (i >= 0) arr.splice(i, 1); else arr.push(c.dataset.k);
+    c.classList.toggle("on");
+  }));
+  document.querySelectorAll("#dgUrgency div").forEach(d => d.onclick = () => {
+    document.querySelectorAll("#dgUrgency div").forEach(x => x.classList.toggle("on", x === d));
+  });
+  $("dgFile").onchange = () => {
+    const files = [...$("dgFile").files].slice(0, 4 - dgFiles.length);
+    files.forEach(f => { if (f.size < 20 * 1024 * 1024) dgFiles.push(f); });
+    $("dgThumbs").innerHTML = dgFiles.map(f => f.type.startsWith("video")
+      ? `<span class="pill">🎬 ${esc(f.name)}</span>`
+      : `<img src="${URL.createObjectURL(f)}" loading="lazy" alt="">`).join("");
+  };
+  $("dgGo").onclick = runDiagnose;
+}
+function runDiagnose() {
+  const err = $("dgErr"); err.style.display = "none";
+  const desc = $("dgDesc").value.trim();
+  if (!desc && dgLights.length === 0 && dgSounds.length === 0)
+    return showErr(err, "Bitte beschreibe das Problem oder wähle mindestens eine Warnleuchte / ein Geräusch.");
+  const car = $("dgCar") ? window._dgCars.find(c => c.id === $("dgCar").value)
+    : ($("dgMake")?.value ? { make: $("dgMake").value, power_ps: +($("dgPs")?.value || 0) } : null);
+  const urgency = document.querySelector("#dgUrgency div.on")?.dataset.u || "normal";
+
+  // Treffer sammeln: Freitext + Warnleuchten + Geräusche
+  const hits = [];
+  const seen = new Set();
+  const push = (h) => { const key = h.cat + "|" + h.service; if (!seen.has(key)) { seen.add(key); hits.push(h); } };
+  dgLights.forEach(k => { const w = WARNING_LIGHTS.find(x => x.k === k); if (w) push({ cat: w.cat, service: w.service, guess: w.guess, conf: w.sev === "hoch" ? "hoch" : "mittel", sev: w.sev }); });
+  dgSounds.forEach(k => { const s = SOUNDS.find(x => x.k === k); if (s) push({ cat: s.cat, service: s.service, guess: s.guess, conf: "mittel" }); });
+  aiAnalyze(desc).forEach(push);
+  const redAlert = dgLights.some(k => WARNING_LIGHTS.find(x => x.k === k)?.sev === "hoch") || urgency === "notfall";
+
+  const top = hits.slice(0, 4);
+  const recs = (allWorkshops || []).filter(ws => top.some(h => ws.categories.includes(h.cat))).slice(0, 3);
+  const qs = top[0] ? `cat=${top[0].cat}&service=${encodeURIComponent(top[0].service)}&title=${encodeURIComponent(top[0].guess.slice(0, 60))}&desc=${encodeURIComponent(desc.slice(0, 300))}&urgency=${urgency}` : "";
+
+  $("dgResult").innerHTML = `
+  ${redAlert ? `<div class="warn" style="border-color:rgba(255,92,92,.5);color:#FF9C9C">🚨 <b>Sicherheitshinweis:</b> Bei roten Warnleuchten oder akuten Problemen nicht weiterfahren. ${urgency === "notfall" ? `<a href="#/notfall" style="color:#fff;font-weight:800">→ Zum Notfallmodus</a>` : `<a href="#/notfall" style="color:#fff;font-weight:800">Notfallmodus öffnen</a>`}</div>` : ""}
+  <div class="card" style="margin-bottom:14px">
+    <div class="tt">🤖 Unverbindliche Ersteinschätzung</div>
+    ${top.length === 0
+      ? `<p class="mm" style="margin-top:10px">Keine eindeutige Zuordnung möglich. Empfohlene Prüfung durch eine Fachwerkstatt – erstelle am besten eine Ausschreibung mit deiner Beschreibung.</p>`
+      : top.map(h => {
+        const pr = priceRange(h.service, car);
+        return `<div style="padding:12px 0;border-bottom:1px solid var(--line)">
+          <div style="font-size:13.5px"><b>Mögliche Ursache:</b> ${esc(h.guess)} <span class="badge ${h.conf === "hoch" ? "b-green" : "b-gold"}">${h.conf}e Wahrscheinlichkeit</span></div>
+          <div class="mm" style="margin-top:4px">Empfohlener Bereich: ${CATS[h.cat].icon} ${CATS[h.cat].name} → ${esc(h.service)}</div>
+          ${pr ? `<div class="mm" style="margin-top:3px">💶 Preisorientierung: häufig <b>${pr.lo}–${pr.hi} €</b>${pr.note ? " (" + esc(pr.note) + ")" : ""}</div>` : ""}
+        </div>`;
+      }).join("")}
+    <p class="mm" style="margin-top:10px;font-size:11px">Unverbindliche Ersteinschätzung – keine Diagnose und keine Preiszusage. Der endgültige Preis wird nach Prüfung durch die Werkstatt festgelegt.</p>
+    <div class="btnRow">
+      ${me && !myWorkshop ? `<a class="btn" href="#/new-request?${qs}">📢 Ausschreibung mit diesen Angaben</a>` : `<a class="btn" href="#/${me ? "search" : "register"}">${me ? "Werkstatt suchen" : "Kostenlos registrieren & anfragen"}</a>`}
+      ${urgency !== "normal" ? `<a class="btn red" href="#/notfall">🚨 Notfallmodus</a>` : ""}
+    </div>
+  </div>
+  ${recs.length ? `<div class="card"><div class="tt">Passende Betriebe in der Nähe</div>
+    <div style="margin-top:12px">${recs.map(ws => wsCardHtml({ ...ws, _dist: distKm(searchOrigin || CITY_CENTER, [ws.lat, ws.lng]) })).join("")}</div></div>` : ""}`;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ============================================================
+// NOTFALLMODUS (öffentlich)
+// ============================================================
+async function vNotfall() {
+  if (!allWorkshops) {
+    const { data } = await sb.from("workshops").select("*").eq("is_verified", true).limit(200);
+    allWorkshops = data || [];
+  }
+  const helpers = allWorkshops.filter(ws => ws.emergency_service || ws.service_mode !== "stationary");
+  main.innerHTML = `
+  <div class="pageHead"><div>
+    <h1>🚨 Notfallmodus</h1>
+    <div class="sub">Panne, Auto startet nicht oder rote Warnleuchte? Hier findest du schnelle Hilfe: mobile Werkstätten und Betriebe mit Notdienst.</div>
+  </div></div>
+  <div class="warn">Bei Unfällen mit Verletzten immer zuerst den Notruf <b>112</b> wählen. Pannenhilfe-Zentralen: ADAC <b>089 20 20 4000</b>.</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="label" style="margin-top:0">Was ist passiert?</div>
+    <div class="chips" id="emType">${EMERGENCY_TYPES.map(e => `<span class="chip" data-k="${e.k}">${e.icon} ${e.name}</span>`).join("")}</div>
+    <div class="btnRow">
+      <button class="btn ghost sm" id="emLoc">📍 Meinen Standort verwenden</button>
+      <span class="mm" id="emLocInfo" style="align-self:center">${searchOrigin ? "📍 " + esc(searchOriginLabel) : "Kein Standort gesetzt"}</span>
+    </div>
+  </div>
+  <div class="tt" style="margin-bottom:12px">Schnelle Hilfe in der Nähe (${helpers.length})</div>
+  <div id="emList">${helpers.length === 0
+    ? '<div class="empty"><div class="e">🚧</div>Aktuell keine Notdienst-Betriebe verfügbar.</div>'
+    : helpers.map(ws => {
+      const d = distKm(searchOrigin || CITY_CENTER, [ws.lat, ws.lng]);
+      return `<div class="card" style="margin-bottom:11px">
+        <div class="cardHead">
+          <div class="ico icoRed">🚨</div>
+          <div style="flex:1;min-width:0"><div class="tt">${esc(ws.name)}</div>
+          <div class="mm">${ws.emergency_service ? "🚨 Notdienst · " : ""}${ws.service_mode !== "stationary" ? "🚐 Mobil · " : ""}📍 ${esc(ws.district || ws.city || "")}${d != null ? ` · ${d.toFixed(1).replace(".", ",")} km` : ""} · ${stars(ws.rating_avg)} ${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : ""}</div></div>
+        </div>
+        <div class="foot">
+          ${ws.phone ? `<a class="btn green sm" href="tel:${esc(ws.phone.replace(/\s/g, ""))}">📞 ${esc(ws.phone)}</a>` : ""}
+          <button class="btn sm" onclick="emergencyRequest('${ws.id}')">🚨 Schnellanfrage</button>
+          <a class="btn ghost sm" href="#/workshop/${ws.id}">Profil</a>
+        </div>
+      </div>`;
+    }).join("")}</div>`;
+  document.querySelectorAll("#emType .chip").forEach(c => c.onclick = () => {
+    document.querySelectorAll("#emType .chip").forEach(x => x.classList.toggle("on", x === c));
+  });
+  $("emLoc").onclick = () => {
+    if (!navigator.geolocation) return toast("Standort nicht unterstützt.");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { searchOrigin = [pos.coords.latitude, pos.coords.longitude]; searchOriginLabel = "Dein Standort"; toast("Standort gesetzt."); vNotfall(); },
+      () => toast("Standort nicht verfügbar."));
+  };
+}
+function emergencyRequest(wsId) {
+  if (!me) { toast("Bitte zuerst anmelden – dann geht die Anfrage direkt raus."); return go("login"); }
+  if (myWorkshop) return toast("Als Betrieb kannst du keine Anfragen stellen.");
+  const t = document.querySelector("#emType .chip.on");
+  const typ = t ? EMERGENCY_TYPES.find(e => e.k === t.dataset.k) : null;
+  go(`new-request?ws=${wsId}&urgency=notfall&title=${encodeURIComponent("🚨 Notfall: " + (typ?.name || "Panne"))}&desc=${encodeURIComponent("NOTFALL – " + (typ?.name || "Panne") + ". Standort: " + (searchOriginLabel || "bitte erfragen") + ". Bitte schnellstmöglich melden!")}`);
+}
+
+// ============================================================
+// WERKSTATTVERGLEICH (bis zu 3)
+// ============================================================
+async function vCompare() {
+  if (compareSet.length < 2) {
+    main.innerHTML = `<div class="pageHead"><div><h1>Werkstattvergleich</h1></div></div>
+      <div class="empty"><div class="e">⇄</div>Wähle in der <a href="#/search" style="color:var(--blue2)">Suche</a> zwei bis drei Werkstätten über „Vergleichen" aus.</div>`;
+    return;
+  }
+  const { data } = await sb.from("workshops").select("*").in("id", compareSet);
+  const list = compareSet.map(id => (data || []).find(w => w.id === id)).filter(Boolean);
+  const origin = searchOrigin || CITY_CENTER;
+  const row = (label, fn) => `<tr><td style="color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:800">${label}</td>${list.map(ws => `<td>${fn(ws)}</td>`).join("")}</tr>`;
+  main.innerHTML = `
+  <div class="pageHead">
+    <div><h1>Werkstattvergleich</h1><div class="sub">${list.length} Betriebe im direkten Vergleich.</div></div>
+    <div class="right"><button class="btn ghost sm" onclick="compareSet=[];go('search')">Auswahl leeren</button></div>
+  </div>
+  <div class="tblWrap"><table class="tbl">
+    <thead><tr><th style="width:150px"></th>${list.map(ws => `<th><a href="#/workshop/${ws.id}" style="color:var(--blue2)">${esc(ws.name)}</a></th>`).join("")}</tr></thead>
+    <tbody>
+      ${row("Bewertung", ws => `<span style="color:var(--gold)">${stars(ws.rating_avg)}</span> ${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} (${ws.rating_count || 0})`)}
+      ${row("Entfernung", ws => { const d = distKm(origin, [ws.lat, ws.lng]); return d != null ? d.toFixed(1).replace(".", ",") + " km" : "–"; })}
+      ${row("Preisniveau", ws => ws.price_level ? "€".repeat(ws.price_level) : "–")}
+      ${row("Stundensatz", ws => ws.hourly_rate ? "ab " + Math.round(ws.hourly_rate) + " €" : "–")}
+      ${row("Verifiziert", ws => ws.is_verified ? "✅" : "–")}
+      ${row("Jetzt geöffnet", ws => { const o = isOpenNow(ws.opening_hours); return o === true ? "✅" : o === false ? "❌" : "–"; })}
+      ${row("Mobiler Service", ws => ws.service_mode !== "stationary" ? "✅" : "–")}
+      ${row("Hol- & Bringservice", ws => ws.pickup_service ? "✅" : "–")}
+      ${row("Ersatzwagen", ws => ws.replacement_car ? "✅" : "–")}
+      ${row("Notdienst", ws => ws.emergency_service ? "✅" : "–")}
+      ${row("Kategorien", ws => ws.categories.map(c => CATS[c]?.icon || "").join(" "))}
+      ${row("Marken-Fokus", ws => (ws.brands || []).length ? ws.brands.slice(0, 4).join(", ") : "Alle")}
+      ${row("", ws => me && !myWorkshop ? `<a class="btn sm" href="#/new-request?ws=${ws.id}">Anfrage stellen</a>` : `<a class="btn ghost sm" href="#/workshop/${ws.id}">Profil</a>`)}
+    </tbody>
+  </table></div>`;
+}
+
+// ============================================================
+// DIGITALE FAHRZEUGAKTE
+// ============================================================
+async function vVehicleRecord(id) {
+  if (!requireAuth() || !id) return;
+  main.innerHTML = `<div class="sk" style="height:220px"></div>`;
+  const [{ data: v }, { data: reqs }, { data: logs }, { data: rems }] = await Promise.all([
+    sb.from("vehicles").select("*").eq("id", id).maybeSingle(),
+    sb.from("requests").select("*, offers(id,total_price,status,workshops(name)), ").eq("vehicle_id", id).order("created_at", { ascending: false }),
+    sb.from("vehicle_logs").select("*").eq("vehicle_id", id).order("created_at", { ascending: false }),
+    sb.from("reminders").select("*").eq("vehicle_id", id).eq("done", false).order("due_date"),
+  ]);
+  if (!v) { main.innerHTML = `<div class="warn">Fahrzeug nicht gefunden.</div>`; return; }
+  const { data: bks } = await sb.from("bookings").select("*, offers(request_id,total_price,workshops(name)), reviews(rating)").eq("vehicle_id", id).order("created_at", { ascending: false });
+  const doneJobs = (bks || []).filter(b => b.status === "completed");
+  const tips = [];
+  if (!v.tuev_until || new Date(v.tuev_until) < new Date(Date.now() + 90 * 864e5)) tips.push(["📋", "TÜV erneuern", "tuev", "HU"]);
+  tips.push(["🛠️", "Inspektion durchführen & Wartungsnachweis sichern", "inspektion", "Kleine Inspektion"]);
+  tips.push(["✨", "Lack aufbereiten / polieren", "pflege", "Politur"]);
+  tips.push(["🛞", "Felgen reparieren", "reifen", "Felgenreparatur"]);
+  main.innerHTML = `
+  <div class="pageHead">
+    <div class="ico icoBlue" style="width:52px;height:52px;font-size:23px">🚗</div>
+    <div style="flex:1"><h1>${esc(v.make)} ${esc(v.model)}${v.series && v.series !== "Keine Angabe" ? " " + esc(v.series) : ""}</h1>
+    <div class="sub">${esc(carLabel(v))}${v.license_plate ? " · 🔖 " + esc(v.license_plate) : ""}</div></div>
+    <div class="right"><button class="btn ghost sm" onclick="openVehicleForm('${v.id}')">Bearbeiten</button></div>
+  </div>
+  <div class="kpiRow">
+    <div class="kpi"><b>${doneJobs.length}</b><span>Abgeschlossene Aufträge</span></div>
+    <div class="kpi"><b>${v.tuev_until ? fmtDate(v.tuev_until) : "–"}</b><span>TÜV gültig bis</span></div>
+    <div class="kpi"><b>${(logs || [])[0]?.mileage ? Number(logs[0].mileage).toLocaleString("de-DE") + " km" : v.mileage ? "~" + Number(v.mileage).toLocaleString("de-DE") + " km" : "–"}</b><span>Letzter Kilometerstand</span></div>
+    <div class="kpi"><b>${(rems || []).length}</b><span>Offene Erinnerungen</span></div>
+  </div>
+  <div class="grid2" style="align-items:start">
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="tt">🗂️ Reparatur- & Auftragshistorie</div>
+        <div style="margin-top:10px">${(reqs || []).length === 0
+          ? '<p class="mm">Noch keine Aufträge mit diesem Fahrzeug.</p>'
+          : reqs.map(r => {
+            const c = CATS[r.category] || { icon: "🔧", name: r.category };
+            const bk = (bks || []).find(b => b.offers?.request_id === r.id);
+            return `<div class="card tap" style="margin-bottom:9px;padding:12px" onclick="go('request/${r.id}')">
+              <div class="cardHead"><div class="ico" style="width:34px;height:34px;font-size:15px">${c.icon}</div>
+              <div style="flex:1"><div class="tt" style="font-size:13px">${esc(r.title)}</div>
+              <div class="mm">${fmtDate(r.created_at)}${bk ? " · " + fmtEur(bk.total_price) + " · " + (bk.offers?.workshops?.name || "") : ""}</div></div>
+              <span class="badge ${bk ? (BK_STATUS[bk.status]?.[1] || "b-grey") : r.status === "open" ? "b-green" : "b-grey"}">${bk ? (BK_STATUS[bk.status]?.[0] || bk.status) : r.status === "open" ? "Offen" : esc(r.status)}</span></div>
+            </div>`;
+          }).join("")}</div>
+      </div>
+      <div class="card">
+        <div class="tt">📈 Kilometerstände & Notizen</div>
+        <div class="split" style="margin-top:12px">
+          <input id="vlKm" inputmode="numeric" placeholder="Kilometerstand">
+          <input id="vlNote" placeholder="Notiz (optional)">
+          <button class="btn sm" id="vlAdd" style="flex:0 0 auto">＋</button>
+        </div>
+        <div style="margin-top:12px">${(logs || []).map(l => `
+          <div class="offerLine"><span>${fmtDate(l.created_at)}${l.note ? " · " + esc(l.note) : ""}</span><span>${l.mileage ? Number(l.mileage).toLocaleString("de-DE") + " km" : ""}</span></div>`).join("") || '<p class="mm">Noch keine Einträge.</p>'}</div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="tt">📄 Dokumente</div>
+        <p class="mm" style="margin-top:6px">${v.registration_doc ? "📄 Fahrzeugschein hinterlegt (privat gespeichert)" : "Kein Fahrzeugschein hinterlegt – über Bearbeiten hochladen."}</p>
+        ${v.registration_doc ? `<button class="btn ghost sm" style="margin-top:8px" id="vDocBtn">Fahrzeugschein öffnen</button>` : ""}
+        <p class="mm" style="margin-top:8px;font-size:11px">Rechnungen und Berichte der Werkstatt findest du im jeweiligen Auftrag – die Reparaturleistung und Rechnung werden durch die Werkstatt erbracht.</p>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="tt">🔔 Anstehende Erinnerungen</div>
+        <div style="margin-top:8px">${(rems || []).length === 0
+          ? `<p class="mm">Keine offenen Erinnerungen. <a href="#/reminders" style="color:var(--blue2)">Zur Erinnerungszentrale →</a></p>`
+          : rems.map(rm => `<div class="offerLine"><span>${esc(rm.title)}</span><span>${fmtDate(rm.due_date)}</span></div>`).join("")}</div>
+      </div>
+      <div class="card">
+        <div class="tt">📈 Verkaufswert verbessern</div>
+        <p class="mm" style="margin-top:6px">Diese Maßnahmen können Verkaufswert oder Verkaufschancen verbessern:</p>
+        <div style="margin-top:8px">${tips.map(t => `
+          <div class="offerLine"><span>${t[0]} ${esc(t[1])}</span><a href="#/new-request?cat=${t[2]}&service=${encodeURIComponent(t[3])}" style="color:var(--blue2);font-weight:700;font-size:12px">Anfragen →</a></div>`).join("")}</div>
+      </div>
+    </div>
+  </div>`;
+  $("vlAdd").onclick = async () => {
+    const km = parseInt($("vlKm").value, 10);
+    if (!km && !$("vlNote").value.trim()) return toast("Kilometerstand oder Notiz angeben.");
+    const { error } = await sb.from("vehicle_logs").insert({ vehicle_id: v.id, user_id: me.id, mileage: km || null, note: $("vlNote").value.trim() || null });
+    if (error) return toast(error.message);
+    toast("Eintrag gespeichert ✓");
+    vVehicleRecord(v.id);
+  };
+  const db = $("vDocBtn");
+  if (db) db.onclick = async () => {
+    const { data, error } = await sb.storage.from("documents").createSignedUrl(v.registration_doc, 300);
+    if (error || !data?.signedUrl) return toast("Dokument konnte nicht geladen werden.");
+    window.open(data.signedUrl, "_blank");
+  };
+}
+
+// ---------- Favoriten ----------
+async function toggleFavorite(wsId, btn) {
+  if (!requireAuth()) return;
+  const { data: ex } = await sb.from("favorites").select("workshop_id").eq("user_id", me.id).eq("workshop_id", wsId).maybeSingle();
+  if (ex) {
+    await sb.from("favorites").delete().eq("user_id", me.id).eq("workshop_id", wsId);
+    toast("Aus Favoriten entfernt.");
+    if (btn) btn.textContent = "🤍 Merken";
+  } else {
+    const { error } = await sb.from("favorites").insert({ user_id: me.id, workshop_id: wsId });
+    if (error) return toast(error.message);
+    toast("Zu Favoriten hinzugefügt ⭐");
+    if (btn) btn.textContent = "❤️ Gemerkt";
+  }
 }
 
 // ============================================================
