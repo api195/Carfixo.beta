@@ -18,9 +18,9 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove("show"), 3000);
 }
 
-const VIEWS = { dashboard: vDashboard, workshops: vWorkshops, users: vUsers, requests: vRequests, payments: vPayments };
+const VIEWS = { dashboard: vDashboard, workshops: vWorkshops, users: vUsers, requests: vRequests, payments: vPayments, reports: vReports };
 function nav(active) {
-  $("topNav").innerHTML = [["dashboard", "Übersicht"], ["workshops", "Werkstätten"], ["users", "Nutzer"], ["requests", "Anfragen"], ["payments", "Zahlungen"]]
+  $("topNav").innerHTML = [["dashboard", "Übersicht"], ["workshops", "Werkstätten"], ["users", "Nutzer"], ["requests", "Anfragen"], ["payments", "Zahlungen"], ["reports", "🚩 Meldungen"]]
     .map(([k, l]) => `<a href="#/${k}" class="${active === k ? "on" : ""}">${l}</a>`).join("") +
     `<a href="app.html" style="color:var(--blue2)">Zur App</a><a href="#" id="outLink">Abmelden</a>`;
   $("outLink").onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
@@ -86,6 +86,29 @@ async function vDashboard() {
     <div class="kpi"><b>${completed.length}</b><span>Abgeschlossen</span></div>
     <div class="kpi"><b>${gmv.toLocaleString("de-DE")} €</b><span>Umsatzvolumen (abgeschlossen)</span></div>
     <div class="kpi"><b>★ ${avgRating}</b><span>Ø Bewertung (${(reviews.data || []).length})</span></div>`;
+  // Conversion-Funnel + beliebte Kategorien
+  const reqTotal = reqs.count || 0;
+  const withOffer = new Set();
+  const catCount = {};
+  (reqs.data || []).forEach(r => {});
+  const { data: allReq } = await sb.from("requests").select("id,category,status");
+  (allReq || []).forEach(r => { catCount[r.category] = (catCount[r.category] || 0) + 1; });
+  const bookedCnt = (allReq || []).filter(r => r.status === "booked").length;
+  const funnel = document.createElement("div");
+  funnel.className = "grid2";
+  funnel.style.marginBottom = "20px";
+  funnel.innerHTML = `
+    <div class="card"><div class="tt">📈 Conversion</div>
+      <div class="offerLine" style="margin-top:8px"><span>Anfragen → Angebote erhalten</span><span><b>${reqTotal ? Math.round(((offers.count || 0) > 0 ? Math.min(reqTotal, offers.count) : 0) / reqTotal * 100) : 0} %</b></span></div>
+      <div class="offerLine"><span>Anfragen → Buchung</span><span><b>${reqTotal ? Math.round(bookedCnt / reqTotal * 100) : 0} %</b></span></div>
+      <div class="offerLine"><span>Buchung → Abschluss</span><span><b>${(bookings.data || []).length ? Math.round(completed.length / bookings.data.length * 100) : 0} %</b></span></div>
+      <div class="offerLine"><span>Stornierungen / No-Shows</span><span><b>${(bookings.data || []).filter(b => b.status === "cancelled").length}</b></span></div>
+    </div>
+    <div class="card"><div class="tt">🔥 Beliebte Kategorien</div>
+      ${Object.entries(catCount).sort((x, y) => y[1] - x[1]).slice(0, 6).map(([c, n]) =>
+        `<div class="offerLine"><span>${CATS[c]?.icon || ""} ${CATS[c]?.name || c}</span><span><b>${n}</b></span></div>`).join("") || '<p class="mm" style="margin-top:8px">Noch keine Daten.</p>'}
+    </div>`;
+  $("pending").parentElement.before(funnel);
   $("pending").innerHTML = pending.length === 0
     ? '<p class="mm">Keine offenen Verifizierungen 🎉</p>'
     : pending.map(w => `
@@ -101,7 +124,7 @@ async function vDashboard() {
 async function vWorkshops() {
   main.innerHTML = `<div class="pageHead"><div><h1>Werkstätten</h1><div class="sub">Verifizieren, prüfen, sperren.</div></div></div>
   <div class="tblWrap"><table class="tbl"><thead><tr>
-    <th>Betrieb</th><th>Standort</th><th>Kategorien</th><th>Bewertung</th><th>Status</th><th></th>
+    <th>Betrieb</th><th>Standort</th><th>Kategorien</th><th>Bewertung</th><th>Status</th><th>Premium</th><th></th>
   </tr></thead><tbody id="wsRows"><tr><td colspan="6"><div class="sk" style="height:60px"></div></td></tr></tbody></table></div>`;
   const { data, error } = await sb.from("workshops").select("*").order("created_at", { ascending: false });
   if (error) { main.innerHTML += `<div class="warn">${esc(error.message)}</div>`; return; }
@@ -112,11 +135,19 @@ async function vWorkshops() {
       <td>${(w.categories || []).map(c => CATS[c]?.icon || "").join(" ")}</td>
       <td>${w.rating_avg > 0 ? "★ " + Number(w.rating_avg).toLocaleString("de-DE") + ` (${w.rating_count})` : "–"}</td>
       <td>${w.is_verified ? '<span class="badge b-green">verifiziert</span>' : '<span class="badge b-gold">wartet</span>'}</td>
+      <td>${w.is_premium ? "👑" : "–"}</td>
       <td style="white-space:nowrap">
         <button class="btn ${w.is_verified ? "red" : "green"} sm" onclick="verifyWs('${w.id}',${!w.is_verified})">${w.is_verified ? "Sperren" : "✓ Verifizieren"}</button>
+        <button class="btn ghost sm" onclick="togglePremium('${w.id}',${!w.is_premium})" style="margin-left:6px">${w.is_premium ? "Premium aus" : "Premium an"}</button>
         <a class="btn ghost sm" href="app.html#/workshop/${w.id}" style="margin-left:6px">Profil</a>
       </td>
-    </tr>`).join("") || '<tr><td colspan="6" class="mm">Keine Werkstätten.</td></tr>';
+    </tr>`).join("") || '<tr><td colspan="7" class="mm">Keine Werkstätten.</td></tr>';
+}
+async function togglePremium(id, val) {
+  const { error } = await sb.from("workshops").update({ is_premium: val }).eq("id", id);
+  if (error) return toast(error.message);
+  toast(val ? "Premium aktiviert 👑" : "Premium deaktiviert.");
+  route();
 }
 async function verifyWs(id, verified) {
   const { error } = await sb.from("workshops").update({ is_verified: verified }).eq("id", id);
@@ -129,7 +160,7 @@ async function verifyWs(id, verified) {
 async function vUsers() {
   main.innerHTML = `<div class="pageHead"><div><h1>Nutzer</h1><div class="sub">Alle registrierten Konten.</div></div></div>
   <div class="tblWrap"><table class="tbl"><thead><tr>
-    <th>Name</th><th>E-Mail</th><th>Rolle</th><th>Premium</th><th>Registriert</th>
+    <th>Name</th><th>E-Mail</th><th>Rolle</th><th>Premium</th><th>Registriert</th><th></th>
   </tr></thead><tbody id="uRows"><tr><td colspan="5"><div class="sk" style="height:60px"></div></td></tr></tbody></table></div>`;
   const { data, error } = await sb.from("profiles").select("*").order("created_at", { ascending: false });
   if (error) { main.innerHTML += `<div class="warn">${esc(error.message)}</div>`; return; }
@@ -142,7 +173,56 @@ async function vUsers() {
       <td><span class="badge ${roleBadge[p.role] || "b-grey"}">${roleName[p.role] || p.role}</span></td>
       <td>${p.is_premium ? "👑" : "–"}</td>
       <td class="mm">${fmtDate(p.created_at)}</td>
+      <td>${p.role !== "admin" ? `<button class="btn ${p.is_blocked ? "green" : "red"} sm" onclick="toggleBlock('${p.id}',${!p.is_blocked})">${p.is_blocked ? "Entsperren" : "Sperren"}</button>` : ""}</td>
     </tr>`).join("");
+}
+
+async function toggleBlock(id, val) {
+  const { error } = await sb.from("profiles").update({ is_blocked: val }).eq("id", id);
+  if (error) return toast(error.message);
+  toast(val ? "Nutzer gesperrt." : "Nutzer entsperrt.");
+  route();
+}
+
+// ---------- Meldungen & Konflikte ----------
+const RP_STATUS = { offen: "b-red", in_pruefung: "b-gold", rueckfrage_gesendet: "b-blue", geloest: "b-green", abgelehnt: "b-grey", geschlossen: "b-grey" };
+async function vReports() {
+  main.innerHTML = `<div class="pageHead"><div><h1>🚩 Meldungen & Konflikte</h1><div class="sub">Meldungen von Kunden und Betrieben prüfen und Entscheidungen dokumentieren.</div></div></div>
+  <div id="rpList"><div class="sk" style="height:110px"></div></div>`;
+  const { data, error } = await sb.from("reports").select("*, workshops(name)").order("created_at", { ascending: false }).limit(100);
+  if (error) { main.innerHTML += `<div class="warn">${esc(error.message)}</div>`; return; }
+  $("rpList").innerHTML = (data || []).length === 0
+    ? '<div class="empty"><div class="e">🎉</div>Keine Meldungen.</div>'
+    : data.map(r => `
+      <div class="card" style="margin-bottom:12px">
+        <div class="cardHead"><div class="ico icoRed">🚩</div>
+          <div style="flex:1"><div class="tt">${esc(r.reason)} <span class="mm">· Ziel: ${esc(r.target_type)}${r.workshops ? " · " + esc(r.workshops.name) : ""}</span></div>
+          <div class="mm">${fmtDate(r.created_at)}${r.description ? " · " + esc(r.description) : ""}</div>
+          ${r.admin_note ? `<div class="mm">📝 ${esc(r.admin_note)}</div>` : ""}</div>
+          <span class="badge ${RP_STATUS[r.status] || "b-grey"}">${esc(r.status)}</span></div>
+        <div class="foot">
+          <select style="width:auto;flex:1;min-width:160px;padding:9px" onchange="setReportStatus('${r.id}',this.value)">
+            ${Object.keys(RP_STATUS).map(k => `<option value="${k}" ${k === r.status ? "selected" : ""}>${k}</option>`).join("")}
+          </select>
+          <button class="btn ghost sm" onclick="noteReport('${r.id}')">📝 Notiz</button>
+          ${r.workshop_id ? `<a class="btn ghost sm" href="app.html#/workshop/${r.workshop_id}">Betrieb ansehen</a>` : ""}
+        </div>
+      </div>`).join("");
+}
+async function setReportStatus(id, status) {
+  const upd = { status };
+  if (["geloest", "abgelehnt", "geschlossen"].includes(status)) upd.resolved_at = new Date().toISOString();
+  const { error } = await sb.from("reports").update(upd).eq("id", id);
+  if (error) return toast(error.message);
+  toast("Status: " + status);
+}
+async function noteReport(id) {
+  const note = prompt("Entscheidung / Notiz dokumentieren:");
+  if (note == null) return;
+  const { error } = await sb.from("reports").update({ admin_note: note }).eq("id", id);
+  if (error) return toast(error.message);
+  toast("Notiz gespeichert.");
+  vReports();
 }
 
 // ---------- Anfragen-Monitor ----------
