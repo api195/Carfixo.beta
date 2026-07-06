@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carfixo – App</title>
+<meta name="description" content="Carfixo: Werkstätten finden, Angebote vergleichen, buchen.">
+<link rel="stylesheet" href="assets/vendor/leaflet.css">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="topbarIn">
+    <a class="logo" href="index.html">car<b>fixo</b><span class="beta">BETA</span></a>
+    <nav class="topNav" id="topNav"></nav>
+    <button class="avatarBtn hidden" id="avatarBtn" title="Konto">?</button>
+  </div>
+</header>
+<main id="main"><div class="empty"><div class="e">⏳</div>Lade Carfixo…</div></main>
+<nav class="tabbar" id="tabbar"></nav>
+<div class="toast" id="toast"></div>
+<div id="modalHost"></div>
+
+<script src="assets/config.js"></script>
+<script src="assets/vendor/supabase.js"></script>
+<script src="assets/vendor/leaflet.js"></script>
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
