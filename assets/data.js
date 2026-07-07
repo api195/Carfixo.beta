@@ -6,15 +6,15 @@
 
 // 13 Hauptkategorien (Schlüssel = DB-Werte) mit Unterkategorien
 const CATS = {
-  reparatur: { icon: "🔧", name: "Reparatur & Diagnose", services: ["Motor","Getriebe","Bremsen","Fahrwerk","Elektrik","Batterie","Auspuff","Kupplung","Steuerkette","Zahnriemen","Motorkontrollleuchte","Geräusche","Vibrationen","Ölverlust","Kühlmittelverlust","Startprobleme"] },
+  reparatur: { icon: "🔧", name: "Reparatur & Diagnose", services: ["Motor","Getriebe","Bremsen","Kupplung","Fahrwerk","Stoßdämpfer","Federn","Lenkung","Elektrik","Batterie","Lichtmaschine","Anlasser","Auspuff","Katalysator","Dieselpartikelfilter","Kühlung","Kühler","Wasserpumpe","Ölverlust","Kühlmittelverlust","Startprobleme","Motorkontrollleuchte","Warnleuchte","Geräusche","Vibrationen","Zahnriemen","Steuerkette","Turbolader","Klimakompressor","Fensterheber","Zentralverriegelung","Sensoren","ABS / ESP","Airbag","Fehlerspeicher auslesen"] },
   inspektion: { icon: "🛠️", name: "Inspektion & Wartung", services: ["Kleine Inspektion","Große Inspektion","Ölwechsel","Nach Herstellervorgabe","Bremsflüssigkeit","Filterwechsel","Zündkerzen","Wartungsintervall"] },
   reifen: { icon: "🛞", name: "Reifen & Felgen", services: ["Reifenwechsel","Montage","Wuchten","Einlagerung","Felgenreparatur","Achsvermessung","Reifenreparatur","RDKS-Service"] },
   karosserie: { icon: "🚘", name: "Karosserie & Unfall", services: ["Unfallinstandsetzung","Dellenentfernung","Hagelschaden","Rostbeseitigung","Stoßstange","Kotflügel","Ausbeulen ohne Lackieren","Gutachten-Vorbereitung"] },
   lack: { icon: "🎨", name: "Lackierung & Folierung", services: ["Lackierung","Folierung","Smart Repair","Steinschlag-Lack","Scheibentönung","Teilfolierung","Lackversiegelung"] },
-  pflege: { icon: "✨", name: "Aufbereitung & Pflege", services: ["Innenreinigung","Außenaufbereitung","Politur","Keramikversiegelung","Geruchsentfernung","Lederpflege","Motorwäsche","Polsterreinigung"] },
+  pflege: { icon: "✨", name: "Aufbereitung & Pflege", services: ["Innenreinigung","Außenreinigung","Komplettaufbereitung","Lederreinigung","Lederpflege","Politur","Lackaufbereitung","Lackversiegelung","Keramikversiegelung","Kratzer entfernen","Geruchsentfernung","Ozonbehandlung","Tierhaarentfernung","Fleckenentfernung","Motorraumreinigung","Felgenreinigung","Scheibenversiegelung","Cabrioverdeckpflege","Kunststoffpflege","Scheinwerferaufbereitung","Verkaufsaufbereitung","Leasingrückgabe-Aufbereitung","Wohnmobil-Aufbereitung","Motorrad-Aufbereitung","Innenraumdesinfektion","Nikotingeruch entfernen","Wasserflecken entfernen","Flugrost entfernen"] },
   klima: { icon: "❄️", name: "Klimaanlage", services: ["Klimaservice","Klimareparatur","Klimadesinfektion","Kältemittel","Klimakompressor"] },
-  tuev: { icon: "📋", name: "TÜV / HU / AU", services: ["HU","AU","Vorabcheck","Nachuntersuchung","Änderungsabnahme","Gutachten","Gasanlagenprüfung"] },
-  tuning: { icon: "🏎️", name: "Tuning & Codierung", services: ["Softwareoptimierung","Codierung","Auspuffanlage","Fahrwerk-Tuning","Felgen-Umbau","Optik","Leistungssteigerung","Eintragung"] },
+  tuev: { icon: "📋", name: "TÜV & Prüfung", services: ["HU","AU","HU + AU","TÜV-Vorbereitung","Mängelbeseitigung vor HU","Nachprüfung","Sicherheitscheck","Gebrauchtwagencheck","Bremsenprüfung","Lichttest","Abgasuntersuchung","Klimaanlagencheck","Batteriecheck","Sommercheck","Wintercheck","Urlaubscheck","Unfallcheck","Fahrzeugbewertung","Oldtimer-Gutachten","H-Kennzeichen-Vorbereitung","Änderungsabnahme","Einzelabnahme","Tuning-Abnahme","Gasprüfung","Wohnmobil-Prüfung","Reifencheck","Achsvermessung","Prüfbericht erklären","Kaufberatung vor Gebrauchtwagenkauf"] },
+  tuning: { icon: "🏎️", name: "Tuning & Codierung", services: ["Chiptuning","Softwareoptimierung","Leistungssteigerung","Leistungsprüfung","Prüfstand","Fahrwerkstuning","Tieferlegung","Gewindefahrwerk","Luftfahrwerk","Spurverbreiterung","Felgen","Reifen","Auspuffanlage","Sportauspuff","Downpipe","Ansaugsystem","Ladeluftkühler","Bremsanlage","Carbonteile","Bodykit","Diffusor","Spoiler","Folierung","Scheibentönung","Ambientebeleuchtung","Innenraumumbau","Codierungen","Freischaltungen","Apple CarPlay Nachrüstung","Android Auto Nachrüstung","Rückfahrkamera","Dashcam","Kennfeldoptimierung","Rückrüstung","Tuning-Abnahme"] },
   autoglas: { icon: "🪟", name: "Autoglas", services: ["Steinschlagreparatur","Frontscheibe wechseln","Seitenscheibe","Heckscheibe","Scheibenversiegelung","Kalibrierung Assistenzsysteme"] },
   schluessel: { icon: "🔑", name: "Schlüssel & Fahrzeugdiagnose", services: ["Schlüssel nachmachen","Schlüssel anlernen","Funkschlüssel-Reparatur","Wegfahrsperre","Steuergeräte-Diagnose","Fehlerspeicher auslesen"] },
   oldtimer: { icon: "🚗", name: "Oldtimer", services: ["Oldtimer-Wartung","Restauration","Vergaser-Einstellung","H-Kennzeichen-Vorbereitung","Ersatzteilsuche","Wertgutachten"] },
@@ -29,83 +29,265 @@ const WORLDS = [
   { key: "tuev", icon: "📋", name: "TÜV & Prüfung", cats: ["tuev"] },
 ];
 
+// ============================================================
+// FAHRZEUGDATENBANK (Beta)
+// Struktur ist so aufgebaut, dass sie später 1:1 durch eine
+// echte Fahrzeugdaten-API ersetzt werden kann – alle Zugriffe
+// laufen über die vehicleLookup()-Funktionen weiter unten.
+// ============================================================
+
+// Marke → Modelle
 const BRANDS = {
-  "Alfa Romeo":["Giulia","Giulietta","Stelvio","Tonale","MiTo"],
-  "Audi":["A1","A3","A4","A5","A6","A7","A8","Q2","Q3","Q5","Q7","Q8","TT","e-tron","RS-Modelle"],
-  "BMW":["1er","2er","3er","4er","5er","6er","7er","8er","X1","X2","X3","X4","X5","X6","X7","Z4","i3","i4","iX","M-Modelle"],
+  "Abarth":["500","595","695","124 Spider"],
+  "Alfa Romeo":["Giulia","Giulietta","Stelvio","Tonale","MiTo","159","4C"],
+  "Aston Martin":["Vantage","DB11","DB12","DBX"],
+  "Audi":["A1","A2","A3","A4","A5","A6","A7","A8","Q2","Q3","Q4 e-tron","Q5","Q7","Q8","TT","R8","e-tron GT","RS-Modelle"],
+  "Bentley":["Continental GT","Flying Spur","Bentayga"],
+  "BMW":["1er","2er","3er","4er","5er","6er","7er","8er","X1","X2","X3","X4","X5","X6","X7","Z3","Z4","i3","i4","i5","iX","iX1","iX3","M-Modelle"],
   "BYD":["Atto 3","Dolphin","Seal","Han","Tang"],
-  "Citroën":["C1","C3","C4","C5","Berlingo","Jumper","DS3"],
-  "Cupra":["Leon","Formentor","Born","Ateca","Tavascan"],
-  "Dacia":["Sandero","Duster","Logan","Jogger","Spring"],
-  "Fiat":["500","Panda","Tipo","Punto","Ducato","Doblo"],
-  "Ford":["Fiesta","Focus","Mondeo","Kuga","Puma","EcoSport","S-MAX","Galaxy","Mustang","Ranger","Transit"],
-  "Honda":["Jazz","Civic","CR-V","HR-V","Accord","e:Ny1"],
-  "Hyundai":["i10","i20","i30","Kona","Tucson","Santa Fe","Ioniq 5","Ioniq 6","Bayon"],
-  "Jaguar":["XE","XF","F-Pace","E-Pace","I-Pace","F-Type"],
-  "Jeep":["Renegade","Compass","Wrangler","Grand Cherokee","Avenger"],
-  "Kia":["Picanto","Rio","Ceed","Stonic","Sportage","Niro","Sorento","EV6","EV9"],
-  "Land Rover":["Defender","Discovery","Range Rover","Range Rover Sport","Evoque","Velar"],
+  "Chevrolet":["Spark","Aveo","Cruze","Captiva","Camaro","Corvette"],
+  "Citroën":["C1","C3","C3 Aircross","C4","C5 Aircross","Berlingo","Jumpy","Jumper","DS3","DS4"],
+  "Cupra":["Leon","Formentor","Born","Ateca","Tavascan","Terramar"],
+  "Dacia":["Sandero","Duster","Logan","Jogger","Spring","Lodgy","Dokker"],
+  "DS":["DS 3","DS 4","DS 7","DS 9"],
+  "Ferrari":["488","F8","Roma","Portofino","296","SF90","Purosangue"],
+  "Fiat":["500","500e","500X","Panda","Tipo","Punto","Ducato","Doblo","Talento"],
+  "Ford":["Ka","Fiesta","Focus","Mondeo","Kuga","Puma","EcoSport","Edge","Explorer","S-MAX","Galaxy","Mustang","Mustang Mach-E","Ranger","Transit","Tourneo"],
+  "Genesis":["G70","G80","GV60","GV70","GV80"],
+  "Honda":["Jazz","Civic","CR-V","HR-V","ZR-V","Accord","e:Ny1","Honda e"],
+  "Hyundai":["i10","i20","i30","i40","Bayon","Kona","Tucson","Santa Fe","Ioniq","Ioniq 5","Ioniq 6","Staria"],
+  "Infiniti":["Q30","Q50","QX30","QX70"],
+  "Jaguar":["XE","XF","XJ","F-Pace","E-Pace","I-Pace","F-Type"],
+  "Jeep":["Renegade","Compass","Cherokee","Grand Cherokee","Wrangler","Avenger","Gladiator"],
+  "Kia":["Picanto","Rio","Ceed","XCeed","Stonic","Niro","Sportage","Sorento","EV6","EV9","Soul","Optima"],
+  "Lada":["Niva","Vesta","Granta"],
+  "Lamborghini":["Huracán","Aventador","Revuelto","Urus"],
+  "Land Rover":["Defender","Discovery","Discovery Sport","Range Rover","Range Rover Sport","Range Rover Velar","Range Rover Evoque"],
+  "Lexus":["CT","IS","ES","NX","RX","UX","LC"],
+  "Maserati":["Ghibli","Quattroporte","Levante","Grecale","MC20"],
   "Mazda":["2","3","6","CX-3","CX-30","CX-5","CX-60","MX-5","MX-30"],
-  "Mercedes-Benz":["A-Klasse","B-Klasse","C-Klasse","E-Klasse","S-Klasse","CLA","CLS","GLA","GLB","GLC","GLE","GLS","V-Klasse","Vito","Sprinter","EQA","EQB","EQC","EQE","EQS","AMG-Modelle"],
-  "Mini":["Cooper","Cooper S","Clubman","Countryman","Cabrio","Electric"],
-  "Mitsubishi":["Space Star","ASX","Eclipse Cross","Outlander","L200"],
-  "Nissan":["Micra","Note","Juke","Qashqai","X-Trail","Leaf","Ariya","Navara"],
-  "Opel":["Corsa","Astra","Insignia","Mokka","Crossland","Grandland","Zafira","Combo","Vivaro"],
-  "Peugeot":["108","208","308","408","508","2008","3008","5008","Partner","Boxer"],
+  "Mercedes-Benz":["A-Klasse","B-Klasse","C-Klasse","E-Klasse","S-Klasse","CLA","CLS","SL","SLK/SLC","GLA","GLB","GLC","GLE","GLS","G-Klasse","V-Klasse","Vito","Sprinter","Citan","EQA","EQB","EQC","EQE","EQS","AMG GT"],
+  "MG":["MG3","MG4","MG5","ZS","HS","Marvel R"],
+  "Mini":["Cooper","Clubman","Countryman","Cabrio","Paceman","Electric"],
+  "Mitsubishi":["Space Star","Colt","ASX","Eclipse Cross","Outlander","Pajero","L200"],
+  "Nissan":["Micra","Note","Juke","Qashqai","X-Trail","Leaf","Ariya","Navara","370Z","GT-R"],
+  "Opel":["Adam","Karl","Corsa","Astra","Insignia","Mokka","Crossland","Grandland","Zafira","Meriva","Combo","Vivaro","Movano"],
+  "Peugeot":["107","108","208","2008","308","3008","408","508","5008","Partner","Rifter","Expert","Boxer"],
   "Polestar":["Polestar 1","Polestar 2","Polestar 3","Polestar 4"],
-  "Porsche":["911","718 Boxster/Cayman","Panamera","Macan","Cayenne","Taycan"],
-  "Renault":["Twingo","Clio","Captur","Megane","Austral","Scenic","Kangoo","Zoe","Master"],
-  "Seat":["Ibiza","Leon","Ateca","Arona","Tarraco","Alhambra","Mii"],
-  "Skoda":["Fabia","Octavia","Superb","Kamiq","Karoq","Kodiaq","Scala","Enyaq","Citigo"],
+  "Porsche":["911","718 Boxster","718 Cayman","Panamera","Macan","Cayenne","Taycan"],
+  "Renault":["Twingo","Clio","Captur","Megane","Megane E-Tech","Austral","Arkana","Scenic","Espace","Kangoo","Trafic","Master","Zoe"],
+  "Rolls-Royce":["Ghost","Phantom","Cullinan","Spectre"],
+  "Saab":["9-3","9-5"],
+  "Seat":["Mii","Ibiza","Leon","Toledo","Ateca","Arona","Tarraco","Alhambra"],
+  "Skoda":["Citigo","Fabia","Rapid","Scala","Octavia","Superb","Kamiq","Karoq","Kodiaq","Enyaq"],
   "Smart":["ForTwo","ForFour","#1","#3"],
-  "Subaru":["Impreza","XV","Forester","Outback","BRZ"],
-  "Suzuki":["Swift","Ignis","Vitara","S-Cross","Jimny"],
+  "Ssangyong":["Tivoli","Korando","Rexton","Musso"],
+  "Subaru":["Impreza","XV","Forester","Outback","Levorg","BRZ","Solterra"],
+  "Suzuki":["Alto","Swift","Ignis","Baleno","Vitara","S-Cross","Jimny","Across"],
   "Tesla":["Model 3","Model S","Model X","Model Y","Cybertruck"],
-  "Toyota":["Aygo","Yaris","Corolla","C-HR","RAV4","Camry","Prius","Hilux","Proace","bZ4X"],
-  "Volkswagen":["Polo","Golf","Passat","Arteon","T-Roc","T-Cross","Tiguan","Touran","Touareg","Sharan","Caddy","Transporter","Amarok","ID.3","ID.4","ID.5","ID.7","ID. Buzz","up!"],
-  "Volvo":["V40","V60","V90","S60","S90","XC40","XC60","XC90","EX30","EX90"],
+  "Toyota":["Aygo","Aygo X","Yaris","Yaris Cross","Corolla","C-HR","RAV4","Camry","Prius","Supra","Land Cruiser","Hilux","Proace","bZ4X"],
+  "Volkswagen":["up!","Polo","Golf","Jetta","Passat","Arteon","Scirocco","Beetle","T-Roc","T-Cross","Taigo","Tiguan","Touran","Touareg","Sharan","Caddy","Transporter","Multivan","Crafter","Amarok","ID.3","ID.4","ID.5","ID.7","ID. Buzz"],
+  "Volvo":["C30","V40","V60","V90","S60","S90","XC40","XC60","XC90","C40","EX30","EX90"],
 };
+
+// Modell → Baureihen/Generationen mit Bauzeitraum [von, bis]
 const SERIES = {
-  "BMW|1er":["E81/E87","F20/F21","F40"],"BMW|2er":["F22","F44 Gran Coupé","G42"],
-  "BMW|3er":["E46","E90/E91","F30/F31","G20/G21"],"BMW|4er":["F32/F33","G22/G23"],
-  "BMW|5er":["E60/E61","F10/F11","G30/G31","G60"],"BMW|7er":["E65","F01","G11","G70"],
-  "BMW|X1":["E84","F48","U11"],"BMW|X3":["E83","F25","G01"],"BMW|X5":["E70","F15","G05"],
-  "Audi|A1":["8X","GB"],"Audi|A3":["8P","8V","8Y"],"Audi|A4":["B7","B8","B9"],
-  "Audi|A5":["8T","F5"],"Audi|A6":["C6","C7","C8"],"Audi|Q3":["8U","F3"],"Audi|Q5":["8R","FY"],
-  "Mercedes-Benz|A-Klasse":["W169","W176","W177"],"Mercedes-Benz|B-Klasse":["W245","W246","W247"],
-  "Mercedes-Benz|C-Klasse":["W204","W205","W206"],"Mercedes-Benz|E-Klasse":["W211","W212","W213","W214"],
-  "Mercedes-Benz|S-Klasse":["W221","W222","W223"],"Mercedes-Benz|GLC":["X253","X254"],
-  "Volkswagen|Polo":["9N","6R/6C","AW"],"Volkswagen|Golf":["IV","V","VI","VII","VIII"],
-  "Volkswagen|Passat":["B6","B7","B8","B9"],"Volkswagen|Tiguan":["I (5N)","II (AD1)","III"],
-  "Volkswagen|Touran":["I (1T)","II (5T)"],"Volkswagen|Transporter":["T5","T6","T6.1","T7"],
-  "Opel|Corsa":["D","E","F"],"Opel|Astra":["H","J","K","L"],
-  "Ford|Fiesta":["MK6","MK7","MK8"],"Ford|Focus":["MK2","MK3","MK4"],"Ford|Kuga":["I","II","III"],
-  "Skoda|Octavia":["I","II","III","IV"],"Skoda|Fabia":["I","II","III","IV"],"Skoda|Superb":["II","III","IV"],
-  "Seat|Ibiza":["6L","6J","KJ"],"Seat|Leon":["1M","1P","5F","KL"],
-  "Porsche|911":["996","997","991","992"],"Porsche|Cayenne":["955","958","9YA"],
-  "Toyota|Yaris":["XP9","XP13","XP21"],"Toyota|Corolla":["E12","E16","E21"],
-  "Renault|Clio":["III","IV","V"],"Renault|Megane":["III","IV","E-Tech"],
-  "Hyundai|i30":["FD","GD","PD"],"Hyundai|Tucson":["TL","NX4"],
-  "Kia|Ceed":["ED","JD","CD"],"Kia|Sportage":["QL","NQ5"],
-  "Peugeot|208":["I","II"],"Peugeot|308":["I","II","III"],
-  "Fiat|500":["312 (Benzin)","500e"],"Mini|Cooper":["R56","F56","J01"],
-  "Volvo|XC60":["I","II"],"Mazda|3":["BL","BM","BP"],
-  "Mercedes-Benz|Sprinter":["W906","W907"],"Tesla|Model 3":["Pre-Facelift","Highland"],
+  "Audi|A1":[["8X (2010–2018)",2010,2018],["GB (ab 2018)",2018,2026]],
+  "Audi|A3":[["8L (1996–2003)",1996,2003],["8P (2003–2012)",2003,2012],["8V (2012–2020)",2012,2020],["8Y (ab 2020)",2020,2026]],
+  "Audi|A4":[["B6 (2000–2004)",2000,2004],["B7 (2004–2008)",2004,2008],["B8 (2007–2015)",2007,2015],["B9 (ab 2015)",2015,2026]],
+  "Audi|A5":[["8T (2007–2016)",2007,2016],["F5 (ab 2016)",2016,2026]],
+  "Audi|A6":[["C6 (2004–2011)",2004,2011],["C7 (2011–2018)",2011,2018],["C8 (ab 2018)",2018,2026]],
+  "Audi|Q3":[["8U (2011–2018)",2011,2018],["F3 (ab 2018)",2018,2026]],
+  "Audi|Q5":[["8R (2008–2016)",2008,2016],["FY (ab 2016)",2016,2026]],
+  "Audi|Q7":[["4L (2005–2015)",2005,2015],["4M (ab 2015)",2015,2026]],
+  "Audi|TT":[["8N (1998–2006)",1998,2006],["8J (2006–2014)",2006,2014],["8S (2014–2023)",2014,2023]],
+  "BMW|1er":[["E81/E87 (2004–2013)",2004,2013],["F20/F21 (2011–2019)",2011,2019],["F40 (ab 2019)",2019,2026]],
+  "BMW|2er":[["F22/F23 (2013–2021)",2013,2021],["F44 Gran Coupé (ab 2019)",2019,2026],["G42 (ab 2021)",2021,2026]],
+  "BMW|3er":[["E46 (1998–2007)",1998,2007],["E90/E91 (2005–2013)",2005,2013],["F30/F31 (2012–2019)",2012,2019],["G20/G21 (ab 2019)",2019,2026]],
+  "BMW|4er":[["F32/F33/F36 (2013–2020)",2013,2020],["G22/G23/G26 (ab 2020)",2020,2026]],
+  "BMW|5er":[["E39 (1995–2004)",1995,2004],["E60/E61 (2003–2010)",2003,2010],["F10/F11 (2010–2017)",2010,2017],["G30/G31 (2017–2023)",2017,2023],["G60 (ab 2023)",2023,2026]],
+  "BMW|7er":[["E65/E66 (2001–2008)",2001,2008],["F01/F02 (2008–2015)",2008,2015],["G11/G12 (2015–2022)",2015,2022],["G70 (ab 2022)",2022,2026]],
+  "BMW|X1":[["E84 (2009–2015)",2009,2015],["F48 (2015–2022)",2015,2022],["U11 (ab 2022)",2022,2026]],
+  "BMW|X3":[["E83 (2003–2010)",2003,2010],["F25 (2010–2017)",2010,2017],["G01 (ab 2017)",2017,2026]],
+  "BMW|X5":[["E53 (1999–2006)",1999,2006],["E70 (2006–2013)",2006,2013],["F15 (2013–2018)",2013,2018],["G05 (ab 2018)",2018,2026]],
+  "Mercedes-Benz|A-Klasse":[["W168 (1997–2004)",1997,2004],["W169 (2004–2012)",2004,2012],["W176 (2012–2018)",2012,2018],["W177 (ab 2018)",2018,2026]],
+  "Mercedes-Benz|B-Klasse":[["W245 (2005–2011)",2005,2011],["W246 (2011–2018)",2011,2018],["W247 (ab 2018)",2018,2026]],
+  "Mercedes-Benz|C-Klasse":[["W203 (2000–2007)",2000,2007],["W204 (2007–2014)",2007,2014],["W205 (2014–2021)",2014,2021],["W206 (ab 2021)",2021,2026]],
+  "Mercedes-Benz|E-Klasse":[["W211 (2002–2009)",2002,2009],["W212 (2009–2016)",2009,2016],["W213 (2016–2023)",2016,2023],["W214 (ab 2023)",2023,2026]],
+  "Mercedes-Benz|S-Klasse":[["W220 (1998–2005)",1998,2005],["W221 (2005–2013)",2005,2013],["W222 (2013–2020)",2013,2020],["W223 (ab 2020)",2020,2026]],
+  "Mercedes-Benz|GLC":[["X253 (2015–2022)",2015,2022],["X254 (ab 2022)",2022,2026]],
+  "Mercedes-Benz|GLA":[["X156 (2013–2020)",2013,2020],["H247 (ab 2020)",2020,2026]],
+  "Mercedes-Benz|Sprinter":[["W906 (2006–2018)",2006,2018],["W907/910 (ab 2018)",2018,2026]],
+  "Volkswagen|Polo":[["9N (2001–2009)",2001,2009],["6R/6C (2009–2017)",2009,2017],["AW (ab 2017)",2017,2026]],
+  "Volkswagen|Golf":[["IV (1997–2006)",1997,2006],["V (2003–2009)",2003,2009],["VI (2008–2013)",2008,2013],["VII (2012–2020)",2012,2020],["VIII (ab 2019)",2019,2026]],
+  "Volkswagen|Passat":[["B6 (2005–2010)",2005,2010],["B7 (2010–2015)",2010,2015],["B8 (2014–2023)",2014,2023],["B9 (ab 2023)",2023,2026]],
+  "Volkswagen|Tiguan":[["I (5N, 2007–2016)",2007,2016],["II (AD1, 2016–2024)",2016,2024],["III (ab 2024)",2024,2026]],
+  "Volkswagen|Touran":[["I (1T, 2003–2015)",2003,2015],["II (5T, ab 2015)",2015,2026]],
+  "Volkswagen|T-Roc":[["A11 (ab 2017)",2017,2026]],
+  "Volkswagen|Transporter":[["T4 (1990–2003)",1990,2003],["T5 (2003–2015)",2003,2015],["T6/T6.1 (2015–2024)",2015,2024],["T7 (ab 2021)",2021,2026]],
+  "Volkswagen|up!":[["AA (2011–2023)",2011,2023]],
+  "Opel|Corsa":[["C (2000–2006)",2000,2006],["D (2006–2014)",2006,2014],["E (2014–2019)",2014,2019],["F (ab 2019)",2019,2026]],
+  "Opel|Astra":[["G (1998–2005)",1998,2005],["H (2004–2010)",2004,2010],["J (2009–2015)",2009,2015],["K (2015–2021)",2015,2021],["L (ab 2021)",2021,2026]],
+  "Opel|Insignia":[["A (2008–2017)",2008,2017],["B (2017–2022)",2017,2022]],
+  "Ford|Fiesta":[["MK6 (2002–2008)",2002,2008],["MK7 (2008–2017)",2008,2017],["MK8 (2017–2023)",2017,2023]],
+  "Ford|Focus":[["MK2 (2004–2011)",2004,2011],["MK3 (2010–2018)",2010,2018],["MK4 (ab 2018)",2018,2026]],
+  "Ford|Kuga":[["I (2008–2012)",2008,2012],["II (2012–2019)",2012,2019],["III (ab 2019)",2019,2026]],
+  "Skoda|Fabia":[["I (1999–2007)",1999,2007],["II (2007–2014)",2007,2014],["III (2014–2021)",2014,2021],["IV (ab 2021)",2021,2026]],
+  "Skoda|Octavia":[["I (1996–2010)",1996,2010],["II (2004–2013)",2004,2013],["III (2012–2020)",2012,2020],["IV (ab 2020)",2020,2026]],
+  "Skoda|Superb":[["I (2001–2008)",2001,2008],["II (2008–2015)",2008,2015],["III (2015–2023)",2015,2023],["IV (ab 2023)",2023,2026]],
+  "Seat|Ibiza":[["6L (2002–2008)",2002,2008],["6J (2008–2017)",2008,2017],["KJ (ab 2017)",2017,2026]],
+  "Seat|Leon":[["1M (1999–2006)",1999,2006],["1P (2005–2012)",2005,2012],["5F (2012–2020)",2012,2020],["KL (ab 2020)",2020,2026]],
+  "Toyota|Yaris":[["XP9 (2005–2011)",2005,2011],["XP13 (2011–2020)",2011,2020],["XP21 (ab 2020)",2020,2026]],
+  "Toyota|Corolla":[["E12 (2001–2007)",2001,2007],["E16 (2013–2019)",2013,2019],["E21 (ab 2019)",2019,2026]],
+  "Toyota|RAV4":[["XA3 (2005–2013)",2005,2013],["XA4 (2013–2018)",2013,2018],["XA5 (ab 2018)",2018,2026]],
+  "Renault|Clio":[["III (2005–2012)",2005,2012],["IV (2012–2019)",2012,2019],["V (ab 2019)",2019,2026]],
+  "Renault|Megane":[["III (2008–2016)",2008,2016],["IV (2016–2023)",2016,2023]],
+  "Hyundai|i30":[["FD (2007–2012)",2007,2012],["GD (2012–2017)",2012,2017],["PD (ab 2017)",2017,2026]],
+  "Hyundai|Tucson":[["TL (2015–2020)",2015,2020],["NX4 (ab 2020)",2020,2026]],
+  "Kia|Ceed":[["ED (2006–2012)",2006,2012],["JD (2012–2018)",2012,2018],["CD (ab 2018)",2018,2026]],
+  "Kia|Sportage":[["SL (2010–2015)",2010,2015],["QL (2015–2021)",2015,2021],["NQ5 (ab 2021)",2021,2026]],
+  "Porsche|911":[["996 (1997–2006)",1997,2006],["997 (2004–2012)",2004,2012],["991 (2011–2019)",2011,2019],["992 (ab 2019)",2019,2026]],
+  "Porsche|Cayenne":[["955/957 (2002–2010)",2002,2010],["958 (2010–2017)",2010,2017],["9YA (ab 2017)",2017,2026]],
+  "Porsche|Macan":[["95B (ab 2014)",2014,2026]],
+  "Fiat|500":[["312 (ab 2007)",2007,2026]],
+  "Mini|Cooper":[["R50/R53 (2001–2006)",2001,2006],["R56 (2006–2013)",2006,2013],["F56 (2014–2023)",2014,2023],["J01 (ab 2023)",2023,2026]],
+  "Volvo|XC60":[["I (2008–2017)",2008,2017],["II (ab 2017)",2017,2026]],
+  "Volvo|XC90":[["I (2002–2014)",2002,2014],["II (ab 2015)",2015,2026]],
+  "Mazda|3":[["BK (2003–2009)",2003,2009],["BL (2009–2013)",2009,2013],["BM (2013–2019)",2013,2019],["BP (ab 2019)",2019,2026]],
+  "Mazda|CX-5":[["KE (2012–2017)",2012,2017],["KF (ab 2017)",2017,2026]],
+  "Peugeot|208":[["I (2012–2019)",2012,2019],["II (ab 2019)",2019,2026]],
+  "Peugeot|308":[["I (2007–2013)",2007,2013],["II (2013–2021)",2013,2021],["III (ab 2021)",2021,2026]],
+  "Tesla|Model 3":[["Pre-Facelift (2017–2023)",2017,2023],["Highland (ab 2023)",2023,2026]],
+  "Tesla|Model Y":[["Juniper/Standard (ab 2020)",2020,2026]],
+  "Nissan|Qashqai":[["J10 (2006–2013)",2006,2013],["J11 (2013–2021)",2013,2021],["J12 (ab 2021)",2021,2026]],
+  "Dacia|Duster":[["I (2010–2018)",2010,2018],["II (2018–2024)",2018,2024],["III (ab 2024)",2024,2026]],
+  "Dacia|Sandero":[["I (2008–2012)",2008,2012],["II (2012–2020)",2012,2020],["III (ab 2020)",2020,2026]],
 };
+
+// Motorisierungen: "Marke|Modell" → [{n: Name, f: Kraftstoff, ps: [PS-Optionen], t: erlaubte Getriebe (optional)}]
+// Für nicht gelistete Modelle greifen Marken-Defaults, danach generische Auswahl.
+const ENGINE_DB = {
+  "BMW|1er":[{n:"114i",f:"Benzin",ps:[102]},{n:"116i",f:"Benzin",ps:[109,122,136]},{n:"118i",f:"Benzin",ps:[136,140,143,170]},{n:"120i",f:"Benzin",ps:[170,178,184]},{n:"125i",f:"Benzin",ps:[218,224]},{n:"M135i/M140i",f:"Benzin",ps:[306,320,326,340]},{n:"116d",f:"Diesel",ps:[116]},{n:"118d",f:"Diesel",ps:[136,143,150]},{n:"120d",f:"Diesel",ps:[163,184,190]},{n:"125d",f:"Diesel",ps:[218,224]}],
+  "BMW|3er":[{n:"316i",f:"Benzin",ps:[102,115,122,136]},{n:"318i",f:"Benzin",ps:[136,143,156]},{n:"320i",f:"Benzin",ps:[150,170,184]},{n:"328i",f:"Benzin",ps:[245]},{n:"330i",f:"Benzin",ps:[252,258]},{n:"335i/340i",f:"Benzin",ps:[306,326,360]},{n:"316d",f:"Diesel",ps:[116,122]},{n:"318d",f:"Diesel",ps:[136,143,150]},{n:"320d",f:"Diesel",ps:[163,184,190]},{n:"330d",f:"Diesel",ps:[231,245,258,265]},{n:"335d",f:"Diesel",ps:[286,313]},{n:"330e (Plug-in)",f:"Plug-in-Hybrid",ps:[252,292],t:["Automatik"]},{n:"M3",f:"Benzin",ps:[420,431,450,480,510]}],
+  "BMW|5er":[{n:"520i",f:"Benzin",ps:[170,184,190]},{n:"528i/530i",f:"Benzin",ps:[245,252,258,272]},{n:"540i",f:"Benzin",ps:[333,340]},{n:"518d",f:"Diesel",ps:[136,150]},{n:"520d",f:"Diesel",ps:[163,184,190,197]},{n:"525d",f:"Diesel",ps:[204,218,231]},{n:"530d",f:"Diesel",ps:[231,245,258,265,286]},{n:"535d",f:"Diesel",ps:[286,299,313]},{n:"530e (Plug-in)",f:"Plug-in-Hybrid",ps:[252,292],t:["Automatik"]},{n:"M5",f:"Benzin",ps:[560,600,625]}],
+  "BMW|X1":[{n:"sDrive18i",f:"Benzin",ps:[136,140,150]},{n:"sDrive20i/xDrive20i",f:"Benzin",ps:[178,184,192,204]},{n:"sDrive18d",f:"Diesel",ps:[136,143,150]},{n:"xDrive20d",f:"Diesel",ps:[163,177,184,190]},{n:"xDrive25e (Plug-in)",f:"Plug-in-Hybrid",ps:[220,245],t:["Automatik"]}],
+  "BMW|X3":[{n:"xDrive20i",f:"Benzin",ps:[184]},{n:"xDrive30i",f:"Benzin",ps:[245,252]},{n:"M40i",f:"Benzin",ps:[354,360]},{n:"xDrive18d/20d",f:"Diesel",ps:[150,163,184,190]},{n:"xDrive30d",f:"Diesel",ps:[249,258,265,286]},{n:"M40d",f:"Diesel",ps:[326,340]}],
+  "BMW|X5":[{n:"xDrive40i",f:"Benzin",ps:[333,340,381]},{n:"xDrive50i",f:"Benzin",ps:[408,449,530]},{n:"xDrive25d",f:"Diesel",ps:[218,231]},{n:"xDrive30d",f:"Diesel",ps:[235,245,258,265,286,298]},{n:"xDrive40d",f:"Diesel",ps:[306,313,340,352]},{n:"xDrive45e (Plug-in)",f:"Plug-in-Hybrid",ps:[394],t:["Automatik"]},{n:"M50d",f:"Diesel",ps:[381,400]}],
+  "BMW|i3":[{n:"i3 (60Ah–120Ah)",f:"Elektro",ps:[170],t:["Automatik"]},{n:"i3s",f:"Elektro",ps:[184],t:["Automatik"]}],
+  "BMW|i4":[{n:"eDrive35",f:"Elektro",ps:[286],t:["Automatik"]},{n:"eDrive40",f:"Elektro",ps:[340],t:["Automatik"]},{n:"M50",f:"Elektro",ps:[544],t:["Automatik"]}],
+  "Audi|A3":[{n:"1.0/30 TFSI",f:"Benzin",ps:[110,116]},{n:"1.4/35 TFSI",f:"Benzin",ps:[122,125,140,150]},{n:"1.8/2.0 TFSI",f:"Benzin",ps:[160,180,190]},{n:"S3",f:"Benzin",ps:[265,280,300,310,333]},{n:"RS3",f:"Benzin",ps:[367,400]},{n:"1.6 TDI/30 TDI",f:"Diesel",ps:[90,105,110,116]},{n:"2.0 TDI/35 TDI",f:"Diesel",ps:[136,143,150,184,200]},{n:"40 TFSI e (Plug-in)",f:"Plug-in-Hybrid",ps:[204,245],t:["Automatik","DSG / Doppelkupplung"]}],
+  "Audi|A4":[{n:"1.8/2.0 TFSI (35/40/45)",f:"Benzin",ps:[150,170,190,204,245,252]},{n:"S4",f:"Benzin",ps:[333,354]},{n:"RS4",f:"Benzin",ps:[450]},{n:"2.0 TDI (35/40)",f:"Diesel",ps:[122,136,143,150,163,177,190,204]},{n:"3.0 TDI (45/50)",f:"Diesel",ps:[218,231,240,272,286]}],
+  "Audi|A6":[{n:"2.0 TFSI (45)",f:"Benzin",ps:[190,204,245,252,265]},{n:"3.0 TFSI (55)",f:"Benzin",ps:[300,333,340]},{n:"2.0 TDI (35/40)",f:"Diesel",ps:[150,163,190,204]},{n:"3.0 TDI (45/50)",f:"Diesel",ps:[218,231,245,272,286]},{n:"S6/RS6",f:"Benzin",ps:[420,450,560,600,630]}],
+  "Audi|Q3":[{n:"1.4/35 TFSI",f:"Benzin",ps:[150]},{n:"2.0/40-45 TFSI",f:"Benzin",ps:[170,180,190,230,245]},{n:"RS Q3",f:"Benzin",ps:[310,340,367,400]},{n:"2.0 TDI (35/40)",f:"Diesel",ps:[140,150,177,190,200]}],
+  "Audi|Q5":[{n:"2.0 TFSI (45)",f:"Benzin",ps:[180,211,224,230,245,252,265]},{n:"SQ5",f:"Benzin",ps:[354]},{n:"2.0 TDI (35/40)",f:"Diesel",ps:[143,150,163,177,190,204]},{n:"3.0 TDI (50/SQ5)",f:"Diesel",ps:[240,245,258,286,313,341]},{n:"55 TFSI e (Plug-in)",f:"Plug-in-Hybrid",ps:[299,367],t:["Automatik"]}],
+  "Mercedes-Benz|A-Klasse":[{n:"A140–A200 (Benzin)",f:"Benzin",ps:[82,95,102,116,122,136,150,163]},{n:"A250",f:"Benzin",ps:[211,218,224]},{n:"A35/A45 AMG",f:"Benzin",ps:[306,381,421]},{n:"A160d–A220d",f:"Diesel",ps:[90,95,109,116,136,150,177,190]},{n:"A250e (Plug-in)",f:"Plug-in-Hybrid",ps:[218],t:["Automatik","DSG / Doppelkupplung"]}],
+  "Mercedes-Benz|C-Klasse":[{n:"C160–C200",f:"Benzin",ps:[129,136,156,163,184,204]},{n:"C250–C300",f:"Benzin",ps:[204,211,245,258]},{n:"C43/C63 AMG",f:"Benzin",ps:[367,390,476,510]},{n:"C180d–C220d",f:"Diesel",ps:[116,122,136,150,163,170,194,200]},{n:"C300d",f:"Diesel",ps:[231,245,265]},{n:"C300e (Plug-in)",f:"Plug-in-Hybrid",ps:[313],t:["Automatik"]}],
+  "Mercedes-Benz|E-Klasse":[{n:"E200–E250",f:"Benzin",ps:[184,197,204,211]},{n:"E300–E450",f:"Benzin",ps:[245,258,299,333,367]},{n:"E53/E63 AMG",f:"Benzin",ps:[435,571,612]},{n:"E200d–E220d",f:"Diesel",ps:[136,150,160,163,194,197,200]},{n:"E300d–E400d",f:"Diesel",ps:[231,245,265,286,330,340]},{n:"E300e (Plug-in)",f:"Plug-in-Hybrid",ps:[312,313],t:["Automatik"]}],
+  "Mercedes-Benz|GLC":[{n:"GLC200–GLC300",f:"Benzin",ps:[184,197,204,211,245,258]},{n:"GLC43/63 AMG",f:"Benzin",ps:[367,390,476,510]},{n:"GLC200d–GLC220d",f:"Diesel",ps:[163,170,194,197]},{n:"GLC300d",f:"Diesel",ps:[245,265]},{n:"GLC300e (Plug-in)",f:"Plug-in-Hybrid",ps:[313,320],t:["Automatik"]}],
+  "Volkswagen|Polo":[{n:"1.0 MPI/TSI",f:"Benzin",ps:[60,65,75,80,95,110,115]},{n:"1.2/1.4 TSI",f:"Benzin",ps:[60,70,86,90,105,110,125,150]},{n:"GTI",f:"Benzin",ps:[180,192,200,207]},{n:"1.4/1.6 TDI",f:"Diesel",ps:[75,80,90,95,105]}],
+  "Volkswagen|Golf":[{n:"1.0 TSI",f:"Benzin",ps:[85,90,110,115]},{n:"1.2/1.4/1.5 TSI",f:"Benzin",ps:[105,110,122,125,130,140,150]},{n:"GTI",f:"Benzin",ps:[200,211,220,230,245,265]},{n:"R",f:"Benzin",ps:[270,300,310,320,333]},{n:"1.6 TDI",f:"Diesel",ps:[90,105,110,115]},{n:"2.0 TDI/GTD",f:"Diesel",ps:[110,115,140,150,170,184,200]},{n:"eHybrid/GTE (Plug-in)",f:"Plug-in-Hybrid",ps:[204,245],t:["DSG / Doppelkupplung","Automatik"]},{n:"e-Golf",f:"Elektro",ps:[115,136],t:["Automatik"]}],
+  "Volkswagen|Passat":[{n:"1.4/1.5 TSI",f:"Benzin",ps:[122,125,150]},{n:"1.8/2.0 TSI",f:"Benzin",ps:[160,180,190,220,272,280]},{n:"1.6 TDI",f:"Diesel",ps:[105,120]},{n:"2.0 TDI",f:"Diesel",ps:[110,140,150,170,177,184,190,200,240]},{n:"GTE (Plug-in)",f:"Plug-in-Hybrid",ps:[218,245],t:["DSG / Doppelkupplung"]}],
+  "Volkswagen|Tiguan":[{n:"1.4/1.5 TSI",f:"Benzin",ps:[122,125,130,150,160]},{n:"2.0 TSI",f:"Benzin",ps:[180,190,220,230,245]},{n:"2.0 TDI",f:"Diesel",ps:[110,115,140,150,177,190,200,240]},{n:"eHybrid (Plug-in)",f:"Plug-in-Hybrid",ps:[245],t:["DSG / Doppelkupplung"]}],
+  "Volkswagen|Touran":[{n:"1.2/1.4/1.5 TSI",f:"Benzin",ps:[105,110,125,140,150]},{n:"1.6/2.0 TDI",f:"Diesel",ps:[90,105,110,115,140,150,177,190]}],
+  "Volkswagen|ID.3":[{n:"Pure/Pro (45–58 kWh)",f:"Elektro",ps:[126,145,150,170,204],t:["Automatik"]},{n:"Pro S/GTX",f:"Elektro",ps:[204,231,326],t:["Automatik"]}],
+  "Volkswagen|ID.4":[{n:"Pure/Pro",f:"Elektro",ps:[148,170,174,204,286],t:["Automatik"]},{n:"GTX",f:"Elektro",ps:[299,340],t:["Automatik"]}],
+  "Opel|Corsa":[{n:"1.0/1.2 (Benzin)",f:"Benzin",ps:[60,65,69,75,90,100,101,130]},{n:"OPC/GSi",f:"Benzin",ps:[150,192,207]},{n:"1.3/1.5 Diesel",f:"Diesel",ps:[75,95,102]},{n:"Corsa-e",f:"Elektro",ps:[136,156],t:["Automatik"]}],
+  "Opel|Astra":[{n:"1.0–1.4 Turbo",f:"Benzin",ps:[105,110,125,130,140,145,150]},{n:"1.6 Turbo/OPC",f:"Benzin",ps:[170,180,200,280]},{n:"1.5/1.6 Diesel",f:"Diesel",ps:[95,105,110,122,130,136,160]},{n:"Plug-in-Hybrid",f:"Plug-in-Hybrid",ps:[180,225],t:["Automatik"]}],
+  "Ford|Fiesta":[{n:"1.0 EcoBoost",f:"Benzin",ps:[95,100,101,125,140,155]},{n:"1.25/1.6 (Benzin)",f:"Benzin",ps:[60,82,96,105,120]},{n:"ST",f:"Benzin",ps:[182,200]},{n:"1.5 TDCi",f:"Diesel",ps:[75,85,95,120]}],
+  "Ford|Focus":[{n:"1.0 EcoBoost",f:"Benzin",ps:[100,101,125,155]},{n:"1.5/1.6 EcoBoost",f:"Benzin",ps:[150,182]},{n:"ST/RS",f:"Benzin",ps:[250,280,350]},{n:"1.5/2.0 TDCi/EcoBlue",f:"Diesel",ps:[95,105,120,150,190]}],
+  "Ford|Kuga":[{n:"1.5 EcoBoost",f:"Benzin",ps:[120,150,182]},{n:"1.5/2.0 Diesel",f:"Diesel",ps:[120,150,163,180,190]},{n:"2.5 PHEV",f:"Plug-in-Hybrid",ps:[225],t:["Automatik"]}],
+  "Skoda|Octavia":[{n:"1.0/1.2/1.4/1.5 TSI",f:"Benzin",ps:[86,105,110,115,122,140,150]},{n:"RS (Benzin)",f:"Benzin",ps:[220,230,245,265]},{n:"1.6/2.0 TDI",f:"Diesel",ps:[90,105,110,115,116,143,150,184,200]},{n:"iV (Plug-in)",f:"Plug-in-Hybrid",ps:[204,245],t:["DSG / Doppelkupplung"]}],
+  "Skoda|Fabia":[{n:"1.0 MPI/TSI",f:"Benzin",ps:[60,65,75,80,95,110,116]},{n:"1.2/1.4 TSI",f:"Benzin",ps:[86,90,105,110,125]},{n:"1.4/1.6 TDI",f:"Diesel",ps:[75,90,105]}],
+  "Seat|Leon":[{n:"1.0/1.2/1.4/1.5 TSI",f:"Benzin",ps:[86,105,110,115,125,130,140,150]},{n:"Cupra",f:"Benzin",ps:[265,280,290,300]},{n:"1.6/2.0 TDI",f:"Diesel",ps:[90,105,110,115,150,184]},{n:"e-Hybrid",f:"Plug-in-Hybrid",ps:[204],t:["DSG / Doppelkupplung"]}],
+  "Seat|Ibiza":[{n:"1.0 MPI/TSI",f:"Benzin",ps:[65,75,80,95,110,115]},{n:"1.5 TSI",f:"Benzin",ps:[150]},{n:"1.4/1.6 TDI",f:"Diesel",ps:[75,80,90,105]}],
+  "Toyota|Yaris":[{n:"1.0/1.5 (Benzin)",f:"Benzin",ps:[69,72,111,125]},{n:"Hybrid",f:"Hybrid",ps:[100,116,130],t:["Automatik"]},{n:"GR Yaris",f:"Benzin",ps:[261,280]}],
+  "Toyota|Corolla":[{n:"1.2/2.0 (Benzin)",f:"Benzin",ps:[116,170]},{n:"1.8/2.0 Hybrid",f:"Hybrid",ps:[122,140,180,196],t:["Automatik"]}],
+  "Toyota|RAV4":[{n:"2.0/2.5 (Benzin)",f:"Benzin",ps:[152,175]},{n:"2.5 Hybrid",f:"Hybrid",ps:[218,222],t:["Automatik"]},{n:"Plug-in-Hybrid",f:"Plug-in-Hybrid",ps:[306],t:["Automatik"]},{n:"2.0/2.2 D-4D",f:"Diesel",ps:[124,136,150]}],
+  "Renault|Clio":[{n:"0.9/1.0 TCe",f:"Benzin",ps:[65,75,90,100]},{n:"1.2/1.3 TCe",f:"Benzin",ps:[100,118,120,130,140]},{n:"RS",f:"Benzin",ps:[200,220]},{n:"1.5 dCi",f:"Diesel",ps:[75,85,90,110]},{n:"E-Tech Hybrid",f:"Hybrid",ps:[140,145],t:["Automatik"]}],
+  "Hyundai|i30":[{n:"1.0/1.4/1.5 T-GDI",f:"Benzin",ps:[100,110,120,140,159]},{n:"N/N Performance",f:"Benzin",ps:[250,275,280]},{n:"1.6 CRDi",f:"Diesel",ps:[95,110,115,136]}],
+  "Hyundai|Tucson":[{n:"1.6 T-GDI",f:"Benzin",ps:[132,150,177,180]},{n:"1.6/2.0 CRDi",f:"Diesel",ps:[115,136,185]},{n:"Hybrid/Plug-in",f:"Hybrid",ps:[230,265],t:["Automatik"]}],
+  "Kia|Ceed":[{n:"1.0/1.4/1.5 T-GDI",f:"Benzin",ps:[100,120,140,160]},{n:"GT",f:"Benzin",ps:[204]},{n:"1.4/1.6 CRDi",f:"Diesel",ps:[90,110,115,136]}],
+  "Kia|Sportage":[{n:"1.6 T-GDI",f:"Benzin",ps:[132,150,177,180]},{n:"1.6/1.7/2.0 CRDi",f:"Diesel",ps:[115,116,136,141,185]},{n:"Hybrid/Plug-in",f:"Hybrid",ps:[230,265],t:["Automatik"]}],
+  "Porsche|911":[{n:"Carrera",f:"Benzin",ps:[301,325,345,350,370,385,394]},{n:"Carrera S/GTS",f:"Benzin",ps:[381,400,420,430,450,480]},{n:"Turbo/Turbo S",f:"Benzin",ps:[480,520,540,560,580,650]},{n:"GT3/GT3 RS",f:"Benzin",ps:[435,475,500,510,525]}],
+  "Porsche|Macan":[{n:"Macan (Basis)",f:"Benzin",ps:[252,265]},{n:"S/GTS",f:"Benzin",ps:[340,354,380,381,440]},{n:"Turbo",f:"Benzin",ps:[400,440]},{n:"S Diesel",f:"Diesel",ps:[258]},{n:"Macan Electric",f:"Elektro",ps:[360,408,516,639],t:["Automatik"]}],
+  "Porsche|Cayenne":[{n:"Cayenne (Basis)",f:"Benzin",ps:[300,340,353]},{n:"S/GTS",f:"Benzin",ps:[400,420,440,460,474]},{n:"Turbo",f:"Benzin",ps:[500,520,550]},{n:"Diesel/S Diesel",f:"Diesel",ps:[245,262,385]},{n:"E-Hybrid",f:"Plug-in-Hybrid",ps:[340,416,462,680],t:["Automatik"]}],
+  "Tesla|Model 3":[{n:"Standard/RWD",f:"Elektro",ps:[239,283,325],t:["Automatik"]},{n:"Long Range",f:"Elektro",ps:[351,441,498],t:["Automatik"]},{n:"Performance",f:"Elektro",ps:[513,534,460],t:["Automatik"]}],
+  "Tesla|Model Y":[{n:"RWD",f:"Elektro",ps:[299],t:["Automatik"]},{n:"Long Range",f:"Elektro",ps:[378,514],t:["Automatik"]},{n:"Performance",f:"Elektro",ps:[534],t:["Automatik"]}],
+  "Fiat|500":[{n:"1.0/1.2 (Benzin)",f:"Benzin",ps:[69,70]},{n:"0.9 TwinAir",f:"Benzin",ps:[80,85,105]},{n:"Abarth",f:"Benzin",ps:[135,145,160,165,180]},{n:"1.3 Diesel",f:"Diesel",ps:[75,95]}],
+  "Mini|Cooper":[{n:"One",f:"Benzin",ps:[75,90,98,102]},{n:"Cooper",f:"Benzin",ps:[115,116,120,136]},{n:"Cooper S",f:"Benzin",ps:[163,170,175,178,184,192,204]},{n:"JCW",f:"Benzin",ps:[211,218,231]},{n:"One D/Cooper D",f:"Diesel",ps:[90,95,112,116]},{n:"Cooper SE (Elektro)",f:"Elektro",ps:[184],t:["Automatik"]}],
+  "Dacia|Duster":[{n:"1.0/1.2/1.3 TCe",f:"Benzin",ps:[90,100,101,125,130,150]},{n:"1.5 dCi/Blue dCi",f:"Diesel",ps:[90,109,110,115]},{n:"ECO-G (LPG)",f:"Autogas (LPG/CNG)",ps:[100]}],
+  "Dacia|Sandero":[{n:"1.0 SCe/TCe",f:"Benzin",ps:[65,67,75,90,100]},{n:"1.5 dCi",f:"Diesel",ps:[75,90,95]},{n:"ECO-G (LPG)",f:"Autogas (LPG/CNG)",ps:[100]}],
+  "Nissan|Qashqai":[{n:"1.2/1.3 DIG-T",f:"Benzin",ps:[115,140,158,160]},{n:"1.5/1.6 dCi",f:"Diesel",ps:[110,115,130]},{n:"e-Power",f:"Hybrid",ps:[190],t:["Automatik"]}],
+  "Volvo|XC60":[{n:"T4/T5/B5 (Benzin)",f:"Benzin",ps:[190,250,254]},{n:"D3/D4/B4 (Diesel)",f:"Diesel",ps:[150,163,190,197]},{n:"D5",f:"Diesel",ps:[215,220,235]},{n:"T6/T8 Plug-in",f:"Plug-in-Hybrid",ps:[340,390,455],t:["Automatik"]}],
+  "Mazda|3":[{n:"Skyactiv-G",f:"Benzin",ps:[100,120,122,150,165]},{n:"Skyactiv-X",f:"Benzin",ps:[180,186]},{n:"Skyactiv-D",f:"Diesel",ps:[105,116,150]}],
+  "Peugeot|208":[{n:"1.2 PureTech",f:"Benzin",ps:[75,82,100,110,130]},{n:"GTi",f:"Benzin",ps:[200,208]},{n:"1.5 BlueHDi",f:"Diesel",ps:[100,102]},{n:"e-208",f:"Elektro",ps:[136,156],t:["Automatik"]}],
+};
+
+// Marken-Fallback für nicht kuratierte Modelle
+const ENGINE_BRAND_DEFAULT = {
+  "Tesla":[{n:"Standard Range",f:"Elektro",ps:[283,306],t:["Automatik"]},{n:"Long Range",f:"Elektro",ps:[440,514],t:["Automatik"]},{n:"Performance/Plaid",f:"Elektro",ps:[534,760,1020],t:["Automatik"]}],
+  "Polestar":[{n:"Standard Range",f:"Elektro",ps:[272,299],t:["Automatik"]},{n:"Long Range/Dual",f:"Elektro",ps:[408,476,517],t:["Automatik"]}],
+  "BYD":[{n:"Elektro",f:"Elektro",ps:[204,218,313,517],t:["Automatik"]}],
+  "Smart":[{n:"Benzin (ForTwo/ForFour)",f:"Benzin",ps:[61,66,71,82,90,109]},{n:"EQ / Elektro",f:"Elektro",ps:[82,272,428],t:["Automatik"]}],
+};
+// Generischer Fallback
+const ENGINE_GENERIC = [
+  {n:"1.0–1.2 (Benzin)",f:"Benzin",ps:[60,65,70,75,80,90,100,110,120]},
+  {n:"1.4–1.6 (Benzin)",f:"Benzin",ps:[90,100,110,122,130,140,150,163]},
+  {n:"1.8–2.0 (Benzin)",f:"Benzin",ps:[140,150,163,180,190,204,220,245]},
+  {n:"2.5–4.0 (Benzin)",f:"Benzin",ps:[218,245,286,306,340,400,450,510]},
+  {n:"1.4–1.6 Diesel",f:"Diesel",ps:[75,90,95,105,110,116,120]},
+  {n:"2.0 Diesel",f:"Diesel",ps:[136,143,150,163,177,184,190,204]},
+  {n:"2.5–3.0 Diesel",f:"Diesel",ps:[204,218,231,245,258,286,313]},
+  {n:"Hybrid",f:"Hybrid",ps:[122,140,180,218,230],t:["Automatik"]},
+  {n:"Plug-in-Hybrid",f:"Plug-in-Hybrid",ps:[204,225,245,306,340],t:["Automatik","DSG / Doppelkupplung"]},
+  {n:"Elektro",f:"Elektro",ps:[136,150,170,204,231,286,340,408],t:["Automatik"]},
+];
+
 const BODIES = ["Limousine","Kombi","Coupé","Cabriolet","Schrägheck","SUV / Geländewagen","Van","Kleinwagen","Pickup","Transporter"];
 const FUELS = ["Benzin","Diesel","Hybrid","Plug-in-Hybrid","Elektro","Autogas (LPG/CNG)","Wasserstoff"];
 const TRANS = ["Manuell","Automatik","DSG / Doppelkupplung"];
 const PS_LIST = [45,54,60,68,75,82,90,95,102,110,116,122,131,136,140,150,163,170,184,190,204,218,231,245,258,272,286,306,326,340,360,400,420,450,476,510,550,585,625];
-const ENGINES = {
-  "BMW":["114i","116i","118i","120i","118d","120d","316i","318i","320i","330i","340i","316d","318d","320d","330d","520i","520d","530d","540i","M-Modell","Elektro (i)","Sonstige"],
-  "Mercedes-Benz":["A160","A180","A200","A220d","A250","C180","C200","C220d","C300","E200","E220d","E300","E350","GLC200","GLC220d","AMG","EQ (Elektro)","Sonstige"],
-  "Audi":["25 TFSI","30 TFSI","35 TFSI","40 TFSI","45 TFSI","2.0 TFSI","3.0 TFSI","30 TDI","35 TDI","40 TDI","2.0 TDI","3.0 TDI","S/RS","e-tron","Sonstige"],
-  "Volkswagen":["1.0 TSI","1.2 TSI","1.4 TSI","1.5 TSI","2.0 TSI","1.6 TDI","2.0 TDI","GTI","GTD","R","ID (Elektro)","Sonstige"],
-  "Tesla":["Standard Range","Long Range","Performance","Plaid"],
-  "Porsche":["Basis","S","GTS","Turbo","Turbo S","GT3","E-Hybrid","Elektro (Taycan)"],
-};
-const ENGINE_DEFAULT = ["1.0","1.2","1.4","1.5","1.6","1.8","2.0","2.2","2.5","3.0","Elektro","Hybrid","Sonstige"];
 const KM_STEPS = [[10000,"bis 10.000 km"],[25000,"bis 25.000 km"],[50000,"bis 50.000 km"],[75000,"bis 75.000 km"],[100000,"bis 100.000 km"],[125000,"bis 125.000 km"],[150000,"bis 150.000 km"],[200000,"bis 200.000 km"],[250000,"bis 250.000 km"],[300000,"über 250.000 km"]];
+
+// ---------- Lookup-API (später durch echte Fahrzeugdaten-API ersetzbar) ----------
+const VehicleData = {
+  brands() { return Object.keys(BRANDS); },
+  models(brand) { return BRANDS[brand] || []; },
+  // → [{label, from, to}]
+  series(brand, model) {
+    const raw = SERIES[brand + "|" + model];
+    if (!raw) return [{ label: "Keine Angabe", from: 1990, to: 2026 }];
+    return raw.map(([label, from, to]) => ({ label, from, to })).concat([{ label: "Keine Angabe", from: 1990, to: 2026 }]);
+  },
+  years(brand, model, seriesLabel) {
+    const s = this.series(brand, model).find(x => x.label === seriesLabel);
+    const from = s ? s.from : 1990, to = s ? Math.min(s.to, 2026) : 2026;
+    const out = [];
+    for (let y = to; y >= from; y--) out.push(y);
+    return out;
+  },
+  engines(brand, model) {
+    return ENGINE_DB[brand + "|" + model] || ENGINE_BRAND_DEFAULT[brand] || ENGINE_GENERIC;
+  },
+  engine(brand, model, engineName) {
+    return this.engines(brand, model).find(e => e.n === engineName) || null;
+  },
+  fuels(brand, model, engineName) {
+    const e = this.engine(brand, model, engineName);
+    return e ? [e.f] : FUELS;
+  },
+  ps(brand, model, engineName) {
+    const e = this.engine(brand, model, engineName);
+    return e ? e.ps : PS_LIST;
+  },
+  transmissions(brand, model, engineName) {
+    const e = this.engine(brand, model, engineName);
+    if (e?.t) return e.t;
+    if (e?.f === "Elektro") return ["Automatik"];
+    return TRANS;
+  },
+};
 
 // Kölner Stadtteile (Schnellauswahl) – Suche funktioniert deutschlandweit über Geocoding
 const DISTRICTS = {
@@ -154,6 +336,13 @@ const PRICE_GUIDE = {
   "Keramikversiegelung": [400, 1200, ""],
   "Innenreinigung": [80, 250, ""],
   "Softwareoptimierung": [400, 900, "inkl. Abstimmung"],
+  "Chiptuning": [350, 800, "inkl. Abstimmung"],
+  "Tieferlegung": [400, 900, "inkl. Achsvermessung"],
+  "Scheibentönung": [180, 450, "je nach Fahrzeug"],
+  "Komplettaufbereitung": [250, 700, "innen + außen"],
+  "Lackaufbereitung": [200, 600, ""],
+  "HU + AU": [120, 160, ""],
+  "Gebrauchtwagencheck": [50, 150, ""],
   "Fahrwerk": [300, 900, "je nach Bauteil"],
   "Stoßdämpfer": [400, 800, "pro Achse"],
   "Getriebe": [500, 3500, "stark bauteilabhängig"],

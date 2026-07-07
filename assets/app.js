@@ -706,12 +706,18 @@ async function vNewRequest(_p, query) {
   document.querySelectorAll("#nUrgency div").forEach(d => d.onclick = () => {
     document.querySelectorAll("#nUrgency div").forEach(x => x.classList.toggle("on", x === d));
   });
-  // „Termin flexibel" / „ASAP" / Datum schließen sich sinnvoll aus
-  $("nAsap").onchange = () => {
-    if ($("nAsap").checked) { $("nDate").value = ""; $("nFlex").checked = false; }
+  // ASAP vs. Wunschtermin/flexibel: Gegenpunkt wird sichtbar deaktiviert
+  const syncDateExclusive = () => {
+    const asap = $("nAsap").checked;
+    $("nDate").disabled = asap;
+    $("nFlex").disabled = asap;
+    if (asap) { $("nDate").value = ""; $("nFlex").checked = false; }
+    $("nAsap").disabled = !!$("nDate").value || $("nFlex").checked;
   };
-  $("nFlex").onchange = () => { if ($("nFlex").checked) $("nAsap").checked = false; };
-  $("nDate").onchange = () => { if ($("nDate").value) $("nAsap").checked = false; };
+  $("nAsap").onchange = syncDateExclusive;
+  $("nFlex").onchange = syncDateExclusive;
+  $("nDate").onchange = syncDateExclusive;
+  syncDateExclusive();
   $("nFile").onchange = handleNrFiles;
   $("nAnalyze").onclick = runAiAnalyze;
   $("nGo").onclick = () => submitRequest(cars);
@@ -1053,6 +1059,7 @@ async function loadBookingBox(r) {
       <button class="btn ghost sm" onclick="openReschedule('${bk.id}','${r.id}')">📅 Termin verschieben</button>
       <button class="btn red sm" onclick="openCancel('${bk.id}','${r.id}')">Stornieren</button>
     </div>` : ""}
+    ${bookingDocsHtml(bk)}
     <p class="mm" style="margin-top:12px;font-size:11px">Die Reparaturleistung, Rechnung und Gewährleistung werden durch die ausgewählte Werkstatt erbracht.</p>
   </div>`;
 }
@@ -1225,62 +1232,141 @@ async function deleteVehicle(id) {
   const { error } = await sb.from("vehicles").delete().eq("id", id);
   if (error) toast(error.message); else { toast("Gelöscht."); loadVehicles(); }
 }
+// Fahrzeug anlegen – abhängige Auswahl wie bei mobile.de/AutoScout24.
+// Datenquelle: VehicleData (assets/data.js) – später durch echte API ersetzbar.
 async function openVehicleForm(editId) {
   let v = {};
   if (editId) { const { data } = await sb.from("vehicles").select("*").eq("id", editId).maybeSingle(); v = data || {}; }
-  const years = []; for (let y = 2026; y >= 1990; y--) years.push(y);
+  const steps = [
+    ["cMake", "Marke"], ["cModel", "Modell"], ["cSeries", "Baureihe"], ["cBody", "Karosserie"],
+    ["cYear", "Baujahr"], ["cEngine", "Motor"], ["cFuel", "Kraftstoff"], ["cPs", "Leistung"],
+    ["cTrans", "Getriebe"], ["cKm", "Kilometer"],
+  ];
   openModal(`
     <h2 style="font-size:20px;font-weight:800">${editId ? "Fahrzeug bearbeiten" : "Fahrzeug anlegen"}</h2>
-    <div class="label">1 · Marke</div>
-    <select id="cMake">${opt("Marke wählen…", Object.keys(BRANDS), v.make)}</select>
-    <div class="label">2 · Modell</div>
-    <select id="cModel" ${v.make ? "" : "disabled"}>${v.make ? opt("Modell wählen…", BRANDS[v.make] || [], v.model) : "<option value=''>Erst Marke wählen</option>"}</select>
-    <div class="label">3 · Baureihe</div>
-    <select id="cSeries" ${v.model ? "" : "disabled"}>${v.make && v.model ? opt("Baureihe wählen…", seriesFor(v.make, v.model), v.series) : "<option value=''>Erst Modell wählen</option>"}</select>
+    <p class="mm" style="margin-top:4px">Schritt für Schritt – es werden nur passende Kombinationen angezeigt.</p>
+    <div id="vfProgress" style="display:flex;gap:3px;margin:14px 0 2px">${steps.map(() => '<div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)"></div>').join("")}</div>
+    <div class="mm" id="vfStep" style="font-size:11px">Schritt 1 von 10 · Marke wählen</div>
+    <div class="label">1 · Marke *</div>
+    <select id="cMake">${opt("Marke wählen…", VehicleData.brands(), v.make)}</select>
+    <div class="label">2 · Modell *</div>
+    <select id="cModel" disabled><option value="">Erst Marke wählen</option></select>
+    <div class="label">3 · Baureihe / Generation *</div>
+    <select id="cSeries" disabled><option value="">Erst Modell wählen</option></select>
     <div class="split">
-      <div><div class="label">4 · Karosserie</div><select id="cBody">${opt("Wählen…", BODIES, v.body_type)}</select></div>
-      <div><div class="label">5 · Baujahr</div><select id="cYear">${opt("Wählen…", years, v.year)}</select></div>
+      <div><div class="label">4 · Karosserie *</div><select id="cBody">${opt("Wählen…", BODIES, v.body_type)}</select></div>
+      <div><div class="label">5 · Baujahr *</div><select id="cYear" disabled><option value="">Erst Baureihe wählen</option></select></div>
+    </div>
+    <div class="label">6 · Motorisierung *</div>
+    <select id="cEngine" disabled><option value="">Erst Modell wählen</option></select>
+    <div class="split">
+      <div><div class="label">7 · Kraftstoff *</div><select id="cFuel" disabled><option value="">Erst Motor wählen</option></select></div>
+      <div><div class="label">8 · Leistung (PS) *</div><select id="cPs" disabled><option value="">Erst Motor wählen</option></select></div>
     </div>
     <div class="split">
-      <div><div class="label">6 · Motor</div><select id="cEngine">${opt("Wählen…", v.make && ENGINES[v.make] ? ENGINES[v.make] : ENGINE_DEFAULT, v.engine)}</select></div>
-      <div><div class="label">7 · Kraftstoff</div><select id="cFuel">${opt("Wählen…", FUELS, v.fuel)}</select></div>
+      <div><div class="label">9 · Getriebe *</div><select id="cTrans" disabled><option value="">Erst Motor wählen</option></select></div>
+      <div><div class="label">10 · Kilometerstand *</div><select id="cKm">${opt("Wählen…", KM_STEPS.map(k => k[1]), kmLabel(v.mileage))}</select></div>
     </div>
-    <div class="split">
-      <div><div class="label">8 · PS</div><select id="cPs">${opt("Wählen…", PS_LIST, v.power_ps)}</select></div>
-      <div><div class="label">9 · Getriebe</div><select id="cTrans">${opt("Wählen…", TRANS, v.transmission)}</select></div>
-    </div>
-    <div class="label">10 · Kilometerstand</div>
-    <select id="cKm">${opt("Wählen…", KM_STEPS.map(k => k[1]), kmLabel(v.mileage))}</select>
-    <div class="split">
+    <div class="okBox hidden" id="vfSummary" style="margin-top:14px"></div>
+    <div class="split" style="margin-top:4px">
       <div><div class="label">Kennzeichen (optional)</div><input id="cPlate" placeholder="K-XX 1234" value="${esc(v.license_plate || "")}"></div>
       <div><div class="label">TÜV gültig bis (optional)</div><input id="cTuev" type="date" value="${esc(v.tuev_until || "")}"></div>
     </div>
-    <div class="label">Fahrzeugschein (optional, privat)</div>
+    <div class="label">Fahrzeugschein (optional, privat gespeichert)</div>
     <input type="file" id="cDoc" accept="image/*,.pdf" style="padding:9px">
     ${v.registration_doc ? '<p class="mm" style="margin-top:5px">📄 Bereits hinterlegt – neue Datei ersetzt die alte.</p>' : ""}
     <div class="btnRow">
-      <button class="btn" id="cSave">${editId ? "Speichern" : "Fahrzeug anlegen"}</button>
+      <button class="btn" id="cSave" disabled>${editId ? "Speichern" : "Fahrzeug anlegen"}</button>
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
     </div>
     <div class="err" id="cErr"></div>`);
-  $("cMake").onchange = () => {
+
+  const stepOrder = ["cMake", "cModel", "cSeries", "cBody", "cYear", "cEngine", "cFuel", "cPs", "cTrans", "cKm"];
+  function refreshProgress() {
+    const bars = $("vfProgress").children;
+    let done = 0;
+    stepOrder.forEach((id, i) => {
+      const ok = !!$(id).value;
+      bars[i].style.background = ok ? "var(--green)" : "rgba(255,255,255,.1)";
+      if (ok) done++;
+    });
+    const next = stepOrder.findIndex(id => !$(id).value);
+    $("vfStep").textContent = next === -1 ? "Alle 10 Schritte ausgefüllt ✓" : `Schritt ${next + 1} von 10 · ${steps[next][1]} wählen`;
+    $("cSave").disabled = next !== -1;
+    const sum = $("vfSummary");
+    if (done >= 6 && $("cMake").value) {
+      sum.classList.remove("hidden");
+      sum.innerHTML = `🚗 <b>${esc($("cMake").value)} ${esc($("cModel").value)}</b>${$("cSeries").value && $("cSeries").value !== "Keine Angabe" ? " · " + esc($("cSeries").value) : ""}${$("cEngine").value ? " · " + esc($("cEngine").value) : ""}${$("cPs").value ? " · " + esc($("cPs").value) + " PS" : ""}${$("cYear").value ? " · BJ " + esc($("cYear").value) : ""}`;
+    } else sum.classList.add("hidden");
+  }
+  function fillModel(keep) {
     const mk = $("cMake").value;
     $("cModel").disabled = !mk;
-    $("cModel").innerHTML = mk ? opt("Modell wählen…", BRANDS[mk] || []) : "<option value=''>Erst Marke wählen</option>";
-    $("cSeries").disabled = true; $("cSeries").innerHTML = "<option value=''>Erst Modell wählen</option>";
-    $("cEngine").innerHTML = opt("Wählen…", ENGINES[mk] || ENGINE_DEFAULT);
-  };
-  $("cModel").onchange = () => {
+    $("cModel").innerHTML = mk ? opt(`Modell wählen… (${VehicleData.models(mk).length})`, VehicleData.models(mk), keep) : "<option value=''>Erst Marke wählen</option>";
+  }
+  function fillSeries(keep) {
     const mk = $("cMake").value, mo = $("cModel").value;
     $("cSeries").disabled = !mo;
-    $("cSeries").innerHTML = mo ? opt("Baureihe wählen…", seriesFor(mk, mo)) : "<option value=''>Erst Modell wählen</option>";
-  };
+    if (!mo) { $("cSeries").innerHTML = "<option value=''>Erst Modell wählen</option>"; return; }
+    const list = VehicleData.series(mk, mo).map(x => x.label);
+    if (keep && !list.includes(keep)) list.unshift(keep); // Altbestand (z.B. "F30")
+    $("cSeries").innerHTML = opt("Baureihe wählen…", list, keep);
+  }
+  function fillYear(keep) {
+    const mk = $("cMake").value, mo = $("cModel").value, se = $("cSeries").value;
+    $("cYear").disabled = !se;
+    if (!se) { $("cYear").innerHTML = "<option value=''>Erst Baureihe wählen</option>"; return; }
+    let years = VehicleData.years(mk, mo, se);
+    if (keep && !years.includes(+keep)) years = [+keep].concat(years);
+    $("cYear").innerHTML = opt("Baujahr wählen…", years, keep);
+  }
+  function fillEngine(keep) {
+    const mk = $("cMake").value, mo = $("cModel").value;
+    $("cEngine").disabled = !mo;
+    if (!mo) { $("cEngine").innerHTML = "<option value=''>Erst Modell wählen</option>"; return; }
+    const list = VehicleData.engines(mk, mo).map(e => e.n);
+    if (keep && !list.includes(keep)) list.unshift(keep);
+    $("cEngine").innerHTML = opt("Motorisierung wählen…", list, keep);
+  }
+  function fillEngineDeps(keepFuel, keepPs, keepTrans) {
+    const mk = $("cMake").value, mo = $("cModel").value, en = $("cEngine").value;
+    const has = !!en;
+    ["cFuel", "cPs", "cTrans"].forEach(id => $(id).disabled = !has);
+    if (!has) {
+      ["cFuel", "cPs", "cTrans"].forEach(id => $(id).innerHTML = "<option value=''>Erst Motor wählen</option>");
+      return;
+    }
+    const fuels = VehicleData.fuels(mk, mo, en);
+    const ps = VehicleData.ps(mk, mo, en);
+    const trans = VehicleData.transmissions(mk, mo, en);
+    $("cFuel").innerHTML = fuels.length === 1
+      ? `<option value="${esc(fuels[0])}" selected>${esc(fuels[0])} (passend zum Motor)</option>`
+      : opt("Kraftstoff wählen…", fuels, keepFuel);
+    const psList = keepPs && !ps.includes(+keepPs) ? [+keepPs].concat(ps) : ps;
+    $("cPs").innerHTML = ps.length === 1
+      ? `<option value="${ps[0]}" selected>${ps[0]} PS</option>`
+      : opt("PS wählen…", psList, keepPs);
+    $("cTrans").innerHTML = trans.length === 1
+      ? `<option value="${esc(trans[0])}" selected>${esc(trans[0])}</option>`
+      : opt("Getriebe wählen…", trans, keepTrans);
+  }
+
+  // Vorbelegung bei Bearbeitung
+  if (v.make) { fillModel(v.model); fillSeries(v.series); fillYear(v.year); fillEngine(v.engine); fillEngineDeps(v.fuel, v.power_ps, v.transmission); }
+
+  $("cMake").onchange = () => { fillModel(); fillSeries(); fillYear(); fillEngine(); fillEngineDeps(); refreshProgress(); };
+  $("cModel").onchange = () => { fillSeries(); fillYear(); fillEngine(); fillEngineDeps(); refreshProgress(); };
+  $("cSeries").onchange = () => { fillYear(); refreshProgress(); };
+  $("cEngine").onchange = () => { fillEngineDeps(); refreshProgress(); };
+  ["cBody", "cYear", "cFuel", "cPs", "cTrans", "cKm"].forEach(id => $(id).onchange = refreshProgress);
+  refreshProgress();
+
   $("cSave").onclick = async () => {
     const err = $("cErr"); err.style.display = "none";
-    for (const fid of ["cMake", "cModel", "cSeries", "cBody", "cYear", "cEngine", "cFuel", "cPs", "cTrans", "cKm"]) {
-      if (!$(fid).value) return showErr(err, "Bitte alle 10 Schritte ausfüllen.");
+    for (const fid of stepOrder) {
+      if (!$(fid).value) return showErr(err, "Bitte alle 10 Schritte ausfüllen – Schritt: " + steps[stepOrder.indexOf(fid)][1]);
     }
-    $("cSave").disabled = true;
+    $("cSave").disabled = true; $("cSave").textContent = "Wird gespeichert…";
     let docPath = v.registration_doc || null;
     const f = $("cDoc").files[0];
     if (f && f.size < 10 * 1024 * 1024) {
@@ -1298,13 +1384,12 @@ async function openVehicleForm(editId) {
     };
     const q = editId ? sb.from("vehicles").update(row).eq("id", editId) : sb.from("vehicles").insert(row);
     const { error } = await q;
-    $("cSave").disabled = false;
+    $("cSave").disabled = false; $("cSave").textContent = editId ? "Speichern" : "Fahrzeug anlegen";
     if (error) return showErr(err, error.message);
     closeModal(); toast(editId ? "Gespeichert ✓" : "Fahrzeug angelegt ✓");
-    loadVehicles();
+    if ($("carList")) loadVehicles(); else route();
   };
 }
-function seriesFor(make, model) { return (SERIES[make + "|" + model] || []).concat(["Keine Angabe"]); }
 function kmLabel(m) { if (!m) return ""; const f = KM_STEPS.find(k => k[0] === Number(m)); return f ? f[1] : ""; }
 
 // ============================================================
@@ -1909,6 +1994,7 @@ async function loadWsJobs() {
         </select>
         <button class="btn ghost sm" onclick="setJobDate('${b.id}','${b.scheduled_at || ""}')">📅 Termin</button>
         <button class="btn ghost sm" onclick="openApprovalForm('${b.id}','${b.customer_id}','${b.offers?.request_id}')">🔧 Zusatzfreigabe</button>
+        <button class="btn ghost sm" onclick="openBookingDocForm('${b.id}')">📄 Rechnung/Dokument</button>
         <button class="btn ghost sm" onclick="markNoShow('${b.id}')">🚫 Nicht erschienen</button>
         <button class="btn red sm" onclick="wsCancelJob('${b.id}')">Absagen</button>` : ""}
         <button class="btn ghost sm" onclick="go('ws/lead/${b.offers?.request_id}')">💬 Chat</button>
@@ -1970,6 +2056,61 @@ function wsCancelJob(id) {
     loadWsJobs();
   };
 }
+// ---------- Rechnung / Dokumente / Gewährleistung (Werkstatt) ----------
+function openBookingDocForm(bookingId) {
+  openModal(`
+    <h2 style="font-size:19px;font-weight:800">📄 Rechnung / Dokument hochladen</h2>
+    <p class="mm" style="margin-top:6px">Rechnungen, Kostenvoranschläge, Prüfberichte oder Übergabeprotokolle – der Kunde sieht sie im Auftrag und in seiner Fahrzeugakte. Die Rechnung wird von deinem Betrieb gestellt, Carfixo speichert sie nur.</p>
+    <div class="label">Dokumentart</div>
+    <select id="bdType">${["Rechnung","Kostenvoranschlag","Prüfbericht / TÜV-Bericht","Übergabeprotokoll","Sonstiges Dokument"].map(x => `<option>${x}</option>`).join("")}</select>
+    <div class="label">Datei (PDF oder Bild) *</div>
+    <input type="file" id="bdFile" accept="application/pdf,image/*" style="padding:9px">
+    <div class="label">Gewährleistungs- / Garantiehinweis (optional, gilt für den Auftrag)</div>
+    <textarea id="bdWarranty" placeholder="z.B. 24 Monate Gewährleistung auf Arbeit, 12 Monate Garantie auf verbaute Teile."></textarea>
+    <div class="btnRow">
+      <button class="btn" id="bdGo">Hochladen</button>
+      <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
+    </div>
+    <div class="err" id="bdErr"></div>`);
+  $("bdGo").onclick = async () => {
+    const err = $("bdErr"); err.style.display = "none";
+    const f = $("bdFile").files[0];
+    const warranty = $("bdWarranty").value.trim();
+    if (!f && !warranty) return showErr(err, "Bitte eine Datei wählen oder einen Gewährleistungshinweis eintragen.");
+    $("bdGo").disabled = true; $("bdGo").textContent = "Wird hochgeladen…";
+    const { data: bk } = await sb.from("bookings").select("documents").eq("id", bookingId).maybeSingle();
+    const docs = [...(bk?.documents || [])];
+    if (f) {
+      if (f.size > 15 * 1024 * 1024) { $("bdGo").disabled = false; return showErr(err, "Datei zu groß (max. 15 MB)."); }
+      const path = `booking/${bookingId}/${Date.now()}_${f.name.replace(/[^\w.\-]/g, "_")}`;
+      const { error: upErr } = await sb.storage.from("documents").upload(path, f);
+      if (upErr) { $("bdGo").disabled = false; $("bdGo").textContent = "Hochladen"; return showErr(err, upErr.message); }
+      docs.push({ type: $("bdType").value, name: f.name, path, uploaded_at: new Date().toISOString() });
+    }
+    const upd = { documents: docs };
+    if (warranty) upd.warranty_note = warranty;
+    const { error } = await sb.from("bookings").update(upd).eq("id", bookingId);
+    if (error) { $("bdGo").disabled = false; return showErr(err, error.message); }
+    closeModal(); toast("Gespeichert ✓ – der Kunde sieht es im Auftrag.");
+    if ($("jobList")) loadWsJobs();
+  };
+}
+async function openBookingDoc(path) {
+  const { data, error } = await sb.storage.from("documents").createSignedUrl(path, 300);
+  if (error || !data?.signedUrl) return toast("Dokument konnte nicht geladen werden.");
+  window.open(data.signedUrl, "_blank");
+}
+function bookingDocsHtml(bk) {
+  const docs = bk.documents || [];
+  if (docs.length === 0 && !bk.warranty_note) return "";
+  return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+    ${docs.length ? `<div class="tt" style="font-size:12.5px">📄 Dokumente der Werkstatt</div>
+    ${docs.map(d => `<div class="offerLine"><span>${esc(d.type || "Dokument")} · ${esc(d.name || "")}</span>
+      <a href="#" onclick="openBookingDoc('${esc(d.path)}');return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>`).join("")}` : ""}
+    ${bk.warranty_note ? `<div class="note" style="margin:10px 0 0">🛡️ <b>Gewährleistung/Garantie (durch die Werkstatt):</b><br>${esc(bk.warranty_note)}</div>` : ""}
+  </div>`;
+}
+
 // ---------- Zusatzfreigabe anfordern ----------
 let apFiles = [];
 function openApprovalForm(bookingId, customerId, requestId) {
@@ -2600,96 +2741,166 @@ async function vVehicleRecord(id) {
   main.innerHTML = `<div class="sk" style="height:220px"></div>`;
   const [{ data: v }, { data: reqs }, { data: logs }, { data: rems }] = await Promise.all([
     sb.from("vehicles").select("*").eq("id", id).maybeSingle(),
-    sb.from("requests").select("*, offers(id,total_price,status,workshops(name)), ").eq("vehicle_id", id).order("created_at", { ascending: false }),
+    sb.from("requests").select("*").eq("vehicle_id", id).order("created_at", { ascending: false }),
     sb.from("vehicle_logs").select("*").eq("vehicle_id", id).order("created_at", { ascending: false }),
-    sb.from("reminders").select("*").eq("vehicle_id", id).eq("done", false).order("due_date"),
+    sb.from("reminders").select("*").eq("vehicle_id", id).order("due_date"),
   ]);
   if (!v) { main.innerHTML = `<div class="warn">Fahrzeug nicht gefunden.</div>`; return; }
-  const { data: bks } = await sb.from("bookings").select("*, offers(request_id,total_price,workshops(name)), reviews(rating)").eq("vehicle_id", id).order("created_at", { ascending: false });
+  const reqIds = (reqs || []).map(r => r.id);
+  const [{ data: bks }, { data: offers }] = await Promise.all([
+    sb.from("bookings").select("*, offers(request_id,total_price,is_fixed_price,workshops(id,name,phone)), reviews(rating)").eq("vehicle_id", id).order("created_at", { ascending: false }),
+    reqIds.length ? sb.from("offers").select("id,request_id,total_price,status,created_at, workshops(name)").in("request_id", reqIds) : Promise.resolve({ data: [] }),
+  ]);
+  const bkIds = (bks || []).map(b => b.id);
+  const { data: approvals } = bkIds.length
+    ? await sb.from("approvals").select("*").in("booking_id", bkIds).order("created_at", { ascending: false })
+    : { data: [] };
+
+  const bkByReq = {};
+  (bks || []).forEach(b => { if (b.offers?.request_id) bkByReq[b.offers.request_id] = b; });
   const doneJobs = (bks || []).filter(b => b.status === "completed");
+  const upcoming = (bks || []).filter(b => b.scheduled_at && new Date(b.scheduled_at) > new Date() && !["completed", "cancelled"].includes(b.status));
+  const openApprovals = (approvals || []).filter(a => a.status === "requested");
+  const allDocs = (bks || []).flatMap(b => (b.documents || []).map(d => ({ ...d, bk: b })));
+  const allPics = (reqs || []).flatMap(r => (r.attachments || [])).concat((approvals || []).flatMap(a => a.photos || []));
+  const openRems = (rems || []).filter(r => !r.done);
+  const lastKm = (logs || []).find(l => l.mileage)?.mileage || v.mileage;
+  const spent = doneJobs.reduce((s, b) => s + Number(b.total_price || 0), 0);
+
+  // „Verkaufswert verbessern"
   const tips = [];
-  if (!v.tuev_until || new Date(v.tuev_until) < new Date(Date.now() + 90 * 864e5)) tips.push(["📋", "TÜV erneuern", "tuev", "HU"]);
-  tips.push(["🛠️", "Inspektion durchführen & Wartungsnachweis sichern", "inspektion", "Kleine Inspektion"]);
-  tips.push(["✨", "Lack aufbereiten / polieren", "pflege", "Politur"]);
+  if (!v.tuev_until || new Date(v.tuev_until) < new Date(Date.now() + 90 * 864e5)) tips.push(["📋", "TÜV erneuern", "tuev", "HU + AU"]);
+  tips.push(["🛠️", "Inspektion durchführen", "inspektion", "Kleine Inspektion"]);
+  tips.push(["📁", "Wartungsnachweise vollständig halten (Dokumente hier sammeln)", null, null]);
+  tips.push(["✨", "Lack aufbereiten", "pflege", "Lackaufbereitung"]);
+  tips.push(["🧽", "Innenraum aufbereiten", "pflege", "Innenreinigung"]);
   tips.push(["🛞", "Felgen reparieren", "reifen", "Felgenreparatur"]);
+  tips.push(["🛞", "Reifen erneuern", "reifen", "Reifenwechsel"]);
+  tips.push(["📷", "Schäden dokumentieren (Fotos in Anfragen hochladen)", null, null]);
+
   main.innerHTML = `
   <div class="pageHead">
     <div class="ico icoBlue" style="width:52px;height:52px;font-size:23px">🚗</div>
-    <div style="flex:1"><h1>${esc(v.make)} ${esc(v.model)}${v.series && v.series !== "Keine Angabe" ? " " + esc(v.series) : ""}</h1>
+    <div style="flex:1"><h1>Fahrzeugakte: ${esc(v.make)} ${esc(v.model)}${v.series && v.series !== "Keine Angabe" ? " " + esc(v.series) : ""}</h1>
     <div class="sub">${esc(carLabel(v))}${v.license_plate ? " · 🔖 " + esc(v.license_plate) : ""}</div></div>
-    <div class="right"><button class="btn ghost sm" onclick="openVehicleForm('${v.id}')">Bearbeiten</button></div>
+    <div class="right">
+      <a class="btn sm" href="#/new-request">＋ Neue Anfrage</a>
+      <button class="btn ghost sm" onclick="openVehicleForm('${v.id}')">Bearbeiten</button>
+    </div>
   </div>
   <div class="kpiRow">
     <div class="kpi"><b>${doneJobs.length}</b><span>Abgeschlossene Aufträge</span></div>
-    <div class="kpi"><b>${v.tuev_until ? fmtDate(v.tuev_until) : "–"}</b><span>TÜV gültig bis</span></div>
-    <div class="kpi"><b>${(logs || [])[0]?.mileage ? Number(logs[0].mileage).toLocaleString("de-DE") + " km" : v.mileage ? "~" + Number(v.mileage).toLocaleString("de-DE") + " km" : "–"}</b><span>Letzter Kilometerstand</span></div>
-    <div class="kpi"><b>${(rems || []).length}</b><span>Offene Erinnerungen</span></div>
+    <div class="kpi"><b>${v.tuev_until ? fmtDate(v.tuev_until) : "–"}</b><span>TÜV gültig bis${v.tuev_until && new Date(v.tuev_until) < new Date(Date.now() + 60 * 864e5) ? " ⚠️" : ""}</span></div>
+    <div class="kpi"><b>${lastKm ? Number(lastKm).toLocaleString("de-DE") + " km" : "–"}</b><span>Letzter Kilometerstand</span></div>
+    <div class="kpi"><b>${spent > 0 ? spent.toLocaleString("de-DE") + " €" : "–"}</b><span>Investiert (abgeschlossen)</span></div>
   </div>
+
+  ${openApprovals.length ? `<div class="warn">⚠️ <b>${openApprovals.length} offene Zusatzfreigabe${openApprovals.length > 1 ? "n" : ""}:</b>
+    ${openApprovals.map(a => {
+      const bk = (bks || []).find(b => b.id === a.booking_id);
+      const rid = bk?.offers?.request_id;
+      return `${esc(a.title)} (+${fmtEur(a.extra_cost)}) ${rid ? `<a href="#/request/${rid}" style="color:#fff;font-weight:800">→ Jetzt entscheiden</a>` : ""}`;
+    }).join(" · ")}</div>` : ""}
+
+  ${upcoming.length ? `<div class="note">📅 <b>Kommende Termine:</b> ${upcoming.map(b => {
+      const w = b.offers?.workshops;
+      return `${fmtDateTime(b.scheduled_at)} bei ${esc(w?.name || "Werkstatt")}`;
+    }).join(" · ")}</div>` : ""}
+
   <div class="grid2" style="align-items:start">
     <div>
       <div class="card" style="margin-bottom:14px">
-        <div class="tt">🗂️ Reparatur- & Auftragshistorie</div>
+        <div class="tt">📋 Fahrzeugdaten</div>
+        <div style="margin-top:8px">
+          <div class="offerLine"><span>Marke / Modell</span><span><b>${esc(v.make)} ${esc(v.model)}</b></span></div>
+          <div class="offerLine"><span>Baureihe</span><span>${esc(v.series || "–")}</span></div>
+          <div class="offerLine"><span>Karosserie</span><span>${esc(v.body_type || "–")}</span></div>
+          <div class="offerLine"><span>Baujahr</span><span>${esc(v.year || "–")}</span></div>
+          <div class="offerLine"><span>Motor / Kraftstoff</span><span>${esc(v.engine || "–")} · ${esc(v.fuel || "–")}</span></div>
+          <div class="offerLine"><span>Leistung / Getriebe</span><span>${v.power_ps ? v.power_ps + " PS" : "–"} · ${esc(v.transmission || "–")}</span></div>
+          <div class="offerLine"><span>Kilometerstand (ca.)</span><span>${lastKm ? Number(lastKm).toLocaleString("de-DE") + " km" : "–"}</span></div>
+          <div class="offerLine"><span>Kennzeichen</span><span>${esc(v.license_plate || "–")}</span></div>
+          <div class="offerLine"><span>TÜV / HU gültig bis</span><span>${v.tuev_until ? fmtDate(v.tuev_until) : "–"}</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="tt">🗂️ Reparatur- & Wartungshistorie <span class="badge b-blue">${(reqs || []).length}</span></div>
         <div style="margin-top:10px">${(reqs || []).length === 0
-          ? '<p class="mm">Noch keine Aufträge mit diesem Fahrzeug.</p>'
+          ? '<p class="mm">Noch keine Aufträge mit diesem Fahrzeug. <a href="#/new-request" style="color:var(--blue2)">Erste Anfrage erstellen →</a></p>'
           : reqs.map(r => {
             const c = CATS[r.category] || { icon: "🔧", name: r.category };
-            const bk = (bks || []).find(b => b.offers?.request_id === r.id);
+            const bk = bkByReq[r.id];
+            const offerCount = (offers || []).filter(o => o.request_id === r.id).length;
+            const rev = bk?.reviews?.[0] || (Array.isArray(bk?.reviews) ? bk.reviews[0] : bk?.reviews);
             return `<div class="card tap" style="margin-bottom:9px;padding:12px" onclick="go('request/${r.id}')">
               <div class="cardHead"><div class="ico" style="width:34px;height:34px;font-size:15px">${c.icon}</div>
-              <div style="flex:1"><div class="tt" style="font-size:13px">${esc(r.title)}</div>
-              <div class="mm">${fmtDate(r.created_at)}${bk ? " · " + fmtEur(bk.total_price) + " · " + (bk.offers?.workshops?.name || "") : ""}</div></div>
-              <span class="badge ${bk ? (BK_STATUS[bk.status]?.[1] || "b-grey") : r.status === "open" ? "b-green" : "b-grey"}">${bk ? (BK_STATUS[bk.status]?.[0] || bk.status) : r.status === "open" ? "Offen" : esc(r.status)}</span></div>
+              <div style="flex:1;min-width:0"><div class="tt" style="font-size:13px">${esc(r.title)}</div>
+              <div class="mm">${fmtDate(r.created_at)} · ${c.name}${bk ? ` · ${fmtEur(bk.total_price)} · ${esc(bk.offers?.workshops?.name || "")}` : offerCount ? ` · ${offerCount} Angebot${offerCount > 1 ? "e" : ""}` : ""}${rev?.rating ? ` · <span style="color:var(--gold)">${stars(rev.rating)}</span>` : ""}</div>
+              ${bk?.warranty_note ? `<div class="mm">🛡️ Garantie/Gewährleistung hinterlegt</div>` : ""}</div>
+              <span class="badge ${bk ? (BK_STATUS[bk.status]?.[1] || "b-grey") : r.status === "open" ? "b-green" : "b-grey"}">${bk ? (BK_STATUS[bk.status]?.[0] || bk.status) : r.status === "open" ? "Offen" : r.status === "booked" ? "Gebucht" : "Beendet"}</span></div>
             </div>`;
           }).join("")}</div>
       </div>
+
       <div class="card">
-        <div class="tt">📈 Kilometerstände & Notizen</div>
+        <div class="tt">📈 Kilometerstand-Historie & Notizen</div>
         <div class="split" style="margin-top:12px">
           <input id="vlKm" inputmode="numeric" placeholder="Kilometerstand">
           <input id="vlNote" placeholder="Notiz (optional)">
           <button class="btn sm" id="vlAdd" style="flex:0 0 auto">＋</button>
         </div>
         <div style="margin-top:12px">${(logs || []).map(l => `
-          <div class="offerLine"><span>${fmtDate(l.created_at)}${l.note ? " · " + esc(l.note) : ""}</span><span>${l.mileage ? Number(l.mileage).toLocaleString("de-DE") + " km" : ""}</span></div>`).join("") || '<p class="mm">Noch keine Einträge.</p>'}</div>
+          <div class="offerLine"><span>${fmtDate(l.created_at)}${l.note ? " · " + esc(l.note) : ""}</span><span>${l.mileage ? "<b>" + Number(l.mileage).toLocaleString("de-DE") + " km</b>" : ""}</span></div>`).join("") || '<p class="mm">Noch keine Einträge – trage regelmäßig deinen Kilometerstand ein.</p>'}</div>
       </div>
     </div>
+
     <div>
       <div class="card" style="margin-bottom:14px">
-        <div class="tt">📄 Dokumente</div>
-        <p class="mm" style="margin-top:6px">${v.registration_doc ? "📄 Fahrzeugschein hinterlegt (privat gespeichert)" : "Kein Fahrzeugschein hinterlegt – über Bearbeiten hochladen."}</p>
-        ${v.registration_doc ? `<button class="btn ghost sm" style="margin-top:8px" id="vDocBtn">Fahrzeugschein öffnen</button>` : ""}
-        <p class="mm" style="margin-top:8px;font-size:11px">Rechnungen und Berichte der Werkstatt findest du im jeweiligen Auftrag – die Reparaturleistung und Rechnung werden durch die Werkstatt erbracht.</p>
+        <div class="tt">📄 Dokumente & Rechnungen <span class="badge b-blue">${allDocs.length + (v.registration_doc ? 1 : 0)}</span></div>
+        <p class="mm" style="margin-top:4px;font-size:11px">Rechnungen und Berichte werden von der jeweiligen Werkstatt erstellt – Carfixo speichert sie hier für dich.</p>
+        <div style="margin-top:8px">
+          ${v.registration_doc ? `<div class="offerLine"><span>🪪 Fahrzeugschein (privat)</span><a href="#" onclick="openBookingDoc('${esc(v.registration_doc)}');return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>` : ""}
+          ${allDocs.length === 0 && !v.registration_doc ? '<p class="mm">Noch keine Dokumente. Werkstätten laden Rechnungen und Berichte nach dem Auftrag hoch.</p>' : ""}
+          ${allDocs.map(d => `<div class="offerLine"><span>${esc(d.type || "Dokument")} · ${esc(d.name || "")} <span class="mm">(${esc(d.bk.booking_no || "")}, ${fmtDate(d.uploaded_at)})</span></span>
+            <a href="#" onclick="openBookingDoc('${esc(d.path)}');return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>`).join("")}
+        </div>
+        ${(bks || []).filter(b => b.warranty_note).map(b => `<div class="note" style="margin:10px 0 0">🛡️ <b>${esc(b.booking_no || "Auftrag")} – Gewährleistung (${esc(b.offers?.workshops?.name || "Werkstatt")}):</b><br>${esc(b.warranty_note)}</div>`).join("")}
       </div>
+
+      ${allPics.length ? `<div class="card" style="margin-bottom:14px">
+        <div class="tt">📷 Bilder aus Anfragen & Aufträgen <span class="badge b-blue">${allPics.length}</span></div>
+        <div class="thumbs" style="margin-top:10px">${allPics.slice(0, 12).map(u => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" loading="lazy" alt="Bild"></a>`).join("")}</div>
+      </div>` : ""}
+
       <div class="card" style="margin-bottom:14px">
-        <div class="tt">🔔 Anstehende Erinnerungen</div>
-        <div style="margin-top:8px">${(rems || []).length === 0
+        <div class="tt">🔔 Erinnerungen & Termine</div>
+        <div style="margin-top:8px">${openRems.length === 0
           ? `<p class="mm">Keine offenen Erinnerungen. <a href="#/reminders" style="color:var(--blue2)">Zur Erinnerungszentrale →</a></p>`
-          : rems.map(rm => `<div class="offerLine"><span>${esc(rm.title)}</span><span>${fmtDate(rm.due_date)}</span></div>`).join("")}</div>
+          : openRems.map(rm => `<div class="offerLine"><span>${esc(rm.title)}</span><span>${fmtDate(rm.due_date)}</span></div>`).join("")}
+        ${upcoming.map(b => `<div class="offerLine"><span>📅 Werkstatt-Termin (${esc(b.offers?.workshops?.name || "")})</span><span>${fmtDateTime(b.scheduled_at)}</span></div>`).join("")}</div>
       </div>
+
       <div class="card">
         <div class="tt">📈 Verkaufswert verbessern</div>
-        <p class="mm" style="margin-top:6px">Diese Maßnahmen können Verkaufswert oder Verkaufschancen verbessern:</p>
         <div style="margin-top:8px">${tips.map(t => `
-          <div class="offerLine"><span>${t[0]} ${esc(t[1])}</span><a href="#/new-request?cat=${t[2]}&service=${encodeURIComponent(t[3])}" style="color:var(--blue2);font-weight:700;font-size:12px">Anfragen →</a></div>`).join("")}</div>
+          <div class="offerLine"><span>${t[0]} ${esc(t[1])}</span>${t[2] ? `<a href="#/new-request?cat=${t[2]}&service=${encodeURIComponent(t[3])}" style="color:var(--blue2);font-weight:700;font-size:12px">Anfragen →</a>` : ""}</div>`).join("")}</div>
+        <p class="mm" style="margin-top:10px;font-size:11px">Diese Maßnahmen können Verkaufswert oder Verkaufschancen verbessern.</p>
       </div>
     </div>
   </div>`;
   $("vlAdd").onclick = async () => {
     const km = parseInt($("vlKm").value, 10);
     if (!km && !$("vlNote").value.trim()) return toast("Kilometerstand oder Notiz angeben.");
+    if (km && lastKm && km < Number(lastKm)) {
+      if (!confirm("Der neue Kilometerstand ist niedriger als der letzte – trotzdem speichern?")) return;
+    }
     const { error } = await sb.from("vehicle_logs").insert({ vehicle_id: v.id, user_id: me.id, mileage: km || null, note: $("vlNote").value.trim() || null });
     if (error) return toast(error.message);
     toast("Eintrag gespeichert ✓");
     vVehicleRecord(v.id);
   };
-  const db = $("vDocBtn");
-  if (db) db.onclick = async () => {
-    const { data, error } = await sb.storage.from("documents").createSignedUrl(v.registration_doc, 300);
-    if (error || !data?.signedUrl) return toast("Dokument konnte nicht geladen werden.");
-    window.open(data.signedUrl, "_blank");
-  };
 }
-
 // ---------- Favoriten ----------
 async function toggleFavorite(wsId, btn) {
   if (!requireAuth()) return;

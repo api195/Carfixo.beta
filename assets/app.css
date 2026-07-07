@@ -69,7 +69,8 @@ main{max-width:1180px;margin:0 auto;padding:26px 18px 60px}
 .b-grey{background:rgba(255,255,255,.07);color:var(--muted)}
 .chip{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--line2);border-radius:99px;font-size:12.5px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.03);color:var(--ink);transition:background .15s,border-color .15s;user-select:none}
 .chip:hover{border-color:rgba(77,141,255,.5)}
-.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(30,107,255,.35)}
+.chip.on::before{content:"✓";font-weight:800;margin-right:2px}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .pill{font-size:11.5px;font-weight:700;color:#C7D4E8;background:rgba(255,255,255,.05);border:1px solid var(--line);padding:5px 11px;border-radius:99px;display:inline-block}
 
@@ -81,8 +82,11 @@ select:disabled{opacity:.4}
 textarea{min-height:90px;resize:vertical}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--blue)}
 input[type=date]{color-scheme:dark}
-.inline{display:flex;align-items:center;gap:9px;font-size:13.5px;margin-top:10px;cursor:pointer}
-.inline input[type=checkbox]{width:19px;height:19px;accent-color:var(--blue)}
+.inline{display:flex;align-items:center;gap:10px;font-size:13.5px;margin-top:8px;cursor:pointer;border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;background:rgba(255,255,255,.02);transition:border-color .15s,background .15s;user-select:none}
+.inline input[type=checkbox]{width:19px;height:19px;accent-color:var(--blue);flex-shrink:0}
+.inline:has(input:checked){border-color:var(--blue);background:rgba(30,107,255,.12);font-weight:700}
+.inline:has(input:checked)::after{content:"Aktiv";margin-left:auto;font-size:9px;font-weight:800;letter-spacing:.5px;color:var(--blue2);background:rgba(30,107,255,.18);padding:3px 8px;border-radius:99px}
+.inline:has(input:disabled){opacity:.4;cursor:not-allowed}
 .split{display:flex;gap:10px}.split>*{flex:1}
 .err{background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.3);border-radius:12px;padding:12px;font-size:12.5px;color:#FF9C9C;margin-top:12px;display:none}
 .note{background:rgba(30,107,255,.09);border:1px solid rgba(30,107,255,.25);border-radius:12px;padding:12px 14px;font-size:12.5px;color:#A8C4F5;line-height:1.55;margin:12px 0}
@@ -105,7 +109,8 @@ input[type=date]{color-scheme:dark}
 /* ---------- Segment ---------- */
 .seg{display:flex;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:13px;padding:4px;margin:14px 0;overflow-x:auto}
 .seg div{flex:1;text-align:center;padding:9px 12px;border-radius:10px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
-.seg div.on{background:var(--blue);color:#fff}
+.seg div.on{background:var(--blue);color:#fff;box-shadow:0 4px 14px rgba(30,107,255,.35)}
+.seg div.on::before{content:"✓ ";font-weight:800}
 
 /* ---------- Suche ---------- */
 .searchGrid{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
@@ -170,13 +175,17 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
 .authCard h1{font-size:24px;font-weight:800;letter-spacing:-.6px}
 .roleGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
 .roleCard{border:1.5px solid var(--line2);border-radius:15px;padding:16px 14px;cursor:pointer;text-align:center;transition:border-color .15s,background .15s}
-.roleCard.on{border-color:var(--blue);background:rgba(30,107,255,.1)}
+.roleCard{position:relative}
+.roleCard.on{border-color:var(--blue);background:rgba(30,107,255,.12);box-shadow:0 0 0 1px var(--blue) inset}
+.roleCard.on::after{content:"✓ Ausgewählt";position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;background:var(--blue);color:#fff;padding:3px 10px;border-radius:99px;white-space:nowrap}
 .roleCard .re{font-size:26px}
 .roleCard .rn{font-size:13px;font-weight:800;margin-top:6px}
 .roleCard .rm{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.4}
 .catGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .catCard{border:1.5px solid var(--line2);border-radius:13px;padding:11px;cursor:pointer;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.02);transition:border-color .15s,background .15s}
-.catCard.on{border-color:var(--blue);background:rgba(30,107,255,.1)}
+.catCard{position:relative}
+.catCard.on{border-color:var(--blue);background:rgba(30,107,255,.12);box-shadow:0 0 0 1px var(--blue) inset}
+.catCard.on::after{content:"✓";position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(30,107,255,.5)}
 .catCard .ce{font-size:19px}
 .catCard .cn{font-size:11.5px;font-weight:700;line-height:1.25}
 .weekGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;min-width:760px}
