@@ -1248,9 +1248,13 @@ async function openVehicleForm(editId) {
     <div id="vfProgress" style="display:flex;gap:3px;margin:14px 0 2px">${steps.map(() => '<div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)"></div>').join("")}</div>
     <div class="mm" id="vfStep" style="font-size:11px">Schritt 1 von 10 · Marke wählen</div>
     <div class="label">1 · Marke *</div>
-    <select id="cMake">${opt("Marke wählen…", VehicleData.brands(), v.make)}</select>
+    <input id="cMake" list="dlMake" placeholder="Tippen zum Suchen – z.B. BMW, Mercedes-Benz…" autocomplete="off" value="${esc(v.make || "")}">
+    <datalist id="dlMake">${VehicleData.brands().map(b => `<option value="${esc(b)}"></option>`).join("")}</datalist>
+    <div class="mm" id="cMakeHint" style="font-size:11px;margin-top:4px"></div>
     <div class="label">2 · Modell *</div>
-    <select id="cModel" disabled><option value="">Erst Marke wählen</option></select>
+    <input id="cModel" list="dlModel" placeholder="Erst Marke wählen" autocomplete="off" disabled value="${esc(v.model || "")}">
+    <datalist id="dlModel"></datalist>
+    <div class="mm" id="cModelHint" style="font-size:11px;margin-top:4px"></div>
     <div class="label">3 · Baureihe / Generation *</div>
     <select id="cSeries" disabled><option value="">Erst Modell wählen</option></select>
     <div class="split">
@@ -1282,30 +1286,44 @@ async function openVehicleForm(editId) {
     <div class="err" id="cErr"></div>`);
 
   const stepOrder = ["cMake", "cModel", "cSeries", "cBody", "cYear", "cEngine", "cFuel", "cPs", "cTrans", "cKm"];
+  // Tipp-Suche: es zählt nur ein exakter Treffer aus der Datenbank (Groß-/Kleinschreibung egal)
+  const canon = (list, val) => list.find(x => x.toLowerCase() === String(val || "").trim().toLowerCase()) || "";
+  const makeSel = () => canon(VehicleData.brands(), $("cMake").value);
+  const modelSel = () => { const mk = makeSel(); return mk ? canon(VehicleData.models(mk), $("cModel").value) : ""; };
+  const stepVal = (id) => id === "cMake" ? makeSel() : id === "cModel" ? modelSel() : $(id).value;
   function refreshProgress() {
     const bars = $("vfProgress").children;
     let done = 0;
     stepOrder.forEach((id, i) => {
-      const ok = !!$(id).value;
+      const ok = !!stepVal(id);
       bars[i].style.background = ok ? "var(--green)" : "rgba(255,255,255,.1)";
       if (ok) done++;
     });
-    const next = stepOrder.findIndex(id => !$(id).value);
+    const mkOk = makeSel(), moOk = modelSel();
+    const mkHint = $("cMakeHint"), moHint = $("cModelHint");
+    mkHint.textContent = mkOk ? `✓ ${mkOk}` : ($("cMake").value.trim() ? "Keine passende Marke gefunden – bitte aus der Vorschlagsliste wählen" : `${VehicleData.brands().length} Marken verfügbar`);
+    mkHint.style.color = mkOk ? "var(--green)" : ($("cMake").value.trim() ? "var(--amber, #ffb020)" : "");
+    moHint.textContent = moOk ? `✓ ${moOk}` : (!mkOk ? "" : ($("cModel").value.trim() ? "Kein passendes Modell gefunden – bitte aus der Vorschlagsliste wählen" : `${VehicleData.models(mkOk).length} Modelle von ${mkOk} verfügbar`));
+    moHint.style.color = moOk ? "var(--green)" : ($("cModel").value.trim() ? "var(--amber, #ffb020)" : "");
+    const next = stepOrder.findIndex(id => !stepVal(id));
     $("vfStep").textContent = next === -1 ? "Alle 10 Schritte ausgefüllt ✓" : `Schritt ${next + 1} von 10 · ${steps[next][1]} wählen`;
     $("cSave").disabled = next !== -1;
     const sum = $("vfSummary");
-    if (done >= 6 && $("cMake").value) {
+    if (done >= 6 && mkOk) {
       sum.classList.remove("hidden");
-      sum.innerHTML = `🚗 <b>${esc($("cMake").value)} ${esc($("cModel").value)}</b>${$("cSeries").value && $("cSeries").value !== "Keine Angabe" ? " · " + esc($("cSeries").value) : ""}${$("cEngine").value ? " · " + esc($("cEngine").value) : ""}${$("cPs").value ? " · " + esc($("cPs").value) + " PS" : ""}${$("cYear").value ? " · BJ " + esc($("cYear").value) : ""}`;
+      sum.innerHTML = `🚗 <b>${esc(mkOk)} ${esc(moOk)}</b>${$("cSeries").value && $("cSeries").value !== "Keine Angabe" ? " · " + esc($("cSeries").value) : ""}${$("cEngine").value ? " · " + esc($("cEngine").value) : ""}${$("cPs").value ? " · " + esc($("cPs").value) + " PS" : ""}${$("cYear").value ? " · BJ " + esc($("cYear").value) : ""}`;
     } else sum.classList.add("hidden");
   }
   function fillModel(keep) {
-    const mk = $("cMake").value;
-    $("cModel").disabled = !mk;
-    $("cModel").innerHTML = mk ? opt(`Modell wählen… (${VehicleData.models(mk).length})`, VehicleData.models(mk), keep) : "<option value=''>Erst Marke wählen</option>";
+    const mk = makeSel();
+    const inp = $("cModel");
+    inp.disabled = !mk;
+    inp.placeholder = mk ? `Modell tippen… (${VehicleData.models(mk).length} verfügbar)` : "Erst Marke wählen";
+    $("dlModel").innerHTML = mk ? VehicleData.models(mk).map(m => `<option value="${esc(m)}"></option>`).join("") : "";
+    if (keep !== undefined) inp.value = keep || "";
   }
   function fillSeries(keep) {
-    const mk = $("cMake").value, mo = $("cModel").value;
+    const mk = makeSel(), mo = modelSel();
     $("cSeries").disabled = !mo;
     if (!mo) { $("cSeries").innerHTML = "<option value=''>Erst Modell wählen</option>"; return; }
     const list = VehicleData.series(mk, mo).map(x => x.label);
@@ -1313,7 +1331,7 @@ async function openVehicleForm(editId) {
     $("cSeries").innerHTML = opt("Baureihe wählen…", list, keep);
   }
   function fillYear(keep) {
-    const mk = $("cMake").value, mo = $("cModel").value, se = $("cSeries").value;
+    const mk = makeSel(), mo = modelSel(), se = $("cSeries").value;
     $("cYear").disabled = !se;
     if (!se) { $("cYear").innerHTML = "<option value=''>Erst Baureihe wählen</option>"; return; }
     let years = VehicleData.years(mk, mo, se);
@@ -1321,7 +1339,7 @@ async function openVehicleForm(editId) {
     $("cYear").innerHTML = opt("Baujahr wählen…", years, keep);
   }
   function fillEngine(keep) {
-    const mk = $("cMake").value, mo = $("cModel").value;
+    const mk = makeSel(), mo = modelSel();
     $("cEngine").disabled = !mo;
     if (!mo) { $("cEngine").innerHTML = "<option value=''>Erst Modell wählen</option>"; return; }
     const list = VehicleData.engines(mk, mo).map(e => e.n);
@@ -1329,7 +1347,7 @@ async function openVehicleForm(editId) {
     $("cEngine").innerHTML = opt("Motorisierung wählen…", list, keep);
   }
   function fillEngineDeps(keepFuel, keepPs, keepTrans) {
-    const mk = $("cMake").value, mo = $("cModel").value, en = $("cEngine").value;
+    const mk = makeSel(), mo = modelSel(), en = $("cEngine").value;
     const has = !!en;
     ["cFuel", "cPs", "cTrans"].forEach(id => $(id).disabled = !has);
     if (!has) {
@@ -1354,8 +1372,19 @@ async function openVehicleForm(editId) {
   // Vorbelegung bei Bearbeitung
   if (v.make) { fillModel(v.model); fillSeries(v.series); fillYear(v.year); fillEngine(v.engine); fillEngineDeps(v.fuel, v.power_ps, v.transmission); }
 
-  $("cMake").onchange = () => { fillModel(); fillSeries(); fillYear(); fillEngine(); fillEngineDeps(); refreshProgress(); };
-  $("cModel").onchange = () => { fillSeries(); fillYear(); fillEngine(); fillEngineDeps(); refreshProgress(); };
+  let lastMake = makeSel(), lastModel = modelSel();
+  $("cMake").oninput = () => {
+    const mk = makeSel();
+    if (mk !== lastMake) { lastMake = mk; lastModel = ""; fillModel(""); fillSeries(); fillYear(); fillEngine(); fillEngineDeps(); }
+    refreshProgress();
+  };
+  $("cMake").onchange = () => { const mk = makeSel(); if (mk) $("cMake").value = mk; $("cMake").oninput(); };
+  $("cModel").oninput = () => {
+    const mo = modelSel();
+    if (mo !== lastModel) { lastModel = mo; fillSeries(); fillYear(); fillEngine(); fillEngineDeps(); }
+    refreshProgress();
+  };
+  $("cModel").onchange = () => { const mo = modelSel(); if (mo) $("cModel").value = mo; $("cModel").oninput(); };
   $("cSeries").onchange = () => { fillYear(); refreshProgress(); };
   $("cEngine").onchange = () => { fillEngineDeps(); refreshProgress(); };
   ["cBody", "cYear", "cFuel", "cPs", "cTrans", "cKm"].forEach(id => $(id).onchange = refreshProgress);
@@ -1364,7 +1393,7 @@ async function openVehicleForm(editId) {
   $("cSave").onclick = async () => {
     const err = $("cErr"); err.style.display = "none";
     for (const fid of stepOrder) {
-      if (!$(fid).value) return showErr(err, "Bitte alle 10 Schritte ausfüllen – Schritt: " + steps[stepOrder.indexOf(fid)][1]);
+      if (!stepVal(fid)) return showErr(err, "Bitte alle 10 Schritte ausfüllen – Schritt: " + steps[stepOrder.indexOf(fid)][1]);
     }
     $("cSave").disabled = true; $("cSave").textContent = "Wird gespeichert…";
     let docPath = v.registration_doc || null;
@@ -1376,7 +1405,7 @@ async function openVehicleForm(editId) {
     }
     const kmVal = KM_STEPS.find(k => k[1] === $("cKm").value);
     const row = {
-      owner_id: me.id, make: $("cMake").value, model: $("cModel").value, series: $("cSeries").value,
+      owner_id: me.id, make: makeSel(), model: modelSel(), series: $("cSeries").value,
       body_type: $("cBody").value, year: +$("cYear").value, engine: $("cEngine").value, fuel: $("cFuel").value,
       power_ps: +$("cPs").value, transmission: $("cTrans").value, mileage: kmVal ? kmVal[0] : null,
       license_plate: $("cPlate").value.trim() || null, tuev_until: $("cTuev").value || null,
