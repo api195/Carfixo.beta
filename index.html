@@ -117,6 +117,37 @@ h1 .grad{background:linear-gradient(100deg,#4D8DFF 10%,#38BDF8 55%,#7C5CFF 95%);
 .mouse::after{content:"";position:absolute;top:7px;left:50%;width:3px;height:7px;margin-left:-1.5px;border-radius:3px;background:var(--blue2);animation:wheel 1.8s infinite}
 @keyframes wheel{0%{transform:translateY(0);opacity:1}70%{transform:translateY(12px);opacity:0}100%{opacity:0}}
 
+/* ================= Startseite: sofort loslegen ================= */
+.heroHome{position:relative;width:100%;max-width:920px;margin:0 auto;text-align:center}
+.heroHome h1{font-size:clamp(32px,5vw,54px)}
+.heroHome .heroSub{margin-left:auto;margin-right:auto;max-width:560px}
+.heroHome .trust{justify-content:center}
+.catStrip{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:26px}
+.catStrip a{font-size:12.5px;font-weight:700;color:#C7D4E8;border:1px solid var(--line2);background:rgba(255,255,255,.04);padding:8px 15px;border-radius:99px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.catStrip a:hover{border-color:var(--blue2);color:#fff;background:rgba(30,107,255,.14)}
+.catStrip a.more{color:var(--blue2);border-color:rgba(30,107,255,.4)}
+.searchBox{display:flex;align-items:stretch;gap:0;background:rgba(12,17,29,.92);border:1px solid var(--line2);border-radius:18px;padding:8px;margin-top:28px;text-align:left;box-shadow:0 24px 70px rgba(0,0,0,.45),0 0 0 1px rgba(30,107,255,.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.sbField{flex:1;padding:8px 16px;min-width:0}
+.sbField.grow{flex:1.7}
+.sbField label{display:block;font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.sbField input{width:100%;background:none;border:none;outline:none;color:var(--ink);font-size:15px;font-family:inherit;padding:3px 0}
+.sbField input::placeholder{color:var(--dim)}
+.sbDivider{width:1px;background:var(--line2);margin:8px 0;flex:0 0 auto}
+.sbGo{flex:0 0 auto;align-self:center;height:52px;padding:0 30px;border:none;border-radius:13px;background:linear-gradient(135deg,#2E77FF,#0A47C2);color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 10px 30px rgba(30,107,255,.4);transition:transform .15s,box-shadow .2s}
+.sbGo:hover{transform:translateY(-1px);box-shadow:0 14px 40px rgba(30,107,255,.55)}
+@media(max-width:720px){
+  .searchBox{flex-direction:column;gap:2px;padding:10px}
+  .sbDivider{width:auto;height:1px;margin:2px 12px}
+  .sbGo{width:100%;align-self:stretch}
+}
+.quickTiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}
+@media(max-width:720px){.quickTiles{grid-template-columns:1fr 1fr;gap:10px}}
+.qt{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;transition:transform .2s,border-color .2s}
+.qt:hover{transform:translateY(-3px);border-color:rgba(77,141,255,.45)}
+.qt .qe{font-size:26px}
+.qt .qn{font-size:13px;font-weight:800}
+.qt .qm{font-size:11px;color:var(--muted);line-height:1.45}
+
 
 /* ================= City-Netz (leuchtende Wege) ================= */
 #cityNet{padding:110px 0 90px;position:relative;overflow:hidden}
@@ -359,56 +390,90 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:12.5px;color:va
   <div class="orb orb2" data-plx="-0.15"></div>
   <div class="beam b1"></div><div class="beam b2"></div><div class="beam b3"></div>
 
-  <div class="wrap heroIn">
-    <div>
-      <div class="kicker rv"><span class="dot"></span> Live in Köln · Beta 2</div>
-      <h1 class="rv" style="--d:.08s">Dein Auto hat ein Problem.<br><span class="grad">Carfixo findet die Lösung.</span></h1>
-      <p class="heroSub rv" style="--d:.16s">Beschreibe dein Anliegen einmal – und passende Werkstätten, Tuning-Betriebe, Aufbereiter und Prüfstellen melden sich mit echten Angeboten bei dir. Vergleichen, chatten, buchen. Fertig.</p>
-      <div class="heroBtns rv" style="--d:.24s">
-        <a class="btn btn-p" href="app.html">Kostenlos Anfrage erstellen</a>
-        <a class="btn btn-g" href="app.html#/diagnose">🤖 KI-Diagnose testen</a>
-        <a class="btn btn-g" href="#pro">Ich bin ein Betrieb</a>
+  <div class="wrap heroHome">
+    <div class="kicker rv"><span class="dot"></span> Live in Köln · Beta 2</div>
+    <h1 class="rv" style="--d:.06s">Was braucht <span class="grad">dein Auto?</span></h1>
+    <p class="heroSub rv" style="--d:.12s">Werkstatt, Tuning, Aufbereitung, TÜV oder Teile – vergleiche echte Angebote von geprüften Betrieben. Kostenlos für Kunden.</p>
+
+    <!-- Direkt-Suche -->
+    <form class="searchBox rv" style="--d:.18s" id="homeSearch">
+      <div class="sbField grow">
+        <label for="hq">Was?</label>
+        <input id="hq" placeholder="z.B. Ölwechsel, TÜV, Chiptuning, Felgen aufbereiten…" autocomplete="off">
       </div>
-      <div class="trust rv" style="--d:.32s">
-        <div><b>8</b>Service-Kategorien</div>
-        <div><b>100 %</b>kostenlos für Kunden</div>
-        <div><b>1</b>Anfrage – viele Angebote</div>
+      <div class="sbDivider"></div>
+      <div class="sbField">
+        <label for="hloc">Wo?</label>
+        <input id="hloc" placeholder="PLZ oder Ort – z.B. Köln" autocomplete="off">
       </div>
+      <button class="sbGo" type="submit">🔍 Suchen</button>
+    </form>
+
+    <!-- Kategorie-Schnellzugriff -->
+    <div class="catStrip rv" style="--d:.24s">
+      <a href="app.html#/search?cat=reparatur">🔧 Reparatur</a>
+      <a href="app.html#/search?cat=inspektion">🛠️ Inspektion</a>
+      <a href="app.html#/search?cat=reifen">🛞 Reifen &amp; Felgen</a>
+      <a href="app.html#/search?cat=tuev">📋 TÜV</a>
+      <a href="app.html#/search?cat=tuning">🏎️ Tuning</a>
+      <a href="app.html#/search?cat=pflege">✨ Aufbereitung</a>
+      <a href="app.html#/search?cat=lack">🎨 Lack &amp; Folierung</a>
+      <a href="app.html#/search?cat=klima">❄️ Klima</a>
+      <a href="app.html#/search?cat=karosserie">🚘 Karosserie</a>
+      <a href="app.html#/teile">🧩 Teile</a>
+      <a class="more" href="app.html#/search">Alle Kategorien →</a>
     </div>
 
-    <div class="heroStage rv-z rv" style="--d:.2s">
-      <div class="heroRing"></div>
-      <div class="fcard f1">
-        <div class="head">
-          <div class="fico icoBlue">🔧</div>
-          <div><div class="ft">Meister Auto Köln</div><div class="fm"><span class="stars">★★★★★</span> 4,9 · 212 Bew.</div></div>
-          <div class="price">189&nbsp;€</div>
-        </div>
-      </div>
-      <div class="fcard f2">
-        <div class="head">
-          <div class="fico icoPurple">✨</div>
-          <div><div class="ft">KI-Analyse</div><div class="fm">„Klingt nach Bremsbelägen vorne"</div></div>
-        </div>
-      </div>
-      <div class="fcard f3">
-        <div class="head">
-          <div class="fico icoGold">📋</div>
-          <div><div class="ft">TÜV läuft ab</div><div class="fm">HU fällig in 21 Tagen – jetzt Termin sichern</div></div>
-          <span class="tagWarn">Premium</span>
-        </div>
-      </div>
-      <div class="fcard f4">
-        <div class="head">
-          <div class="fico icoGreen">✓</div>
-          <div><div class="ft">Angebot angenommen</div><div class="fm">Termin: Do, 9:00 Uhr</div></div>
-        </div>
-      </div>
+    <!-- Schnell-Einstiege -->
+    <div class="quickTiles rv" style="--d:.3s">
+      <a class="qt" href="app.html#/search">
+        <span class="qe">🔍</span><span class="qn">Betrieb finden</span>
+        <span class="qm">Werkstätten &amp; Spezialisten in deiner Nähe vergleichen</span>
+      </a>
+      <a class="qt" href="app.html#/diagnose">
+        <span class="qe">🤖</span><span class="qn">KI-Diagnose</span>
+        <span class="qm">Problem beschreiben – kostenlose Ersteinschätzung mit Preisrahmen</span>
+      </a>
+      <a class="qt" href="app.html#/teile">
+        <span class="qe">🧩</span><span class="qn">Teile kaufen</span>
+        <span class="qm">Neue &amp; gebrauchte Teile direkt vom Betrieb, auf Wunsch mit Einbau</span>
+      </a>
+      <a class="qt" href="app.html#/new-request">
+        <span class="qe">📢</span><span class="qn">Anfrage erstellen</span>
+        <span class="qm">Einmal beschreiben – passende Betriebe melden sich mit Angeboten</span>
+      </a>
+      <a class="qt" href="app.html#/notfall">
+        <span class="qe">🚨</span><span class="qn">Notfall-Hilfe</span>
+        <span class="qm">Panne oder dringendes Problem? Betriebe mit Notdienst finden</span>
+      </a>
+      <a class="qt" href="#pro">
+        <span class="qe">🏪</span><span class="qn">Für Betriebe</span>
+        <span class="qm">Neue Kunden gewinnen &amp; Teile verkaufen – kostenlos in der Beta</span>
+      </a>
+    </div>
+
+    <div class="trust rv" style="--d:.36s">
+      <div><b>14</b>Service-Kategorien</div>
+      <div><b>100 %</b>kostenlos für Kunden</div>
+      <div><b>1</b>Anfrage – viele Angebote</div>
     </div>
   </div>
 
-  <div class="scrollHint"><span>Scroll die Story</span><div class="mouse"></div></div>
+  <div class="scrollHint"><span>So funktioniert's</span><div class="mouse"></div></div>
 </header>
+
+<script>
+// Startseiten-Suche → App-Suche mit Stichwort + Ort
+document.getElementById("homeSearch").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var q = document.getElementById("hq").value.trim();
+  var loc = document.getElementById("hloc").value.trim();
+  var params = [];
+  if (q) params.push("q=" + encodeURIComponent(q));
+  if (loc) params.push("loc=" + encodeURIComponent(loc));
+  location.href = "app.html#/search" + (params.length ? "?" + params.join("&") : "");
+});
+</script>
 
 <!-- ================= STORY ================= -->
 <section id="story">
