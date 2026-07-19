@@ -18,8 +18,6 @@ Die Bibliotheken (supabase-js, Leaflet) liegen lokal unter `assets/vendor/`.
 
 **Kunden**
 - Registrierung/Login, Fahrzeug-Garage (mit Fahrzeugschein-Upload, TÜV-Datum)
-  – nur Marke + Modell sind Pflicht, ~80 Marken / ~900 Modelle in der Auswahl, Freitext für alles andere erlaubt
-- Teile-Marktplatz: neue & gebrauchte Teile von verifizierten Betrieben durchsuchen (Kategorie, Zustand, Preis) und direkt anfragen
 - Werkstatt-Suche mit Filtern (Kategorie, Leistung, Marke, Stadtteil, Bewertung, mobil), Karte + Liste
 - Vollständige Werkstattprofile mit Bewertungen und Öffnungszeiten
 - Direktanfrage an einen Betrieb **oder** öffentliche Ausschreibung an alle passenden Betriebe
@@ -33,7 +31,6 @@ Die Bibliotheken (supabase-js, Leaflet) liegen lokal unter `assets/vendor/`.
   Leistungen, Marken, Öffnungszeiten, Preisniveau, mobiler Service)
 - Dashboard mit KPIs, offene Ausschreibungen (nach Kategorien gefiltert) + Direktanfragen
 - Angebote mit Einzelpositionen, Auftragsverwaltung mit Status, Wochenkalender, Kundenchat
-- Teile verkaufen über den Teile-Marktplatz (Fotos, Preis, Zustand, OE-Nummer, Versand/Einbau-Option, pausierbar)
 - Sichtbar in der Suche erst nach **Verifizierung durch einen Admin**
 
 **Admin** (`admin.html`)
@@ -44,7 +41,7 @@ Die Bibliotheken (supabase-js, Leaflet) liegen lokal unter `assets/vendor/`.
 Projekt: `boozzfiroukraekyijfq` (EU) – Verbindung in `assets/config.js` (öffentlicher Publishable Key).
 
 Tabellen: `profiles`, `workshops`, `vehicles`, `requests` (open/direct), `offers`, `bookings`,
-`messages`, `reviews`, `reminders`, `parts` (Teile-Marktplatz) + Storage-Buckets `attachments` (öffentlich) und `documents` (privat).
+`messages`, `reviews`, `reminders` + Storage-Buckets `attachments` (öffentlich) und `documents` (privat).
 
 Sicherheit:
 - Row Level Security auf allen Tabellen (Kunden sehen nur Eigenes, Betriebe nur passende offene
