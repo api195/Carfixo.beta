@@ -372,13 +372,13 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:12.5px;color:va
 <!-- ================= NAV ================= -->
 <nav id="nav">
   <div class="navIn">
-    <a class="logo" href="#top">car<b>fixo</b><span class="beta">BETA</span></a>
+    <a class="logo" href="#top">car<b>fixo</b></a>
     <div class="navLinks">
       <a href="#story">So funktioniert's</a>
       <a href="#features">Funktionen</a>
       <a href="#kategorien">Kategorien</a>
       <a href="#pro">Für Betriebe</a>
-      <a class="navCta" href="app.html">Beta öffnen</a>
+      <a class="navCta" href="app.html">App öffnen</a>
     </div>
   </div>
 </nav>
@@ -391,7 +391,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:12.5px;color:va
   <div class="beam b1"></div><div class="beam b2"></div><div class="beam b3"></div>
 
   <div class="wrap heroHome">
-    <div class="kicker rv"><span class="dot"></span> Live in Köln · Beta 2</div>
+    <div class="kicker rv"><span class="dot"></span> Live in Köln</div>
     <h1 class="rv" style="--d:.06s">Was braucht <span class="grad">dein Auto?</span></h1>
     <p class="heroSub rv" style="--d:.12s">Werkstatt, Tuning, Aufbereitung, TÜV oder Teile – vergleiche echte Angebote von geprüften Betrieben. Kostenlos für Kunden.</p>
 
@@ -448,7 +448,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:12.5px;color:va
       </a>
       <a class="qt" href="#pro">
         <span class="qe">🏪</span><span class="qn">Für Betriebe</span>
-        <span class="qm">Neue Kunden gewinnen &amp; Teile verkaufen – kostenlos in der Beta</span>
+        <span class="qm">Neue Kunden gewinnen &amp; Teile verkaufen – aktuell kostenlos</span>
       </a>
     </div>
 
@@ -459,7 +459,6 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:12.5px;color:va
     </div>
   </div>
 
-  <div class="scrollHint"><span>So funktioniert's</span><div class="mouse"></div></div>
 </header>
 
 <script>
@@ -503,23 +502,55 @@ document.getElementById("homeSearch").addEventListener("submit", function (e) {
         <div class="stage">
           <div class="carScene">
             <svg class="carSvg" viewBox="0 0 460 200" fill="none" aria-hidden="true">
-              <ellipse cx="230" cy="176" rx="190" ry="10" fill="rgba(30,107,255,.08)"/>
-              <path d="M60 150 C60 128 78 118 100 114 L138 82 C146 74 158 68 172 68 L290 68 C306 68 318 74 328 84 L358 112 C388 118 402 128 402 146 L402 156 C402 162 398 166 392 166 L70 166 C64 166 60 162 60 156 Z" fill="#111A2E" stroke="rgba(255,255,255,.14)" stroke-width="2"/>
-              <path d="M150 86 L168 74 C172 71 178 70 184 70 L216 70 L216 110 L142 110 Z" fill="rgba(77,141,255,.14)" stroke="rgba(255,255,255,.1)"/>
-              <path d="M228 70 L286 70 C296 70 304 74 310 80 L332 108 L228 108 Z" fill="rgba(77,141,255,.14)" stroke="rgba(255,255,255,.1)"/>
-              <circle cx="130" cy="164" r="26" fill="#0A0F1C" stroke="rgba(255,255,255,.2)" stroke-width="3"/>
-              <circle cx="130" cy="164" r="10" fill="#1A2438"/>
-              <circle cx="332" cy="164" r="26" fill="#0A0F1C" stroke="rgba(255,255,255,.2)" stroke-width="3"/>
-              <circle cx="332" cy="164" r="10" fill="#1A2438"/>
-              <rect x="62" y="128" width="20" height="9" rx="4" fill="rgba(255,220,120,.85)"/>
-              <rect x="380" y="128" width="20" height="9" rx="4" fill="rgba(255,92,92,.8)"/>
+              <defs>
+                <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#24344f"/><stop offset="1" stop-color="#0d1524"/>
+                </linearGradient>
+                <linearGradient id="carGlass" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="rgba(140,185,255,.32)"/><stop offset="1" stop-color="rgba(70,110,190,.10)"/>
+                </linearGradient>
+                <radialGradient id="carHead" cx="0.5" cy="0.5" r="0.5">
+                  <stop offset="0" stop-color="#FFF4C8"/><stop offset="1" stop-color="rgba(255,220,120,.15)"/>
+                </radialGradient>
+              </defs>
+              <!-- Bodenschatten -->
+              <ellipse cx="230" cy="181" rx="198" ry="11" fill="rgba(30,107,255,.10)"/>
+              <!-- Greenhouse / Kabine -->
+              <path d="M150 100 C160 74 174 62 194 60 L286 60 C303 60 315 69 321 83 L321 100 Z" fill="url(#carGlass)" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>
+              <line x1="236" y1="61" x2="236" y2="100" stroke="rgba(10,15,26,.85)" stroke-width="4"/>
+              <!-- Karosserie -->
+              <path d="M50 150 C50 137 60 131 76 127 L150 100 L321 100 L360 116 C389 120 410 128 410 148 L410 156 C410 163 406 167 400 167 L60 167 C54 167 50 163 50 156 Z" fill="url(#carBody)" stroke="rgba(255,255,255,.17)" stroke-width="2"/>
+              <!-- Bodyline + Türen -->
+              <path d="M68 138 L404 138" stroke="rgba(255,255,255,.08)" stroke-width="2"/>
+              <line x1="236" y1="104" x2="236" y2="150" stroke="rgba(0,0,0,.35)" stroke-width="1.4"/>
+              <line x1="150" y1="102" x2="150" y2="150" stroke="rgba(0,0,0,.22)" stroke-width="1.2"/>
+              <rect x="188" y="120" width="22" height="5" rx="2.5" fill="rgba(255,255,255,.24)"/>
+              <rect x="266" y="120" width="22" height="5" rx="2.5" fill="rgba(255,255,255,.24)"/>
+              <!-- Seitenspiegel -->
+              <path d="M151 101 l-13 -5 3 11 z" fill="#16223a" stroke="rgba(255,255,255,.12)"/>
+              <!-- Radkästen -->
+              <path d="M104 167 a31 31 0 0 1 62 0 Z" fill="#0A0F1C"/>
+              <path d="M300 167 a31 31 0 0 1 62 0 Z" fill="#0A0F1C"/>
+              <!-- Räder + Alufelgen -->
+              <circle cx="135" cy="165" r="29" fill="#0A0F1C" stroke="rgba(255,255,255,.22)" stroke-width="3"/>
+              <circle cx="135" cy="165" r="14" fill="#1A2438" stroke="rgba(120,160,230,.45)" stroke-width="1.5"/>
+              <path d="M135 165 L149 165 M135 165 L139 178 M135 165 L124 173 M135 165 L124 157 M135 165 L139 152" stroke="rgba(130,170,235,.55)" stroke-width="1.5"/>
+              <circle cx="135" cy="165" r="3.4" fill="#2a3a58"/>
+              <circle cx="331" cy="165" r="29" fill="#0A0F1C" stroke="rgba(255,255,255,.22)" stroke-width="3"/>
+              <circle cx="331" cy="165" r="14" fill="#1A2438" stroke="rgba(120,160,230,.45)" stroke-width="1.5"/>
+              <path d="M331 165 L345 165 M331 165 L335 178 M331 165 L320 173 M331 165 L320 157 M331 165 L335 152" stroke="rgba(130,170,235,.55)" stroke-width="1.5"/>
+              <circle cx="331" cy="165" r="3.4" fill="#2a3a58"/>
+              <!-- Scheinwerfer / Rücklicht -->
+              <path d="M50 126 q10 0 12 8 l-14 3 q-2 -6 2 -11 Z" fill="url(#carHead)"/>
+              <rect x="396" y="126" width="16" height="10" rx="3" fill="rgba(255,92,92,.85)"/>
+              <!-- Motorkontrollleuchte -->
               <g class="warnLamp">
                 <circle cx="230" cy="34" r="17" fill="rgba(255,176,32,.14)" stroke="#FFB020" stroke-width="2"/>
                 <path d="M230 24 L239 41 L221 41 Z" fill="none" stroke="#FFB020" stroke-width="2.4" stroke-linejoin="round"/>
                 <line x1="230" y1="31" x2="230" y2="36" stroke="#FFB020" stroke-width="2.4" stroke-linecap="round"/>
                 <circle cx="230" cy="39" r="0.8" fill="#FFB020"/>
               </g>
-              <line x1="230" y1="52" x2="230" y2="66" stroke="rgba(255,176,32,.5)" stroke-width="1.5" stroke-dasharray="3 4"/>
+              <line x1="230" y1="52" x2="230" y2="60" stroke="rgba(255,176,32,.5)" stroke-width="1.5" stroke-dasharray="3 4"/>
             </svg>
             <div class="smoke" style="width:18px;height:18px;top:44%;left:20%"></div>
             <div class="smoke" style="width:13px;height:13px;top:48%;left:24%;animation-delay:1.2s"></div>
@@ -870,7 +901,7 @@ document.getElementById("homeSearch").addEventListener("submit", function (e) {
     <h2 class="rv" style="--d:.08s">Dein Auto verdient<br><span class="grad" style="background:linear-gradient(100deg,#4D8DFF,#38BDF8);-webkit-background-clip:text;background-clip:text;color:transparent">die richtige Werkstatt.</span></h2>
     <p class="secSub rv" style="--d:.16s;max-width:460px;margin-left:auto;margin-right:auto">Erstelle deine erste Anfrage in unter zwei Minuten – kostenlos und unverbindlich.</p>
     <div class="heroBtns rv" style="--d:.24s;margin-top:34px">
-      <a class="btn btn-p" href="app.html">Jetzt Beta starten</a>
+      <a class="btn btn-p" href="app.html">Jetzt starten</a>
       <a class="btn btn-g" href="#story">Story nochmal ansehen</a>
     </div>
   </div>
@@ -880,13 +911,13 @@ document.getElementById("homeSearch").addEventListener("submit", function (e) {
 <footer>
   <div class="wrap footIn">
     <span class="logo">car<b>fixo</b></span>
-    <span>© 2026 Carfixo · Beta</span>
+    <span>© 2026 Carfixo</span>
     <div class="footLinks">
       <a href="#story">So funktioniert's</a>
       <a href="#pro">Für Betriebe</a>
       <a href="legal.html">Datenschutz & Impressum</a>
       <a href="app.html#/notfall">🚨 Notfall</a>
-      <a href="app.html">Beta öffnen</a>
+      <a href="app.html">App öffnen</a>
     </div>
   </div>
 </footer>

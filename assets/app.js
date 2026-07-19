@@ -693,7 +693,7 @@ async function vNewRequest(_p, query) {
       </div>
       <input type="file" id="nFile" accept="image/*" multiple class="hidden">
       <div class="thumbs" id="nThumbs"></div>
-      <button class="btn ghost sm" style="margin-top:10px" id="nAnalyze">🤖 Beschreibung analysieren (Beta)</button>
+      <button class="btn ghost sm" style="margin-top:10px" id="nAnalyze">🤖 Beschreibung analysieren</button>
       <div id="nAiOut"></div>
     </div>
     <div class="card">
@@ -794,7 +794,7 @@ function runAiAnalyze() {
   const hits = aiAnalyze($("nTitle").value + " " + $("nDesc").value);
   $("nAiOut").innerHTML = hits.length === 0
     ? `<div class="warn" style="margin-top:12px">🤖 Keine eindeutige Einschätzung möglich – beschreibe das Problem etwas genauer (Geräusch, Warnlampe, wann tritt es auf?).</div>`
-    : `<div class="note" style="margin-top:12px"><b>🤖 Unverbindliche Ersteinschätzung (Beta):</b><br>${hits.map((h, i) => `
+    : `<div class="note" style="margin-top:12px"><b>🤖 Unverbindliche Ersteinschätzung:</b><br>${hits.map((h, i) => `
         <div style="margin-top:8px">• Mögliche Ursache: <b>${esc(h.guess)}</b> <span class="badge ${h.conf === "hoch" ? "b-green" : "b-gold"}">${h.conf}e Wahrscheinlichkeit</span><br>
         <a href="#" data-ai="${i}" style="color:var(--blue2);font-size:12px;font-weight:700">→ Kategorie „${CATS[h.cat].name}" + „${esc(h.service)}" übernehmen</a></div>`).join("")}
       <br><span style="font-size:11px;opacity:.8">Empfohlene Prüfung durch eine Fachwerkstatt – dies ist keine verbindliche Diagnose.</span></div>`;
@@ -1016,7 +1016,7 @@ function openCheckout(offerId, requestId) {
   const net = Number(o.total_price) / 1.19;
   openModal(`
     <h2 style="font-size:20px;font-weight:800">Buchungsübersicht</h2>
-    <div class="note" style="margin-top:12px">🧪 <b>Beta-Testmodus:</b> Zahlungen sind in der Beta noch nicht aktiv. Es wird nichts berechnet – der komplette Ablauf funktioniert trotzdem.</div>
+    <div class="note" style="margin-top:12px">🧪 <b>Testmodus:</b> Zahlungen sind noch nicht aktiv. Es wird nichts berechnet – der komplette Ablauf funktioniert trotzdem.</div>
     <div class="card" style="margin-top:8px;padding:14px">
       <div class="offerLine"><span>Werkstatt</span><span><b>${esc(w.name || "")}</b></span></div>
       ${(o.line_items || []).map(li => `<div class="offerLine"><span>${esc(li.label)}</span><span>${fmtEur(li.price)}</span></div>`).join("")}
@@ -1159,7 +1159,7 @@ async function acceptProposedDate(bkId, reqId) {
 function openCancel(bkId, reqId) {
   openModal(`
     <h2 style="font-size:19px;font-weight:800">Buchung stornieren</h2>
-    <div class="note" style="margin-top:10px">Stornierung in der Beta kostenlos. Später gilt: kostenfrei bis 24 h vor Termin (Platzhalter).</div>
+    <div class="note" style="margin-top:10px">Stornierung aktuell kostenlos. Später gilt: kostenfrei bis 24 h vor Termin (Platzhalter).</div>
     <div class="label">Grund</div>
     <select id="ccReason">${CANCEL_REASONS.map(x => `<option>${x}</option>`).join("")}</select>
     <div class="btnRow">
@@ -1703,7 +1703,7 @@ async function vReminders() {
       <div class="chips" style="justify-content:center;margin-top:16px">
         <span class="pill">📋 TÜV-Warnung</span><span class="pill">🛠️ Service-Intervalle</span><span class="pill">🛞 Saison-Reifen</span>
       </div>
-      <button class="btn wide" style="margin-top:20px" id="premGo">Premium aktivieren – in der Beta kostenlos</button>
+      <button class="btn wide" style="margin-top:20px" id="premGo">Premium aktivieren – aktuell kostenlos</button>
     </div>`;
     $("premGo").onclick = async () => {
       const { error } = await sb.from("profiles").update({ is_premium: true }).eq("id", me.id);
@@ -1846,7 +1846,7 @@ async function vAccount() {
       </div>` : `<div class="card" style="margin-bottom:14px">
         <div class="tt">👑 Carfixo Premium</div>
         <p class="mm" style="margin-top:6px">${myProfile?.is_premium ? "Aktiv – du bekommst Erinnerungen für TÜV, Service und Reifen." : "Erinnerungen für TÜV, Service & saisonale Reifenwechsel."}</p>
-        <button class="btn ghost sm" style="margin-top:12px" id="premToggle">${myProfile?.is_premium ? "Premium deaktivieren" : "Premium aktivieren (Beta: kostenlos)"}</button>
+        <button class="btn ghost sm" style="margin-top:12px" id="premToggle">${myProfile?.is_premium ? "Premium deaktivieren" : "Premium aktivieren (aktuell kostenlos)"}</button>
       </div>`}
       ${myProfile?.role === "admin" ? `<div class="card" style="margin-bottom:14px"><div class="tt">🛡️ Admin</div><a class="btn ghost sm" style="margin-top:12px" href="admin.html">Admin-Bereich öffnen</a></div>` : ""}
       ${!isWs ? `<div class="card" style="margin-bottom:14px">
@@ -2654,9 +2654,9 @@ async function vWsProfile() {
       </div>
       <div class="card" style="margin-top:14px;border-color:rgba(255,176,32,.35)">
         <div class="tt">👑 Premium für Betriebe</div>
-        <p class="mm" style="margin-top:4px">${w.is_premium ? "Aktiv: bevorzugte Platzierung (als Gesponsert markiert), mehr Galerie-Bilder, detaillierte Statistiken." : "Bevorzugte Platzierung, mehr Bilder, detaillierte Statistiken – in der Beta kostenlos."}</p>
+        <p class="mm" style="margin-top:4px">${w.is_premium ? "Aktiv: bevorzugte Platzierung (als Gesponsert markiert), mehr Galerie-Bilder, detaillierte Statistiken." : "Bevorzugte Platzierung, mehr Bilder, detaillierte Statistiken – aktuell kostenlos."}</p>
         <div class="btnRow">
-          <button class="btn ghost sm" id="pPremToggle">${w.is_premium ? "Premium deaktivieren" : "Premium aktivieren (Beta: kostenlos)"}</button>
+          <button class="btn ghost sm" id="pPremToggle">${w.is_premium ? "Premium deaktivieren" : "Premium aktivieren (aktuell kostenlos)"}</button>
           <a class="btn ghost sm" href="#/ws/stats">📊 Statistiken</a>
         </div>
       </div>
@@ -2828,7 +2828,7 @@ async function saveWsProfile(getPriceLevel) {
 }
 
 // ============================================================
-// KI-DIAGNOSE (Hauptfunktion, öffentlich – Beta, regelbasiert)
+// KI-DIAGNOSE (Hauptfunktion, öffentlich – regelbasiert)
 // ============================================================
 let dgLights = [], dgSounds = [], dgFiles = [];
 async function vDiagnose() {
@@ -2845,7 +2845,7 @@ async function vDiagnose() {
   window._dgCars = cars;
   main.innerHTML = `
   <div class="pageHead"><div>
-    <h1>🤖 KI-Diagnose <span class="badge b-purple">Beta</span></h1>
+    <h1>🤖 KI-Diagnose</h1>
     <div class="sub">Beschreibe das Problem deines Autos – du bekommst eine <b>unverbindliche Ersteinschätzung</b> mit möglichen Ursachen, Preisorientierung und passenden Werkstätten. Ersetzt keine Prüfung durch eine Fachwerkstatt.</div>
   </div></div>
   <div class="grid2" style="align-items:start">
@@ -3246,7 +3246,7 @@ async function vWsStats() {
       <div class="chips" style="justify-content:center;margin-top:16px">
         <span class="pill">📊 Angebots- & Annahmequote</span><span class="pill">⭐ Profil-Boost</span><span class="pill">🖼️ Mehr Bilder</span>
       </div>
-      <button class="btn wide" style="margin-top:20px" id="wsPremGo">Premium aktivieren – in der Beta kostenlos</button>
+      <button class="btn wide" style="margin-top:20px" id="wsPremGo">Premium aktivieren – aktuell kostenlos</button>
     </div>`;
     $("wsPremGo").onclick = async () => {
       const { error } = await sb.from("workshops").update({ is_premium: true }).eq("id", myWorkshop.id);
@@ -3422,7 +3422,7 @@ const TOURS = {
     ["🤖", "KI-Diagnose oder Suche", "Nicht sicher, was dein Auto hat? Nutze die KI-Diagnose. Oder finde Werkstätten direkt über die Suche mit Umkreis und Filtern.", "diagnose"],
     ["📢", "Anfrage erstellen", "Erstelle eine Ausschreibung für alle passenden Betriebe – oder stelle eine Direktanfrage an eine Wunsch-Werkstatt.", "new-request"],
     ["⚖️", "Angebote vergleichen", "Betriebe senden dir Angebote mit Einzelpositionen. Vergleiche Preis, Bewertung und Termin – und stelle Rückfragen im Chat.", "requests"],
-    ["🧪", "Termin buchen", "Nimm das beste Angebot an – in der Beta als kostenlose Testbuchung. Der Termin wird mit der Werkstatt bestätigt.", null],
+    ["🧪", "Termin buchen", "Nimm das beste Angebot an – als kostenlose Testbuchung. Der Termin wird mit der Werkstatt bestätigt.", null],
     ["📌", "Status verfolgen", "Verfolge deinen Auftrag live: von Fahrzeug angenommen über Reparatur läuft bis Abholbereit – inklusive Zusatzfreigaben.", null],
     ["⭐", "Bewerten", "Nach Abschluss bewertest du den Betrieb – das hilft anderen Autofahrern.", null],
   ],
