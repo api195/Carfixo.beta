@@ -7,7 +7,7 @@ Kunden beschreiben ihr Anliegen einmal – passende Betriebe antworten mit echte
 
 | Datei | Zweck |
 |---|---|
-| `index.html` | Landingpage (interaktive Scroll-Experience) |
+| `index.html` | Startseite: Direkt-Suche (Was? / Wo?), Kategorie-Schnellzugriff, Einstiegskacheln + Scroll-Story „So funktioniert's" |
 | `app.html` | Die eigentliche Web-App (Kunden + Betriebe, Hash-Routing) |
 | `admin.html` | Geschützter Admin-Bereich (nur `role = admin`) |
 

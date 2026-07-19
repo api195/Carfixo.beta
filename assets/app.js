@@ -242,20 +242,34 @@ async function signOut() {
 // SUCHE (öffentlich) – Standort / Adresse / Radius
 // ============================================================
 let searchState = {
-  world: "", cat: "", service: "", brand: "", radius: 25,
+  q: "", world: "", cat: "", service: "", brand: "", radius: 25,
   openNow: false, pickup: false, replacement: false, mobile: false,
   minRating: 0, sort: "rating", shown: 12,
 };
 let searchOrigin = null, searchOriginLabel = "";   // [lat,lng] – Standort des Kunden
 let allWorkshops = null, searchMap = null, compareSet = [];
 
-async function vSearch() {
+async function vSearch(_p, query) {
+  // Deep-Links von der Startseite: #/search?q=…&cat=…&world=…&loc=…
+  if (query) {
+    if (query.q !== undefined) searchState.q = query.q;
+    if (query.cat && CATS[query.cat]) { searchState.cat = query.cat; searchState.world = ""; }
+    if (query.world && WORLDS.some(w => w.key === query.world)) searchState.world = query.world;
+  }
+  const pendingLoc = query?.loc || "";
   const s = searchState;
   main.innerHTML = `
   <div class="pageHead">
     <div><h1>Werkstatt-Suche</h1>
     <div class="sub">Werkstätten, Tuning, Aufbereitung und Prüfstellen in deiner Nähe – nach Entfernung, Leistung und Bewertung gefiltert.</div></div>
     ${me && !myWorkshop ? `<div class="right"><a class="btn sm" href="#/new-request">＋ Ausschreibung</a></div>` : ""}
+  </div>
+
+  <div class="card" style="margin-bottom:14px;padding:8px 8px 8px 18px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:18px">🔍</span>
+    <input id="fQ" value="${esc(s.q || "")}" placeholder="Wonach suchst du? z.B. Ölwechsel, Chiptuning, Felgen aufbereiten, Betriebsname…"
+      style="border:none;background:none;font-size:15.5px;padding:12px 0" autocomplete="off">
+    ${s.q ? `<button class="btn ghost sm" id="fQClear" style="flex:0 0 auto">✕</button>` : ""}
   </div>
 
   <div class="card" style="margin-bottom:16px;border-color:rgba(124,92,255,.35);background:linear-gradient(120deg,rgba(124,92,255,.1),var(--panel))">
@@ -323,6 +337,14 @@ async function vSearch() {
 
   fillCatSelect();
 
+  // Freitext-Suche
+  $("fQ").oninput = () => {
+    searchState.q = $("fQ").value;
+    searchState.shown = 12;
+    applyFilters();
+  };
+  if ($("fQClear")) $("fQClear").onclick = () => { searchState.q = ""; vSearch(); };
+
   // Standort-Quellen
   $("locBtn").onclick = () => {
     if (!navigator.geolocation) return toast("Standort wird von diesem Gerät nicht unterstützt.");
@@ -360,7 +382,7 @@ async function vSearch() {
     searchState.shown = 12; applyFilters();
   });
   $("fReset").onclick = () => {
-    searchState = { world: "", cat: "", service: "", brand: "", radius: 25, openNow: false, pickup: false, replacement: false, mobile: false, minRating: 0, sort: "rating", shown: 12 };
+    searchState = { q: "", world: "", cat: "", service: "", brand: "", radius: 25, openNow: false, pickup: false, replacement: false, mobile: false, minRating: 0, sort: "rating", shown: 12 };
     vSearch();
   };
 
@@ -373,10 +395,13 @@ async function vSearch() {
 
   if (!allWorkshops) {
     const { data, error } = await sb.from("workshops").select("*").eq("is_verified", true).order("rating_avg", { ascending: false }).limit(200);
+    if (!$("results")) return;
     if (error) { $("results").innerHTML = `<div class="warn">${esc(error.message)}</div>`; return; }
     allWorkshops = data || [];
   }
   applyFilters();
+  // Ort von der Startseite übernehmen (z.B. „Köln" oder PLZ)
+  if (pendingLoc && $("locAddr")) { $("locAddr").value = pendingLoc; geocodeAddress(); }
 }
 function setSearchOrigin(ll, label) {
   searchOrigin = ll; searchOriginLabel = label;
@@ -419,7 +444,14 @@ function applyFilters() {
   const s = searchState;
   const origin = searchOrigin || CITY_CENTER;
   const w = WORLDS.find(x => x.key === s.world);
+  const q = (s.q || "").trim().toLowerCase();
   let list = allWorkshops.filter(ws => {
+    if (q) {
+      const hay = [ws.name, ws.description, ws.district, ws.city,
+        ...(ws.services || []), ...(ws.brands || []),
+        ...ws.categories.map(c => CATS[c]?.name || c)].join(" ").toLowerCase();
+      if (!q.split(/\s+/).every(word => hay.includes(word))) return false;
+    }
     if (w && !ws.categories.some(c => w.cats.includes(c))) return false;
     if (s.cat && !ws.categories.includes(s.cat)) return false;
     if (s.service && !(ws.services || []).includes(s.service)) return false;
