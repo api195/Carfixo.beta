@@ -123,6 +123,17 @@ function requireAuth() {
   if (!me) { toast("Bitte zuerst anmelden."); go("login"); return false; }
   return true;
 }
+// Login-/Registrierungs-Gate mit Rücksprung: nach erfolgreicher Anmeldung landet
+// der Nutzer wieder dort, wo er weitermachen wollte (CHECK24-Prinzip).
+function authGate(next, toLogin) {
+  if (next) sessionStorage.setItem("cfx_after_auth", next);
+  go(toLogin ? "login" : "register");
+}
+function afterAuth(def) {
+  const t = sessionStorage.getItem("cfx_after_auth");
+  if (t) { sessionStorage.removeItem("cfx_after_auth"); return t; }
+  return def;
+}
 
 // ============================================================
 // AUTH
@@ -149,7 +160,7 @@ async function vLogin() {
     if (error) return showErr(err, error.message === "Invalid login credentials" ? "E-Mail oder Passwort falsch." : error.message);
     await loadSession();
     toast("Angemeldet ✓");
-    go("");
+    go(afterAuth(""));
   };
 }
 
@@ -221,7 +232,7 @@ async function doRegister() {
     go("ws/profile");
   } else {
     toast("Willkommen bei Carfixo ✓");
-    go("search");
+    go(afterAuth("search"));
   }
 }
 async function createWorkshopForMe(name) {
@@ -2903,12 +2914,54 @@ async function vDiagnose() {
       : `<img src="${URL.createObjectURL(f)}" loading="lazy" alt="">`).join("");
   };
   $("dgGo").onclick = runDiagnose;
+
+  // Nach Registrierung/Login: zuvor eingegebene Diagnose wiederherstellen …
+  const pend = sessionStorage.getItem("cfx_dg_pending");
+  if (pend) {
+    sessionStorage.removeItem("cfx_dg_pending");
+    try {
+      const d = JSON.parse(pend);
+      $("dgDesc").value = d.desc || "";
+      dgLights = Array.isArray(d.lights) ? d.lights.slice() : [];
+      dgSounds = Array.isArray(d.sounds) ? d.sounds.slice() : [];
+      document.querySelectorAll("#dgLights .chip").forEach(c => c.classList.toggle("on", dgLights.includes(c.dataset.k)));
+      document.querySelectorAll("#dgSounds .chip").forEach(c => c.classList.toggle("on", dgSounds.includes(c.dataset.k)));
+      if (d.urgency) document.querySelectorAll("#dgUrgency div").forEach(x => x.classList.toggle("on", x.dataset.u === d.urgency));
+      if ($("dgMake") && d.make) $("dgMake").value = d.make;
+      if ($("dgPs") && d.ps) $("dgPs").value = d.ps;
+    } catch (e) { /* ignore */ }
+    // … und die Einschätzung direkt anzeigen, wenn jetzt angemeldet
+    if (me) runDiagnose();
+  }
+}
+function saveDgPending() {
+  sessionStorage.setItem("cfx_dg_pending", JSON.stringify({
+    desc: $("dgDesc")?.value || "", lights: dgLights, sounds: dgSounds,
+    urgency: document.querySelector("#dgUrgency div.on")?.dataset.u || "normal",
+    make: $("dgMake")?.value || "", ps: $("dgPs")?.value || "",
+  }));
 }
 function runDiagnose() {
   const err = $("dgErr"); err.style.display = "none";
   const desc = $("dgDesc").value.trim();
   if (!desc && dgLights.length === 0 && dgSounds.length === 0)
     return showErr(err, "Bitte beschreibe das Problem oder wähle mindestens eine Warnleuchte / ein Geräusch.");
+  // KI-Antwort erst nach Registrierung – Eingaben werden gesichert und danach fortgesetzt
+  if (!me) {
+    saveDgPending();
+    $("dgResult").innerHTML = `
+      <div class="card" style="text-align:center;padding:34px 24px;border-color:rgba(30,107,255,.4);background:linear-gradient(160deg,rgba(30,107,255,.08),var(--panel))">
+        <div style="font-size:40px">🔒</div>
+        <div class="tt" style="margin-top:10px;font-size:16px">Deine Ersteinschätzung ist fertig</div>
+        <p class="mm" style="margin-top:8px;font-size:12.5px">Registriere dich <b>kostenlos</b>, um die möglichen Ursachen, die Preisorientierung und passende Werkstätten zu sehen. Deine Eingaben bleiben erhalten.</p>
+        <div class="btnRow" style="justify-content:center;margin-top:16px">
+          <button class="btn" onclick="authGate('diagnose')">Kostenlos registrieren &amp; Ergebnis sehen</button>
+          <button class="btn ghost" onclick="authGate('diagnose', true)">Ich habe schon ein Konto</button>
+        </div>
+      </div>`;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
   const car = $("dgCar") ? window._dgCars.find(c => c.id === $("dgCar").value)
     : ($("dgMake")?.value ? { make: $("dgMake").value, power_ps: +($("dgPs")?.value || 0) } : null);
   const urgency = document.querySelector("#dgUrgency div.on")?.dataset.u || "normal";
@@ -3003,7 +3056,11 @@ async function vNotfall() {
   };
 }
 function emergencyRequest(wsId) {
-  if (!me) { toast("Bitte zuerst anmelden – dann geht die Anfrage direkt raus."); return go("login"); }
+  if (!me) {
+    sessionStorage.setItem("cfx_after_auth", "notfall");
+    toast("Registriere dich kostenlos – danach kannst du die Notfall-Anfrage direkt senden.");
+    return go("register");
+  }
   if (myWorkshop) return toast("Als Betrieb kannst du keine Anfragen stellen.");
   const t = document.querySelector("#emType .chip.on");
   const typ = t ? EMERGENCY_TYPES.find(e => e.k === t.dataset.k) : null;
