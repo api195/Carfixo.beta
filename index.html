@@ -138,6 +138,11 @@ section{position:relative;padding:34px 0}
 .skRow{height:150px;border-radius:18px;background:linear-gradient(90deg,rgba(255,255,255,.03),rgba(255,255,255,.07),rgba(255,255,255,.03));background-size:200% 100%;animation:sk 1.4s infinite}
 @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
+/* Kategorie-Bänder */
+.worldBand[hidden]{display:none}
+.bandChips{margin-top:14px}
+.worldBand:nth-of-type(even) .rowHead h2{letter-spacing:-.4px}
+
 /* Beliebte Leistungen */
 .popular{display:flex;gap:9px;flex-wrap:wrap}
 .popular a{font-size:12.5px;font-weight:700;color:#C7D4E8;border:1px solid var(--line);background:rgba(255,255,255,.03);padding:9px 15px;border-radius:99px;transition:border-color .15s,color .15s,background .15s}
@@ -295,6 +300,83 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
   </div>
 </section>
 
+<!-- ================= BEREICHE (Kategorie-Reihen wie bei Vergleichsportalen) ================= -->
+<section class="worldBand" id="band-werkstatt" hidden>
+  <div class="wrap">
+    <div class="rowHead rv">
+      <h2>🔧 Werkstätten</h2>
+      <span class="sub">Reparatur · Inspektion · Reifen · Klima</span>
+      <a class="all" href="app.html#/search?world=werkstatt">Alle Werkstätten →</a>
+    </div>
+    <div class="cardsGrid" data-cards></div>
+    <div class="popular bandChips rv">
+      <a href="app.html#/search?q=%C3%96lwechsel">Ölwechsel</a>
+      <a href="app.html#/search?q=Bremsen">Bremsen</a>
+      <a href="app.html#/search?q=Inspektion">Inspektion</a>
+      <a href="app.html#/search?q=Reifenwechsel">Reifenwechsel</a>
+      <a href="app.html#/search?q=Klimaservice">Klimaservice</a>
+      <a href="app.html#/search?q=Zahnriemen">Zahnriemen</a>
+    </div>
+  </div>
+</section>
+
+<section class="worldBand" id="band-tuning" hidden>
+  <div class="wrap">
+    <div class="rowHead rv">
+      <h2>🏎️ Tuning &amp; Codierung</h2>
+      <span class="sub">Leistung · Optik · Felgen · Software</span>
+      <a class="all" href="app.html#/search?world=tuning">Alle Tuner →</a>
+    </div>
+    <div class="cardsGrid" data-cards></div>
+    <div class="popular bandChips rv">
+      <a href="app.html#/search?q=Chiptuning">Chiptuning</a>
+      <a href="app.html#/search?q=Stage%201">Stage 1–3</a>
+      <a href="app.html#/search?q=Felgenaufbereitung">Felgenaufbereitung</a>
+      <a href="app.html#/search?q=Felgen%20hochglanzverdichten">Hochglanzverdichten</a>
+      <a href="app.html#/search?q=Gewindefahrwerk">Gewindefahrwerk</a>
+      <a href="app.html#/search?q=Klappenauspuff">Klappenauspuff</a>
+      <a href="app.html#/search?q=Codierungen">Codierungen</a>
+    </div>
+  </div>
+</section>
+
+<section class="worldBand" id="band-pflege" hidden>
+  <div class="wrap">
+    <div class="rowHead rv">
+      <h2>✨ Aufbereitung &amp; Folierung</h2>
+      <span class="sub">Detailing · Keramik · Lack · Folie</span>
+      <a class="all" href="app.html#/search?world=pflege">Alle Aufbereiter →</a>
+    </div>
+    <div class="cardsGrid" data-cards></div>
+    <div class="popular bandChips rv">
+      <a href="app.html#/search?q=Komplettaufbereitung">Komplettaufbereitung</a>
+      <a href="app.html#/search?q=Keramikversiegelung">Keramikversiegelung</a>
+      <a href="app.html#/search?q=Politur">Politur</a>
+      <a href="app.html#/search?q=Lederreinigung">Lederreinigung</a>
+      <a href="app.html#/search?q=Folierung">Folierung</a>
+      <a href="app.html#/search?q=Scheibent%C3%B6nung">Scheibentönung</a>
+    </div>
+  </div>
+</section>
+
+<section class="worldBand" id="band-tuev" hidden>
+  <div class="wrap">
+    <div class="rowHead rv">
+      <h2>📋 TÜV &amp; Prüfung</h2>
+      <span class="sub">HU/AU · Checks · Gutachten · Eintragungen</span>
+      <a class="all" href="app.html#/search?world=tuev">Alle Prüfstellen →</a>
+    </div>
+    <div class="cardsGrid" data-cards></div>
+    <div class="popular bandChips rv">
+      <a href="app.html#/search?q=HU">HU + AU</a>
+      <a href="app.html#/search?q=T%C3%9CV-Vorbereitung">TÜV-Vorbereitung</a>
+      <a href="app.html#/search?q=Gebrauchtwagencheck">Gebrauchtwagencheck</a>
+      <a href="app.html#/search?q=Tuning-Abnahme">Tuning-Abnahme</a>
+      <a href="app.html#/search?q=Wintercheck">Wintercheck</a>
+    </div>
+  </div>
+</section>
+
 <!-- ================= BELIEBTE LEISTUNGEN ================= -->
 <section>
   <div class="wrap">
@@ -419,27 +501,47 @@ async function sbGet(path) {
   return res.json();
 }
 
+function wsCard(w) {
+  return `
+    <a class="cCard" href="app.html#/workshop/${w.id}">
+      <div class="cHead">
+        <div class="cAv" ${w.logo_url ? `style="background-image:url('${esc(w.logo_url)}');color:transparent"` : ""}>${esc((w.name || "?").split(/\s+/).slice(0, 2).map(x => x[0]).join("").toUpperCase())}</div>
+        <div style="flex:1;min-width:0">
+          <div class="cT">${esc(w.name)}</div>
+          <div class="cM"><span class="stars">${stars(w.rating_avg)}</span> ${w.rating_avg > 0 ? Number(w.rating_avg).toLocaleString("de-DE") : "Neu"} (${w.rating_count || 0}) · 📍 ${esc(w.district || w.city || "Köln")}</div>
+        </div>
+        <span class="badge b-green">✓</span>
+      </div>
+      <div class="cPills">
+        ${(w.categories || []).slice(0, 3).map(c => `<span class="pill">${CAT_ICONS[c] || ""} ${CAT_NAMES[c] || c}</span>`).join("")}
+        ${w.pickup_service ? '<span class="pill">🔁 Hol/Bring</span>' : ""}
+        ${w.emergency_service ? '<span class="pill">🚨 Notdienst</span>' : ""}
+      </div>
+    </a>`;
+}
+
 (async () => {
-  const row = document.getElementById("wsRow");
   try {
-    const ws = await sbGet("workshops?is_verified=eq.true&select=id,name,district,city,rating_avg,rating_count,categories,logo_url,price_level,pickup_service,emergency_service&order=rating_avg.desc,rating_count.desc&limit=6");
+    const ws = await sbGet("workshops?is_verified=eq.true&select=id,name,district,city,rating_avg,rating_count,categories,logo_url,price_level,pickup_service,emergency_service&order=rating_avg.desc,rating_count.desc&limit=60");
     if (!ws.length) throw new Error("leer");
-    row.innerHTML = ws.map(w => `
-      <a class="cCard" href="app.html#/workshop/${w.id}">
-        <div class="cHead">
-          <div class="cAv" ${w.logo_url ? `style="background-image:url('${esc(w.logo_url)}');color:transparent"` : ""}>${esc((w.name || "?").split(/\s+/).slice(0, 2).map(x => x[0]).join("").toUpperCase())}</div>
-          <div style="flex:1;min-width:0">
-            <div class="cT">${esc(w.name)}</div>
-            <div class="cM"><span class="stars">${stars(w.rating_avg)}</span> ${w.rating_avg > 0 ? Number(w.rating_avg).toLocaleString("de-DE") : "Neu"} (${w.rating_count || 0}) · 📍 ${esc(w.district || w.city || "Köln")}</div>
-          </div>
-          <span class="badge b-green">✓</span>
-        </div>
-        <div class="cPills">
-          ${(w.categories || []).slice(0, 3).map(c => `<span class="pill">${CAT_ICONS[c] || ""} ${CAT_NAMES[c] || c}</span>`).join("")}
-          ${w.pickup_service ? '<span class="pill">🔁 Hol/Bring</span>' : ""}
-          ${w.emergency_service ? '<span class="pill">🚨 Notdienst</span>' : ""}
-        </div>
-      </a>`).join("");
+    // Top-Reihe: die 6 bestbewerteten insgesamt
+    document.getElementById("wsRow").innerHTML = ws.slice(0, 6).map(wsCard).join("");
+    // Kategorie-Bänder: beste 3 je Bereich (wie Produkt-Reihen bei Vergleichsportalen)
+    const WORLD_CATS = {
+      werkstatt: ["reparatur","inspektion","reifen","klima","karosserie","autoglas","schluessel","eauto","oldtimer","teile"],
+      tuning: ["tuning"],
+      pflege: ["pflege","lack"],
+      tuev: ["tuev"],
+    };
+    for (const [world, cats] of Object.entries(WORLD_CATS)) {
+      const band = document.getElementById("band-" + world);
+      if (!band) continue;
+      const list = ws.filter(w => (w.categories || []).some(c => cats.includes(c))).slice(0, 3);
+      if (!list.length) continue;
+      band.querySelector("[data-cards]").innerHTML = list.map(wsCard).join("");
+      band.hidden = false;
+      band.querySelectorAll(".rv").forEach(el => io.observe(el));
+    }
   } catch (e) {
     document.getElementById("topWs").style.display = "none";
   }
