@@ -1282,46 +1282,74 @@ async function deleteVehicle(id) {
   const { error } = await sb.from("vehicles").delete().eq("id", id);
   if (error) toast(error.message); else { toast("Gelöscht."); loadVehicles(); }
 }
-// Fahrzeug anlegen – abhängige Auswahl wie bei mobile.de/AutoScout24.
-// Datenquelle: VehicleData (assets/data.js) – später durch echte API ersetzbar.
+// Fahrzeug anlegen – Aufbau und Auswahllisten nach mobile.de-Vorbild.
+// Pflicht sind nur Marke + Modell; Motorisierung aus der Datenbank füllt
+// Kraftstoff/Leistung automatisch vor. Freitext ist überall erlaubt.
 async function openVehicleForm(editId) {
   let v = {};
   if (editId) { const { data } = await sb.from("vehicles").select("*").eq("id", editId).maybeSingle(); v = data || {}; }
+  const years = []; for (let y = 2026; y >= 1950; y--) years.push(y);
   openModal(`
     <h2 style="font-size:20px;font-weight:800">${editId ? "Fahrzeug bearbeiten" : "Fahrzeug anlegen"}</h2>
-    <p class="mm" style="margin-top:4px">Nur <b>Marke und Modell</b> sind Pflicht – alle weiteren Angaben sind optional, helfen Werkstätten aber bei der Einschätzung. Ist deine Marke oder dein Modell nicht in der Liste? Einfach eintippen – Freitext ist erlaubt.</p>
-    <div class="label">Marke *</div>
-    <input id="cMake" list="dlMake" placeholder="Tippen zum Suchen – z.B. BMW, Mercedes-Benz…" autocomplete="off" value="${esc(v.make || "")}">
-    <datalist id="dlMake">${VehicleData.brands().map(b => `<option value="${esc(b)}"></option>`).join("")}</datalist>
-    <div class="mm" id="cMakeHint" style="font-size:11px;margin-top:4px"></div>
-    <div class="label">Modell *</div>
-    <input id="cModel" list="dlModel" placeholder="Erst Marke wählen" autocomplete="off" disabled value="${esc(v.model || "")}">
-    <datalist id="dlModel"></datalist>
-    <div class="mm" id="cModelHint" style="font-size:11px;margin-top:4px"></div>
-    <div class="label" style="margin-top:16px">Details (optional)</div>
-    <div class="mm" style="font-size:11px;margin-bottom:4px">Es werden nur passende Kombinationen angezeigt.</div>
-    <select id="cSeries" disabled><option value="">Baureihe / Generation (optional)</option></select>
+    <p class="mm" style="margin-top:4px">Nur <b>Marke und Modell</b> sind Pflicht. Nicht in der Liste? Einfach eintippen – Freitext ist erlaubt.</p>
+
+    <div class="label" style="margin-top:14px">🚗 Fahrzeugdaten</div>
     <div class="split">
-      <div><div class="label">Karosserie</div><select id="cBody">${opt("Optional…", BODIES, v.body_type)}</select></div>
-      <div><div class="label">Baujahr</div><select id="cYear" disabled><option value="">Optional…</option></select></div>
-    </div>
-    <div class="label">Motorisierung</div>
-    <select id="cEngine" disabled><option value="">Optional…</option></select>
-    <div class="split">
-      <div><div class="label">Kraftstoff</div><select id="cFuel" disabled><option value="">Optional…</option></select></div>
-      <div><div class="label">Leistung (PS)</div><select id="cPs" disabled><option value="">Optional…</option></select></div>
+      <div><div class="label" style="margin-top:0">Marke *</div>
+        <input id="cMake" list="dlMake" placeholder="z.B. BMW" autocomplete="off" value="${esc(v.make || "")}">
+        <datalist id="dlMake">${VehicleData.brands().map(b => `<option value="${esc(b)}"></option>`).join("")}</datalist>
+        <div class="mm" id="cMakeHint" style="font-size:11px;margin-top:4px"></div></div>
+      <div><div class="label" style="margin-top:0">Modell *</div>
+        <input id="cModel" list="dlModel" placeholder="Erst Marke wählen" autocomplete="off" disabled value="${esc(v.model || "")}">
+        <datalist id="dlModel"></datalist>
+        <div class="mm" id="cModelHint" style="font-size:11px;margin-top:4px"></div></div>
     </div>
     <div class="split">
-      <div><div class="label">Getriebe</div><select id="cTrans" disabled><option value="">Optional…</option></select></div>
-      <div><div class="label">Kilometerstand</div><select id="cKm">${opt("Optional…", KM_STEPS.map(k => k[1]), kmLabel(v.mileage))}</select></div>
+      <div><div class="label">Variante (optional)</div><input id="cVariant" maxlength="60" placeholder="z.B. 320d M Sport" value="${esc(v.variant || "")}"></div>
+      <div><div class="label">Kategorie</div><select id="cBody">${opt("Optional…", BODIES, v.body_type)}</select></div>
     </div>
+
+    <div class="label" style="margin-top:18px">📅 Erstzulassung &amp; Historie</div>
+    <div class="split">
+      <div><div class="label" style="margin-top:0">EZ Monat</div><select id="cEzMonth">${opt("MM", EZ_MONTHS, v.ez_month ? String(v.ez_month).padStart(2, "0") : "")}</select></div>
+      <div><div class="label" style="margin-top:0">EZ Jahr</div><select id="cYear">${opt("JJJJ", years, v.year)}</select></div>
+    </div>
+    <div class="split">
+      <div><div class="label">Kilometerstand</div><input id="cKm" inputmode="numeric" placeholder="z.B. 87500" value="${v.mileage ?? ""}"></div>
+      <div><div class="label">Anzahl Fahrzeughalter</div><select id="cOwners">${opt("Optional…", [1,2,3,4,5,6,7,8,9], v.owners)}</select></div>
+    </div>
+    <div class="label">HU gültig bis</div>
+    <input id="cTuev" type="date" value="${esc(v.tuev_until || "")}">
+    <label class="inline"><input type="checkbox" id="cCheckbook" ${v.checkbook ? "checked" : ""}> 📒 Scheckheftgepflegt</label>
+    <label class="inline"><input type="checkbox" id="cAccFree" ${v.accident_free ? "checked" : ""}> ✅ Unfallfrei</label>
+
+    <div class="label" style="margin-top:18px">⚙️ Technische Daten</div>
+    <div class="label" style="margin-top:6px">Motorisierung (optional – füllt Kraftstoff &amp; Leistung automatisch)</div>
+    <select id="cEngine" disabled><option value="">Erst Marke &amp; Modell wählen</option></select>
+    <div class="split">
+      <div><div class="label">Kraftstoffart</div><select id="cFuel">${opt("Optional…", FUELS, v.fuel)}</select></div>
+      <div><div class="label">Getriebe</div><select id="cTrans">${opt("Optional…", TRANS, v.transmission)}</select></div>
+    </div>
+    <div class="split">
+      <div><div class="label">Leistung (PS)</div><input id="cPs" inputmode="numeric" placeholder="z.B. 150" value="${v.power_ps ?? ""}"><div class="mm" id="cKw" style="font-size:11px;margin-top:4px"></div></div>
+      <div><div class="label">Baureihe / Generation</div><select id="cSeries" disabled><option value="">Optional…</option></select></div>
+    </div>
+
+    <div class="label" style="margin-top:18px">🎨 Ausstattung</div>
+    <div class="split">
+      <div><div class="label" style="margin-top:0">Türen</div><select id="cDoors">${opt("Optional…", DOORS, v.doors)}</select></div>
+      <div><div class="label" style="margin-top:0">Sitzplätze</div><select id="cSeats">${opt("Optional…", SEATS, v.seats)}</select></div>
+    </div>
+    <div class="label">Außenfarbe</div>
+    <select id="cColor">${opt("Optional…", COLORS, v.color)}</select>
+
     <div class="okBox hidden" id="vfSummary" style="margin-top:14px"></div>
-    <div class="split" style="margin-top:4px">
-      <div><div class="label">Kennzeichen (optional)</div><input id="cPlate" placeholder="K-XX 1234" value="${esc(v.license_plate || "")}"></div>
-      <div><div class="label">TÜV gültig bis (optional)</div><input id="cTuev" type="date" value="${esc(v.tuev_until || "")}"></div>
+
+    <div class="label" style="margin-top:18px">📄 Dokumente</div>
+    <div class="split">
+      <div><div class="label" style="margin-top:0">Kennzeichen (optional)</div><input id="cPlate" placeholder="K-XX 1234" value="${esc(v.license_plate || "")}"></div>
+      <div><div class="label" style="margin-top:0">Fahrzeugschein (optional)</div><input type="file" id="cDoc" accept="image/*,.pdf" style="padding:9px"></div>
     </div>
-    <div class="label">Fahrzeugschein (optional, privat gespeichert)</div>
-    <input type="file" id="cDoc" accept="image/*,.pdf" style="padding:9px">
     ${v.registration_doc ? '<p class="mm" style="margin-top:5px">📄 Bereits hinterlegt – neue Datei ersetzt die alte.</p>' : ""}
     <div class="btnRow">
       <button class="btn" id="cSave" disabled>${editId ? "Speichern" : "Fahrzeug anlegen"}</button>
@@ -1329,28 +1357,30 @@ async function openVehicleForm(editId) {
     </div>
     <div class="err" id="cErr"></div>`);
 
-  // Tipp-Suche: exakter Treffer aus der Datenbank wird übernommen,
-  // sonst gilt die Eingabe als Freitext (damit wirklich jedes Auto anlegbar ist).
+  // Tipp-Suche: exakter Treffer aus der Datenbank wird übernommen, sonst Freitext
   const known = (list, val) => list.find(x => x.toLowerCase() === String(val || "").trim().toLowerCase()) || "";
   const makeSel = () => known(VehicleData.brands(), $("cMake").value) || $("cMake").value.trim();
   const modelSel = () => known(VehicleData.models(makeSel()), $("cModel").value) || $("cModel").value.trim();
-  function refreshProgress() {
+
+  function refresh() {
     const mk = makeSel(), mo = modelSel();
     const mkKnown = !!known(VehicleData.brands(), mk);
     const moKnown = mkKnown && !!known(VehicleData.models(mk), mo);
     const mkHint = $("cMakeHint"), moHint = $("cModelHint");
-    mkHint.textContent = !mk ? `${VehicleData.brands().length} Marken verfügbar – oder frei eintippen`
-      : mkKnown ? `✓ ${mk}` : `✓ „${mk}" wird als eigene Angabe gespeichert`;
+    mkHint.textContent = !mk ? `${VehicleData.brands().length} Marken – oder frei eintippen`
+      : mkKnown ? `✓ ${mk}` : `✓ „${mk}" als eigene Angabe`;
     mkHint.style.color = mk ? "var(--green)" : "";
     moHint.textContent = !mk ? "" : !mo
-      ? (mkKnown ? `${VehicleData.models(mk).length} Modelle von ${mk} verfügbar – oder frei eintippen` : "Modell frei eintippen")
-      : moKnown ? `✓ ${mo}` : `✓ „${mo}" wird als eigene Angabe gespeichert`;
+      ? (mkKnown ? `${VehicleData.models(mk).length} Modelle – oder frei eintippen` : "Modell frei eintippen")
+      : moKnown ? `✓ ${mo}` : `✓ „${mo}" als eigene Angabe`;
     moHint.style.color = mo ? "var(--green)" : "";
     $("cSave").disabled = !(mk && mo);
+    const ps = parseInt($("cPs").value, 10);
+    $("cKw").textContent = ps > 0 ? `= ${Math.round(ps * 0.7355)} kW` : "";
     const sum = $("vfSummary");
     if (mk && mo) {
       sum.classList.remove("hidden");
-      sum.innerHTML = `🚗 <b>${esc(mk)} ${esc(mo)}</b>${$("cSeries").value && $("cSeries").value !== "Keine Angabe" ? " · " + esc($("cSeries").value) : ""}${$("cEngine").value ? " · " + esc($("cEngine").value) : ""}${$("cPs").value ? " · " + esc($("cPs").value) + " PS" : ""}${$("cYear").value ? " · BJ " + esc($("cYear").value) : ""}`;
+      sum.innerHTML = `🚗 <b>${esc(mk)} ${esc(mo)}</b>${$("cVariant").value.trim() ? " " + esc($("cVariant").value.trim()) : ""}${$("cFuel").value ? " · " + esc($("cFuel").value) : ""}${ps > 0 ? " · " + ps + " PS" : ""}${$("cYear").value ? " · EZ " + ($("cEzMonth").value ? $("cEzMonth").value + "/" : "") + esc($("cYear").value) : ""}${$("cKm").value ? " · " + Number($("cKm").value).toLocaleString("de-DE") + " km" : ""}`;
     } else sum.classList.add("hidden");
   }
   function fillModel(keep) {
@@ -1365,76 +1395,65 @@ async function openVehicleForm(editId) {
   function fillSeries(keep) {
     const mk = makeSel(), mo = modelSel();
     $("cSeries").disabled = !mo;
-    if (!mo) { $("cSeries").innerHTML = "<option value=''>Baureihe / Generation (optional)</option>"; return; }
+    if (!mo) { $("cSeries").innerHTML = "<option value=''>Optional…</option>"; return; }
     const list = VehicleData.series(mk, mo).map(x => x.label);
-    if (keep && !list.includes(keep)) list.unshift(keep); // Altbestand (z.B. "F30")
-    $("cSeries").innerHTML = opt("Baureihe / Generation (optional)", list, keep);
-  }
-  function fillYear(keep) {
-    const mk = makeSel(), mo = modelSel(), se = $("cSeries").value;
-    $("cYear").disabled = !mo;
-    if (!mo) { $("cYear").innerHTML = "<option value=''>Optional…</option>"; return; }
-    let years = se ? VehicleData.years(mk, mo, se) : VehicleData.years(mk, mo, "Keine Angabe");
-    if (keep && !years.includes(+keep)) years = [+keep].concat(years);
-    $("cYear").innerHTML = opt("Baujahr (optional)", years, keep);
+    if (keep && !list.includes(keep)) list.unshift(keep);
+    $("cSeries").innerHTML = opt("Baureihe (optional)", list, keep);
   }
   function fillEngine(keep) {
     const mk = makeSel(), mo = modelSel();
     $("cEngine").disabled = !mo;
-    if (!mo) { $("cEngine").innerHTML = "<option value=''>Optional…</option>"; return; }
+    if (!mo) { $("cEngine").innerHTML = "<option value=''>Erst Marke &amp; Modell wählen</option>"; return; }
     const list = VehicleData.engines(mk, mo).map(e => e.n);
     if (keep && !list.includes(keep)) list.unshift(keep);
-    $("cEngine").innerHTML = opt("Motorisierung (optional)", list, keep);
+    $("cEngine").innerHTML = opt("Motorisierung wählen (optional)", list, keep);
   }
-  function fillEngineDeps(keepFuel, keepPs, keepTrans) {
+  // Motor-Auswahl füllt Kraftstoff + PS automatisch vor
+  function applyEngine() {
     const mk = makeSel(), mo = modelSel(), en = $("cEngine").value;
-    const has = !!mo;
-    ["cFuel", "cPs", "cTrans"].forEach(id => $(id).disabled = !has);
-    if (!has) {
-      ["cFuel", "cPs", "cTrans"].forEach(id => $(id).innerHTML = "<option value=''>Optional…</option>");
-      return;
+    if (!en) return;
+    const e = VehicleData.engine(mk, mo, en);
+    if (!e) return;
+    if (e.f) {
+      const mapped = known(FUELS, e.f) || (e.f === "Hybrid" ? "Hybrid (Benzin/Elektro)" : e.f === "Autogas (LPG/CNG)" ? "Autogas (LPG)" : e.f);
+      if (![...$("cFuel").options].some(o => o.value === mapped)) $("cFuel").insertAdjacentHTML("beforeend", `<option value="${esc(mapped)}">${esc(mapped)}</option>`);
+      $("cFuel").value = mapped;
     }
-    // Ohne gewählten Motor: volle Auswahl; mit Motor: nur passende Werte
-    const fuels = en ? VehicleData.fuels(mk, mo, en) : FUELS;
-    const ps = en ? VehicleData.ps(mk, mo, en) : PS_LIST;
-    const trans = en ? VehicleData.transmissions(mk, mo, en) : TRANS;
-    $("cFuel").innerHTML = fuels.length === 1
-      ? `<option value="${esc(fuels[0])}" selected>${esc(fuels[0])} (passend zum Motor)</option>`
-      : opt("Kraftstoff (optional)", fuels, keepFuel);
-    const psList = keepPs && !ps.includes(+keepPs) ? [+keepPs].concat(ps) : ps;
-    $("cPs").innerHTML = ps.length === 1
-      ? `<option value="${ps[0]}" selected>${ps[0]} PS</option>`
-      : opt("PS (optional)", psList, keepPs);
-    $("cTrans").innerHTML = trans.length === 1
-      ? `<option value="${esc(trans[0])}" selected>${esc(trans[0])}</option>`
-      : opt("Getriebe (optional)", trans, keepTrans);
+    if (e.ps?.length === 1) $("cPs").value = e.ps[0];
+    else if (e.ps?.length && !$("cPs").value) $("cPs").placeholder = e.ps.join(" / ") + " PS möglich";
+    if (e.f === "Elektro") $("cTrans").value = "Automatik";
+    refresh();
   }
 
   // Vorbelegung bei Bearbeitung
-  if (v.make) { fillModel(v.model); fillSeries(v.series); fillYear(v.year); fillEngine(v.engine); fillEngineDeps(v.fuel, v.power_ps, v.transmission); }
+  if (v.make) { fillModel(v.model); fillSeries(v.series); fillEngine(v.engine); }
 
   let lastMake = makeSel(), lastModel = modelSel();
   $("cMake").oninput = () => {
     const mk = makeSel();
-    if (mk !== lastMake) { lastMake = mk; lastModel = ""; fillModel(""); fillSeries(); fillYear(); fillEngine(); fillEngineDeps(); }
-    refreshProgress();
+    if (mk !== lastMake) { lastMake = mk; lastModel = ""; fillModel(""); fillSeries(); fillEngine(); }
+    refresh();
   };
   $("cMake").onchange = () => { const mk = makeSel(); if (mk) $("cMake").value = mk; $("cMake").oninput(); };
   $("cModel").oninput = () => {
     const mo = modelSel();
-    if (mo !== lastModel) { lastModel = mo; fillSeries(); fillYear(); fillEngine(); fillEngineDeps(); }
-    refreshProgress();
+    if (mo !== lastModel) { lastModel = mo; fillSeries(); fillEngine(); }
+    refresh();
   };
   $("cModel").onchange = () => { const mo = modelSel(); if (mo) $("cModel").value = mo; $("cModel").oninput(); };
-  $("cSeries").onchange = () => { fillYear(); refreshProgress(); };
-  $("cEngine").onchange = () => { fillEngineDeps(); refreshProgress(); };
-  ["cBody", "cYear", "cFuel", "cPs", "cTrans", "cKm"].forEach(id => $(id).onchange = refreshProgress);
-  refreshProgress();
+  $("cEngine").onchange = applyEngine;
+  ["cVariant", "cBody", "cEzMonth", "cYear", "cKm", "cOwners", "cFuel", "cTrans", "cPs", "cDoors", "cSeats", "cColor"].forEach(id => {
+    $(id).oninput = refresh; $(id).onchange = refresh;
+  });
+  refresh();
 
   $("cSave").onclick = async () => {
     const err = $("cErr"); err.style.display = "none";
     if (!makeSel()) return showErr(err, "Bitte eine Marke angeben.");
     if (!modelSel()) return showErr(err, "Bitte ein Modell angeben.");
+    const kmRaw = $("cKm").value.replace(/[^0-9]/g, "");
+    if ($("cKm").value.trim() && !kmRaw) return showErr(err, "Bitte den Kilometerstand als Zahl angeben.");
+    const psRaw = $("cPs").value.replace(/[^0-9]/g, "");
     $("cSave").disabled = true; $("cSave").textContent = "Wird gespeichert…";
     let docPath = v.registration_doc || null;
     const f = $("cDoc").files[0];
@@ -1443,14 +1462,21 @@ async function openVehicleForm(editId) {
       const { error: upErr } = await sb.storage.from("documents").upload(path, f);
       if (!upErr) docPath = path;
     }
-    const kmVal = KM_STEPS.find(k => k[1] === $("cKm").value);
     const row = {
-      owner_id: me.id, make: makeSel(), model: modelSel(), series: $("cSeries").value || null,
-      body_type: $("cBody").value || null, year: +$("cYear").value || null,
-      engine: $("cEngine").value || null, fuel: $("cFuel").value || null,
-      power_ps: +$("cPs").value || null, transmission: $("cTrans").value || null,
-      mileage: kmVal ? kmVal[0] : null,
-      license_plate: $("cPlate").value.trim() || null, tuev_until: $("cTuev").value || null,
+      owner_id: me.id, make: makeSel(), model: modelSel(),
+      variant: $("cVariant").value.trim() || null,
+      body_type: $("cBody").value || null,
+      ez_month: +$("cEzMonth").value || null, year: +$("cYear").value || null,
+      mileage: kmRaw ? +kmRaw : null,
+      owners: +$("cOwners").value || null,
+      tuev_until: $("cTuev").value || null,
+      checkbook: $("cCheckbook").checked, accident_free: $("cAccFree").checked,
+      engine: $("cEngine").value || null, series: $("cSeries").value || null,
+      fuel: $("cFuel").value || null, transmission: $("cTrans").value || null,
+      power_ps: psRaw ? +psRaw : null,
+      doors: $("cDoors").value || null, seats: +$("cSeats").value || null,
+      color: $("cColor").value || null,
+      license_plate: $("cPlate").value.trim() || null,
       registration_doc: docPath,
     };
     const q = editId ? sb.from("vehicles").update(row).eq("id", editId) : sb.from("vehicles").insert(row);
@@ -2970,12 +2996,12 @@ function runDiagnose() {
   const hits = [];
   const seen = new Set();
   const push = (h) => { const key = h.cat + "|" + h.service; if (!seen.has(key)) { seen.add(key); hits.push(h); } };
-  dgLights.forEach(k => { const w = WARNING_LIGHTS.find(x => x.k === k); if (w) push({ cat: w.cat, service: w.service, guess: w.guess, conf: w.sev === "hoch" ? "hoch" : "mittel", sev: w.sev }); });
-  dgSounds.forEach(k => { const s = SOUNDS.find(x => x.k === k); if (s) push({ cat: s.cat, service: s.service, guess: s.guess, conf: "mittel" }); });
-  aiAnalyze(desc).forEach(push);
+  dgLights.forEach(k => { const w = WARNING_LIGHTS.find(x => x.k === k); if (w) push({ cat: w.cat, service: w.service, guess: w.guess, conf: w.sev === "hoch" ? "hoch" : "mittel", sev: w.sev, why: w.why, risk: w.risk }); });
+  dgSounds.forEach(k => { const s = SOUNDS.find(x => x.k === k); if (s) push({ cat: s.cat, service: s.service, guess: s.guess, conf: "mittel", why: s.why }); });
+  aiAnalyze(desc, 5).forEach(push);
   const redAlert = dgLights.some(k => WARNING_LIGHTS.find(x => x.k === k)?.sev === "hoch") || urgency === "notfall";
 
-  const top = hits.slice(0, 4);
+  const top = hits.slice(0, 5);
   const recs = (allWorkshops || []).filter(ws => top.some(h => ws.categories.includes(h.cat))).slice(0, 3);
   const qs = top[0] ? `cat=${top[0].cat}&service=${encodeURIComponent(top[0].service)}&title=${encodeURIComponent(top[0].guess.slice(0, 60))}&desc=${encodeURIComponent(desc.slice(0, 300))}&urgency=${urgency}` : "";
 
@@ -2987,9 +3013,12 @@ function runDiagnose() {
       ? `<p class="mm" style="margin-top:10px">Keine eindeutige Zuordnung möglich. Empfohlene Prüfung durch eine Fachwerkstatt – erstelle am besten eine Ausschreibung mit deiner Beschreibung.</p>`
       : top.map(h => {
         const pr = priceRange(h.service, car);
-        return `<div style="padding:12px 0;border-bottom:1px solid var(--line)">
-          <div style="font-size:13.5px"><b>Mögliche Ursache:</b> ${esc(h.guess)} <span class="badge ${h.conf === "hoch" ? "b-green" : "b-gold"}">${h.conf}e Wahrscheinlichkeit</span></div>
-          <div class="mm" style="margin-top:4px">Empfohlener Bereich: ${CATS[h.cat].icon} ${CATS[h.cat].name} → ${esc(h.service)}</div>
+        return `<div style="padding:13px 0;border-bottom:1px solid var(--line)">
+          <div style="font-size:13.5px"><b>Mögliche Ursache:</b> ${esc(h.guess)} <span class="badge ${h.conf === "hoch" ? "b-green" : "b-gold"}">${h.conf}e Wahrscheinlichkeit</span>${h.sev === "hoch" ? ' <span class="badge b-red">wichtig</span>' : ""}</div>
+          ${h.why ? `<div class="mm" style="margin-top:5px;font-size:12.5px;line-height:1.55">💡 ${esc(h.why)}</div>` : ""}
+          ${h.risk ? `<div class="mm" style="margin-top:4px;font-size:12.5px;line-height:1.55;color:#EBC172">⚠️ ${esc(h.risk)}</div>` : ""}
+          ${h.action ? `<div class="mm" style="margin-top:4px;font-size:12.5px;line-height:1.55;color:#8FE7BF">👉 ${esc(h.action)}</div>` : ""}
+          <div class="mm" style="margin-top:5px">Empfohlener Bereich: ${CATS[h.cat].icon} ${CATS[h.cat].name} → ${esc(h.service)}</div>
           ${pr ? `<div class="mm" style="margin-top:3px">💶 Preisorientierung: häufig <b>${pr.lo}–${pr.hi} €</b>${pr.note ? " (" + esc(pr.note) + ")" : ""}</div>` : ""}
         </div>`;
       }).join("")}

@@ -297,9 +297,17 @@ const ENGINE_GENERIC = [
   {n:"Elektro",f:"Elektro",ps:[136,150,170,204,231,286,340,408],t:["Automatik"]},
 ];
 
-const BODIES = ["Limousine","Kombi","Coupé","Cabriolet","Schrägheck","SUV / Geländewagen","Van","Kleinwagen","Pickup","Transporter"];
-const FUELS = ["Benzin","Diesel","Hybrid","Plug-in-Hybrid","Elektro","Autogas (LPG/CNG)","Wasserstoff"];
-const TRANS = ["Manuell","Automatik","DSG / Doppelkupplung"];
+// Fahrzeugkategorien nach mobile.de-Vorbild
+const BODIES = ["Limousine","Kombi","Kleinwagen","Cabrio/Roadster","Sportwagen/Coupé","SUV/Geländewagen/Pickup","Van/Kleinbus","Transporter","Wohnmobil","Andere"];
+// Kraftstoffarten nach mobile.de-Vorbild
+const FUELS = ["Benzin","Diesel","Elektro","Hybrid (Benzin/Elektro)","Hybrid (Diesel/Elektro)","Plug-in-Hybrid","Autogas (LPG)","Erdgas (CNG)","Wasserstoff","Ethanol","Andere"];
+// Getriebe nach mobile.de-Vorbild
+const TRANS = ["Schaltgetriebe","Automatik","Halbautomatik"];
+// Weitere mobile.de-Auswahllisten
+const COLORS = ["Beige","Blau","Braun","Gelb","Gold","Grau","Grün","Orange","Rot","Schwarz","Silber","Violett","Weiß","Andere"];
+const DOORS = ["2/3","4/5","6/7"];
+const SEATS = [2,3,4,5,6,7,8,9];
+const EZ_MONTHS = ["01","02","03","04","05","06","07","08","09","10","11","12"];
 const PS_LIST = [45,54,60,68,75,82,90,95,102,110,116,122,131,136,140,150,163,170,184,190,204,218,231,245,258,272,286,306,326,340,360,400,420,450,476,510,550,585,625];
 const KM_STEPS = [[10000,"bis 10.000 km"],[25000,"bis 25.000 km"],[50000,"bis 50.000 km"],[75000,"bis 75.000 km"],[100000,"bis 100.000 km"],[125000,"bis 125.000 km"],[150000,"bis 150.000 km"],[200000,"bis 200.000 km"],[250000,"bis 250.000 km"],[300000,"über 250.000 km"]];
 
@@ -645,6 +653,51 @@ const PRICE_GUIDE = {
   "Startprobleme": [80, 500, "Diagnose + Ursache"],
   "Dellenentfernung": [80, 300, "pro Delle"],
   "Smart Repair": [80, 300, ""],
+  "Radlager": [180, 450, "pro Rad inkl. Einbau"],
+  "Antriebswelle": [250, 600, "Gelenk/Welle inkl. Einbau"],
+  "Turbolader": [1200, 2800, "inkl. Anbauteile"],
+  "Dieselpartikelfilter": [150, 2200, "Regeneration günstig, Tausch teuer"],
+  "AGR-Ventil": [300, 800, "inkl. Reinigung/Adaption"],
+  "Lichtmaschine": [400, 900, "inkl. Einbau"],
+  "Anlasser": [300, 700, "inkl. Einbau"],
+  "Zündspulen": [120, 350, "je nach Anzahl"],
+  "Zündkerzen": [80, 250, "satzweise"],
+  "Glühkerzen": [150, 450, "satzweise, festsitzend teurer"],
+  "Injektoren": [300, 1500, "je nach Anzahl/Bauart"],
+  "Lambdasonde": [180, 400, "inkl. Einbau"],
+  "Katalysator": [400, 1500, "Original teurer"],
+  "Kraftstoffpumpe": [250, 700, "in-Tank teurer"],
+  "Kraftstofffilter": [60, 150, "inkl. Entlüften"],
+  "Servolenkung": [200, 1200, "stark befundabhängig"],
+  "Motorlager": [150, 500, "pro Lager"],
+  "Zylinderkopfdichtung": [900, 2500, "inkl. Planen"],
+  "Automatikgetriebe-Service": [250, 600, "Spülung inkl. Öl"],
+  "Fensterheber": [150, 400, "inkl. Einbau"],
+  "Zentralverriegelung": [120, 400, "pro Schloss/Stellmotor"],
+  "Marderschaden": [100, 800, "je nach Bissschäden"],
+  "Kabelbaum-Reparatur": [100, 900, "stark befundabhängig"],
+  "Sensoren": [80, 350, "inkl. Anlernen"],
+  "ABS / ESP": [100, 800, "Sensor günstig, Block teuer"],
+  "Airbag": [80, 600, "Diagnose + Bauteil"],
+  "Wuchten": [25, 60, "4 Räder"],
+  "RDKS-Service": [40, 120, "Sensor-Service/Anlernen"],
+  "Klimadesinfektion": [50, 120, "inkl. Filter teurer"],
+  "Kühlung": [150, 600, "Thermostat/Wasserpumpe"],
+  "Scheibenwischer / Waschanlage": [30, 120, "Wischer + Düsen"],
+  "Standheizung-Service": [120, 400, "Diagnose + Wartung"],
+  "Elektrik": [80, 300, "Diagnose + Kleinreparatur"],
+  "Schlüssel nachmachen": [80, 350, "inkl. Codierung"],
+  "Wegfahrsperre": [100, 400, "Diagnose + Anlernen"],
+  "Mängelbeseitigung vor HU": [100, 600, "je nach Mängelliste"],
+  "HV-Batterie-Check": [80, 250, "inkl. Zertifikat teurer"],
+  "Ladeelektronik": [150, 900, "stark befundabhängig"],
+  "HV-Reparatur": [200, 2500, "nur HV-qualifizierte Betriebe"],
+  "Ausbeulen ohne Lackieren": [80, 350, "pro Delle"],
+  "Rostbeseitigung": [150, 900, "je nach Umfang"],
+  "Federn": [200, 500, "paarweise pro Achse"],
+  "Kühlmittelverlust": [120, 700, "Diagnose + Ursache (Schlauch günstig, Wasserpumpe teurer)"],
+  "Reifenreparatur": [25, 60, "pro Reifen, wenn reparabel"],
+  "Geräusche": [50, 150, "Geräuschdiagnose / Probefahrt"],
 };
 // Fahrzeugklassen-Multiplikator (grob nach PS + Marke)
 function vehicleFactor(v) {
@@ -667,25 +720,33 @@ function priceRange(service, v) {
 
 // ---------- Warnleuchten & Geräusche (Diagnose) ----------
 const WARNING_LIGHTS = [
-  { k: "mkl", icon: "🟡", name: "Motorkontrollleuchte", sev: "mittel", cat: "reparatur", service: "Motorkontrollleuchte", guess: "Fehlereintrag im Motorsteuergerät – Auslesen empfohlen" },
-  { k: "oel", icon: "🔴", name: "Öldruck", sev: "hoch", cat: "reparatur", service: "Motor", guess: "Öldruckproblem – nicht weiterfahren, Ölstand prüfen" },
-  { k: "kuehl", icon: "🔴", name: "Kühlmitteltemperatur", sev: "hoch", cat: "reparatur", service: "Kühlmittelverlust", guess: "Überhitzung oder Kühlmittelverlust – anhalten und prüfen lassen" },
-  { k: "batt", icon: "🔴", name: "Batterie / Ladekontrolle", sev: "hoch", cat: "reparatur", service: "Batterie", guess: "Lichtmaschine oder Batterie lädt nicht" },
-  { k: "brems", icon: "🔴", name: "Bremse / ABS", sev: "hoch", cat: "reparatur", service: "Bremsen", guess: "Bremsanlage prüfen lassen – Beläge, Flüssigkeit oder ABS-Sensor" },
-  { k: "airbag", icon: "🟡", name: "Airbag", sev: "mittel", cat: "reparatur", service: "Elektrik", guess: "Fehler im Rückhaltesystem" },
-  { k: "reifen", icon: "🟡", name: "Reifendruck (RDKS)", sev: "mittel", cat: "reifen", service: "Reifenreparatur", guess: "Druckverlust oder RDKS-Sensor" },
-  { k: "esp", icon: "🟡", name: "ESP / Traktion", sev: "mittel", cat: "reparatur", service: "Elektrik", guess: "Fahrdynamikregelung meldet Fehler" },
-  { k: "vorgluh", icon: "🟡", name: "Vorglühen / Abgas (Diesel)", sev: "mittel", cat: "reparatur", service: "Motorkontrollleuchte", guess: "Glühanlage oder Abgassystem (AGR, DPF)" },
+  { k: "mkl", icon: "🟡", name: "Motorkontrollleuchte", sev: "mittel", cat: "reparatur", service: "Motorkontrollleuchte", guess: "Fehlereintrag im Motorsteuergerät – Auslesen empfohlen", why: "Die gelbe MKL kann von der lockeren Tankdeckel-Dichtung bis zum Kat-Problem vieles bedeuten – der Fehlerspeicher verrät die Ursache in Minuten.", risk: "Blinkt sie, drohen akute Zündaussetzer mit Kat-Schaden – dann nur noch sehr schonend fahren." },
+  { k: "oel", icon: "🔴", name: "Öldruck", sev: "hoch", cat: "reparatur", service: "Motor", guess: "Öldruckproblem – sofort anhalten und Ölstand prüfen", why: "Ohne Öldruck laufen die Motorlager trocken – die rote Ölkanne ist die ernsteste Leuchte überhaupt.", risk: "Schon wenige Kilometer können einen kapitalen Motorschaden bedeuten. Motor aus, Ölstand prüfen, im Zweifel abschleppen." },
+  { k: "kuehl", icon: "🔴", name: "Kühlmitteltemperatur", sev: "hoch", cat: "reparatur", service: "Kühlmittelverlust", guess: "Überhitzung oder Kühlmittelverlust – anhalten und prüfen lassen", why: "Zu wenig Kühlmittel oder ein defekter Lüfter/Thermostat lässt den Motor überhitzen.", risk: "Überhitzung verzieht Zylinderkopf und Dichtung – teuer. Anhalten, abkühlen lassen, nie den heißen Deckel öffnen." },
+  { k: "batt", icon: "🔴", name: "Batterie / Ladekontrolle", sev: "hoch", cat: "reparatur", service: "Lichtmaschine", guess: "Lichtmaschine lädt nicht – Auto fährt auf Reserve", why: "Leuchtet sie während der Fahrt, liefert der Generator keinen Strom mehr – das Auto zehrt von der Batterie.", risk: "Nach 30–60 Minuten bleibt das Auto stehen. Verbraucher aus und direkt zur Werkstatt." },
+  { k: "brems", icon: "🔴", name: "Bremse / ABS", sev: "hoch", cat: "reparatur", service: "Bremsen", guess: "Bremsanlage prüfen – Beläge, Flüssigkeit oder ABS-Sensor", why: "Rote Bremsleuchte = Handbremse angezogen, Flüssigkeit niedrig oder Beläge verschlissen. Gelbes ABS = Regelektronik gestört, Grundbremse funktioniert.", risk: "Bremsflüssigkeitsverlust ist akut sicherheitskritisch – vorsichtig fahren und sofort prüfen lassen." },
+  { k: "airbag", icon: "🟡", name: "Airbag", sev: "mittel", cat: "reparatur", service: "Airbag", guess: "Fehler im Rückhaltesystem", why: "Häufig ist nur ein Sitzbelegungs- oder Gurtstraffer-Stecker gestört – trotzdem sind Airbags dann evtl. deaktiviert.", risk: "Im Unfallfall lösen Airbags möglicherweise nicht aus – zeitnah auslesen lassen." },
+  { k: "reifen", icon: "🟡", name: "Reifendruck (RDKS)", sev: "mittel", cat: "reifen", service: "RDKS-Service", guess: "Druckverlust oder RDKS-Sensor", why: "Meist schleichender Druckverlust (Nagel, Ventil) – manchmal auch nur ein leerer Sensorakku.", risk: "Ein Reifen mit Minderdruck überhitzt und kann platzen – Druck bald prüfen." },
+  { k: "esp", icon: "🟡", name: "ESP / Traktion", sev: "mittel", cat: "reparatur", service: "ABS / ESP", guess: "Fahrdynamikregelung meldet Fehler", why: "Oft steckt ein Raddrehzahl- oder Lenkwinkelsensor dahinter.", risk: "Schleuderschutz fehlt – bei Nässe und Glätte deutlich riskanter." },
+  { k: "vorgluh", icon: "🟡", name: "Vorglühen / Abgas (Diesel)", sev: "mittel", cat: "reparatur", service: "Glühkerzen", guess: "Glühanlage oder Abgassystem (AGR, DPF)", why: "Blinkende Glühwendel = Fehler im Motormanagement; dauerhaft = Glühkerzen altern (schlechter Kaltstart).", risk: "Startprobleme bei Kälte, mögliche Folgeprobleme an AGR/DPF." },
+  { k: "dpf", icon: "🟡", name: "Partikelfilter (DPF)", sev: "mittel", cat: "reparatur", service: "Dieselpartikelfilter", guess: "DPF beladen – Regenerationsfahrt nötig", why: "Bei viel Kurzstrecke kann sich der Filter nicht freibrennen.", risk: "Ignorieren führt zu Notlauf und teurem Filtertausch – erst eine zügige Überlandfahrt versuchen." },
+  { k: "lenk", icon: "🔴", name: "Lenkung", sev: "hoch", cat: "reparatur", service: "Servolenkung", guess: "Servolenkung gestört", why: "Elektrische Servolenkungen schalten bei Fehlern ab – die Lenkung wird schlagartig schwer.", risk: "In Notmanövern fehlt Lenkunterstützung – sicherheitskritisch, sofort prüfen lassen." },
+  { k: "adblue", icon: "🟡", name: "AdBlue / SCR", sev: "mittel", cat: "reparatur", service: "Motorkontrollleuchte", guess: "AdBlue nachfüllen oder Systemfehler", why: "Nach dem Countdown verweigert das Auto gesetzlich bedingt den Neustart.", risk: "Liegenbleiben trotz vollem Tank – rechtzeitig auffüllen bzw. Diagnose." },
+  { k: "wasser", icon: "🟡", name: "Wasser im Kraftstofffilter", sev: "mittel", cat: "inspektion", service: "Kraftstofffilter", guess: "Wasserabscheider voll (Diesel)", why: "Der Dieselfilter scheidet Kondenswasser ab – der Behälter muss entleert werden.", risk: "Wasser in der Einspritzung schädigt Injektoren und Hochdruckpumpe." },
 ];
 const SOUNDS = [
-  { k: "quietschen", name: "Quietschen beim Bremsen", cat: "reparatur", service: "Bremsen", guess: "Verschlissene Bremsbeläge oder -scheiben" },
-  { k: "schleifen", name: "Schleifen / Kratzen", cat: "reparatur", service: "Bremsen", guess: "Bremsen oder Radlager" },
-  { k: "klappern", name: "Klappern / Poltern", cat: "reparatur", service: "Fahrwerk", guess: "Koppelstange, Traggelenk oder Stabilisator" },
-  { k: "brummen", name: "Brummen (geschwindigkeitsabhängig)", cat: "reparatur", service: "Fahrwerk", guess: "Radlager oder Reifen" },
-  { k: "pfeifen", name: "Pfeifen / Heulen", cat: "reparatur", service: "Motor", guess: "Riemen, Turbolader oder Servopumpe" },
-  { k: "rasseln", name: "Rasseln beim Start", cat: "reparatur", service: "Steuerkette", guess: "Steuerkette oder Kettenspanner" },
-  { k: "knacken", name: "Knacken beim Lenken", cat: "reparatur", service: "Fahrwerk", guess: "Antriebswelle / Gelenk" },
-  { k: "auspuff_laut", name: "Lauter Auspuff / Dröhnen", cat: "reparatur", service: "Auspuff", guess: "Undichte oder defekte Abgasanlage" },
+  { k: "quietschen", name: "Quietschen beim Bremsen", cat: "reparatur", service: "Bremsen", guess: "Verschlissene Bremsbeläge oder -scheiben", why: "Der Verschleißwarnstift der Beläge quietscht absichtlich, wenn der Belag zur Neige geht." },
+  { k: "schleifen", name: "Schleifen / Kratzen", cat: "reparatur", service: "Bremsen", guess: "Bremsen (Metall auf Metall) oder Radlager", why: "Dauerhaftes Schleifen deutet auf komplett abgefahrene Beläge oder ein defektes Radlager." },
+  { k: "klappern", name: "Klappern / Poltern", cat: "reparatur", service: "Fahrwerk", guess: "Koppelstange, Traggelenk oder Stabilisator", why: "Ausgeschlagene Fahrwerkslager poltern besonders auf Kopfsteinpflaster und bei kleinen Bodenwellen." },
+  { k: "brummen", name: "Brummen (geschwindigkeitsabhängig)", cat: "reparatur", service: "Radlager", guess: "Radlager oder Sägezahn-Reifen", why: "Wird das Brummen mit dem Tempo lauter und ändert sich in Kurven, ist meist ein Radlager fällig." },
+  { k: "pfeifen", name: "Pfeifen / Heulen", cat: "reparatur", service: "Turbolader", guess: "Riemen, Turbolader oder Servopumpe", why: "Pfeifen unter Last spricht für die Ladeluftstrecke/Turbo; drehzahlabhängiges Heulen für Riementrieb oder Pumpen." },
+  { k: "rasseln", name: "Rasseln beim Start", cat: "reparatur", service: "Steuerkette", guess: "Steuerkette oder Kettenspanner", why: "Kurzes Kaltstart-Rasseln ist das typische Frühzeichen einer gelängten Kette – ernst nehmen." },
+  { k: "knacken", name: "Knacken beim Lenken", cat: "reparatur", service: "Antriebswelle", guess: "Antriebswellen-Gelenk", why: "Rhythmisches Knacken bei vollem Lenkeinschlag = klassisches Gleichlaufgelenk-Symptom." },
+  { k: "auspuff_laut", name: "Lauter Auspuff / Dröhnen", cat: "reparatur", service: "Auspuff", guess: "Undichte oder defekte Abgasanlage", why: "Auspuffanlagen rosten von innen nach außen – meist ist erst ein Übergang oder das Flexrohr undicht." },
+  { k: "klopfen", name: "Klopfen / Nageln aus dem Motor", cat: "reparatur", service: "Motor", guess: "Hydrostößel, Injektoren oder Motorlager(schaden)", why: "Kann harmlos sein – ein tieffrequentes Klopfen unter Last aber auch ein beginnender Lagerschaden. Abhorchen lassen!" },
+  { k: "zischen", name: "Zischen / Luftgeräusch", cat: "reparatur", service: "Motor", guess: "Undichtigkeit im Unterdruck-/Ladeluftsystem", why: "Entweichende Luft bringt Gemisch und Ladedruck durcheinander – per Rauchtest schnell zu finden." },
+  { k: "heulen_getriebe", name: "Heulen beim Fahren (lastabhängig)", cat: "reparatur", service: "Getriebe", guess: "Getriebe- oder Differenziallager", why: "Last- und ganghabhängiges Heulen kommt aus dem Antriebsstrang – Ölstand prüfen lassen." },
+  { k: "surren", name: "Elektrisches Surren / Pumpe läuft nach", cat: "reparatur", service: "Elektrik", guess: "Stellmotor, Lüfter oder Pumpe läuft dauerhaft", why: "Dauerläufer ziehen die Batterie leer – den Verursacher orten lassen." },
 ];
 const EMERGENCY_TYPES = [
   { k: "startet_nicht", icon: "🔋", name: "Auto startet nicht" },
@@ -698,39 +759,149 @@ const EMERGENCY_TYPES = [
   { k: "abschlepp", icon: "🚛", name: "Abschleppdienst nötig" },
 ];
 
-// Regelbasierte Beta-Analyse (Freitext)
+// ============================================================
+// KI-DIAGNOSE v2 – regelbasierte Analyse mit Erklärungen
+// Jede Regel: kw (Stichwörter/Phrasen), cat/service (Zuordnung),
+// guess (mögliche Ursache), why (verständliche Erklärung),
+// risk (was droht beim Ignorieren), action (Empfehlung), conf, sev
+// ============================================================
 const AI_RULES = [
-  { kw:["quietsch","bremse","bremsen","schleif"], cat:"reparatur", service:"Bremsen", guess:"Verschlissene Bremsbeläge oder -scheiben", conf:"hoch" },
-  { kw:["motorkontrollleuchte","mkl","motorleuchte","check engine","gelbe leuchte"], cat:"reparatur", service:"Motorkontrollleuchte", guess:"Fehlereintrag im Motorsteuergerät – Diagnose nötig", conf:"hoch" },
-  { kw:["klima","kühlt nicht","warme luft"], cat:"klima", service:"Klimaservice", guess:"Kältemittel niedrig oder Kompressorproblem", conf:"mittel" },
-  { kw:["batterie","springt nicht an","startet nicht","anlasser","orgelt"], cat:"reparatur", service:"Startprobleme", guess:"Schwache Batterie, Anlasser oder Ladeproblem", conf:"mittel" },
-  { kw:["reifen","platt","profil","vibrier","unwucht"], cat:"reifen", service:"Reifenreparatur", guess:"Reifenschaden oder Unwucht", conf:"mittel" },
-  { kw:["klapper","poltern","fahrwerk","stoßdämpfer","schlägt","knackt"], cat:"reparatur", service:"Fahrwerk", guess:"Ausgeschlagene Fahrwerkskomponente (Koppelstange, Traggelenk)", conf:"mittel" },
-  { kw:["öl","ölfleck","verliert","tropft"], cat:"reparatur", service:"Ölverlust", guess:"Undichtigkeit (Ölwanne, Ventildeckel, Simmerring)", conf:"mittel" },
-  { kw:["kühlmittel","kühlwasser","überhitzt","temperatur"], cat:"reparatur", service:"Kühlmittelverlust", guess:"Kühlsystem undicht oder Thermostat defekt", conf:"mittel" },
-  { kw:["kupplung","rutscht","gang","schaltet schwer"], cat:"reparatur", service:"Kupplung", guess:"Verschlissene Kupplung oder Getriebeproblem", conf:"mittel" },
-  { kw:["auspuff","laut","brummt","dröhnt","abgas"], cat:"reparatur", service:"Auspuff", guess:"Undichte oder defekte Abgasanlage", conf:"mittel" },
-  { kw:["kratzer","delle","beule","lack","rost"], cat:"karosserie", service:"Dellenentfernung", guess:"Lack-/Karosserieschaden – Smart Repair möglich", conf:"mittel" },
-  { kw:["tüv","hu","plakette"], cat:"tuev", service:"HU", guess:"Hauptuntersuchung fällig", conf:"hoch" },
-  { kw:["zahnriemen","steuerkette","rasselt"], cat:"reparatur", service:"Zahnriemen", guess:"Zahnriemen-/Steuerkettenservice empfohlen", conf:"mittel" },
-  { kw:["scheibe","steinschlag","riss","glas"], cat:"autoglas", service:"Steinschlagreparatur", guess:"Glasschaden – Reparatur oft ohne Scheibentausch möglich", conf:"hoch" },
-  { kw:["schlüssel","funk","zentralverriegelung","wegfahrsperre"], cat:"schluessel", service:"Funkschlüssel-Reparatur", guess:"Schlüssel- oder Verriegelungsproblem", conf:"mittel" },
-  { kw:["ruckelt","zieht nicht","leistung","notlauf"], cat:"reparatur", service:"Motor", guess:"Zündung, Einspritzung oder Turbolader – Diagnose empfohlen", conf:"mittel" },
+  // ---------- Bremsen ----------
+  { kw:["quietsch","bremse quietscht","bremsen quietschen","quietscht beim bremsen"], cat:"reparatur", service:"Bremsen", guess:"Verschlissene Bremsbeläge", conf:"hoch", why:"Bremsbeläge haben einen Verschleißindikator – ein Metallstift quietscht bewusst, wenn der Belag fast abgefahren ist.", risk:"Fährt der Belag ganz ab, bremst Metall auf Metall: längerer Bremsweg und teure Scheiben-Schäden.", action:"Beläge zeitnah prüfen und wechseln lassen – meist ein günstiger Routine-Job." },
+  { kw:["metall auf metall","schleift beim bremsen","kratzt beim bremsen","schleifger"], cat:"reparatur", service:"Bremsen", guess:"Bremsbeläge komplett abgefahren oder Fremdkörper", conf:"hoch", sev:"hoch", why:"Ein metallisches Schleifen beim Bremsen bedeutet oft: Der Belag ist weg und die Trägerplatte reibt auf der Scheibe.", risk:"Stark verlängerter Bremsweg, Scheiben werden zerstört – sicherheitskritisch.", action:"Nicht mehr lange fahren – sofort prüfen lassen." },
+  { kw:["lenkrad vibriert beim bremsen","rubbelt","bremse vibriert","flattert beim bremsen"], cat:"reparatur", service:"Bremsen", guess:"Verzogene oder ungleichmäßig abgenutzte Bremsscheiben", conf:"hoch", why:"Wenn es nur beim Bremsen vibriert, sind meist die Bremsscheiben verzogen – z.B. durch Überhitzung.", risk:"Bremswirkung lässt nach, Verschleiß an Radaufhängung steigt.", action:"Scheiben und Beläge prüfen, meist achsweise erneuern." },
+  { kw:["bremspedal weich","pedal lässt sich durchtreten","schwammiges pedal"], cat:"reparatur", service:"Bremsen", guess:"Luft im Bremssystem oder alternde Bremsflüssigkeit", conf:"mittel", sev:"hoch", why:"Ein weiches Pedal deutet auf Luft oder Feuchtigkeit in der Bremsflüssigkeit hin – die Bremskraft kommt nicht voll an.", risk:"Im Extremfall Bremsversagen, besonders bei starker Beanspruchung.", action:"Sofort prüfen lassen, Bremsflüssigkeit wechseln/entlüften." },
+  { kw:["zieht beim bremsen","bremst einseitig"], cat:"reparatur", service:"Bremsen", guess:"Festsitzender Bremssattel oder ungleiche Bremswirkung", conf:"mittel", why:"Zieht das Auto beim Bremsen zur Seite, bremst eine Seite stärker – oft ein hängender Bremssattel.", risk:"Ungleichmäßiger Verschleiß, Überhitzung, Schleudergefahr bei Nässe.", action:"Bremsanlage achsweise prüfen lassen." },
+  { kw:["handbremse","feststellbremse","parkbremse"], cat:"reparatur", service:"Bremsen", guess:"Handbremse verstellt, Seil fest oder elektrische Parkbremse defekt", conf:"mittel", why:"Handbremsseile längen sich oder rosten fest; elektrische Parkbremsen haben oft Stellmotor-Probleme.", risk:"Fahrzeug rollt weg oder Bremse löst nicht – Räder können blockieren.", action:"Einstellen bzw. Stellmotor prüfen lassen." },
+
+  // ---------- Motor: Start & Lauf ----------
+  { kw:["startet nicht","springt nicht an","geht nicht an","macht keinen mucks"], cat:"reparatur", service:"Startprobleme", guess:"Batterie, Anlasser oder Wegfahrsperre", conf:"hoch", why:"Kein Startversuch = meist Strom (Batterie, Masseband) oder Anlasser. Dreht der Motor, liegt es eher an Kraftstoff/Zündung.", risk:"Man bleibt liegen – oft zum ungünstigsten Zeitpunkt.", action:"Batterie testen lassen; das ist die häufigste und günstigste Ursache." },
+  { kw:["orgelt","dreht aber startet nicht","dreht durch aber"], cat:"reparatur", service:"Startprobleme", guess:"Kraftstoffversorgung oder Zündung", conf:"mittel", why:"Dreht der Anlasser, aber der Motor zündet nicht, fehlt Sprit, Zündfunke oder Kompression.", risk:"Batterie wird beim Orgeln schnell leer, Katalysator kann Schaden nehmen.", action:"Fehlerspeicher auslesen und Kraftstoffdruck/Zündung prüfen lassen." },
+  { kw:["klackt beim starten","klick beim start","relais klackert"], cat:"reparatur", service:"Anlasser", guess:"Anlasser-Magnetschalter oder zu wenig Batteriespannung", conf:"mittel", why:"Ein einzelnes Klacken heißt: Der Magnetschalter zieht an, aber der Anlasser dreht nicht – Batterie schwach oder Anlasser fest.", risk:"Bald gar kein Start mehr möglich.", action:"Batterie laden/testen, sonst Anlasser prüfen." },
+  { kw:["geht im leerlauf aus","säuft ab","stirbt ab","leerlauf unruhig","sägt im leerlauf","dreht unruhig"], cat:"reparatur", service:"Motor", guess:"Drosselklappe, Leerlaufregler, Falschluft oder Zündaussetzer", conf:"mittel", why:"Unruhiger Leerlauf entsteht oft durch verschmutzte Drosselklappe, undichte Ansaugluft (Falschluft) oder einzelne Zylinder, die nicht sauber zünden.", risk:"Erhöhter Verbrauch, Absterben an der Ampel, Folgeschäden am Kat.", action:"Diagnose mit Fehlerspeicher – meist gut eingrenzbar." },
+  { kw:["ruckelt","ruckeln beim beschleunigen","zieht nicht","leistungsverlust","keine leistung","notlauf","notlaufprogramm"], cat:"reparatur", service:"Motor", guess:"Zündung, Einspritzung, Turbolader oder AGR", conf:"mittel", why:"Ruckeln und Leistungsverlust sind klassische Zeichen für Zündaussetzer, verstopfte Einspritzung, klemmende AGR oder ein Ladedruckproblem – das Steuergerät schaltet dann oft in den Notlauf.", risk:"Weiterfahren kann Kat, Turbo oder DPF beschädigen.", action:"Fehlerspeicher auslesen lassen – der Eintrag zeigt fast immer die Richtung." },
+  { kw:["zündaussetzer","misfire","zylinder aussetzer"], cat:"reparatur", service:"Zündspulen", guess:"Zündspule oder Zündkerze defekt", conf:"hoch", why:"Aussetzer auf einzelnen Zylindern kommen meist von einer defekten Zündspule oder verschlissenen Kerzen.", risk:"Unverbrannter Kraftstoff zerstört auf Dauer den Katalysator.", action:"Spulen/Kerzen prüfen – oft schnell und günstig behoben." },
+  { kw:["klopft","klopfen im motor","nagelt","motor nagelt","lagerschaden","pleuel"], cat:"reparatur", service:"Motor", guess:"Mechanisches Motorgeräusch – Hydrostößel, Injektoren oder Lager", conf:"mittel", sev:"hoch", why:"Klopfen/Nageln kann harmlos sein (Hydrostößel, Diesel-Injektoren) – aber auch ein beginnender Lagerschaden.", risk:"Ein Lagerschaden endet im kapitalen Motorschaden.", action:"Nicht ignorieren: Motor abhorchen lassen, Ölstand sofort prüfen." },
+  { kw:["vibriert im stand","brummt im stand","zittert im leerlauf"], cat:"reparatur", service:"Motorlager", guess:"Defektes Motor- oder Getriebelager", conf:"mittel", why:"Ausgeschlagene Motorlager übertragen die normalen Motorvibrationen ungefiltert auf die Karosserie.", risk:"Belastet Auspuff, Leitungen und andere Lager.", action:"Lager prüfen und einzeln tauschen lassen." },
+
+  // ---------- Öl, Kühlung, Rauch ----------
+  { kw:["ölfleck","verliert öl","öl unterm auto","tropft öl","ölverlust"], cat:"reparatur", service:"Ölverlust", guess:"Undichtigkeit an Ölwanne, Ventildeckel oder Simmerring", conf:"hoch", why:"Ölverlust kommt fast immer von alternden Dichtungen. Kleiner Ölfilm ist häufig, Tropfen auf dem Boden sind ernster.", risk:"Zu wenig Öl führt zum Motorschaden; Öl auf heißen Teilen kann brennen.", action:"Leckstelle orten lassen (Motorwäsche + Kontrolle), Ölstand regelmäßig prüfen." },
+  { kw:["ölverbrauch","öl nachfüllen","braucht öl"], cat:"reparatur", service:"Motor", guess:"Erhöhter Ölverbrauch – Ventilschaftdichtungen oder Kolbenringe", conf:"mittel", why:"Verbrennt der Motor Öl (bläulicher Rauch), sind oft Ventilschaftdichtungen oder Kolbenringe verschlissen.", risk:"Kat und Turbolader leiden; ohne Kontrolle droht Ölmangel.", action:"Verbrauch dokumentieren, Kompression messen lassen." },
+  { kw:["überhitzt","temperatur steigt","kühlwasser","kühlmittel","kühlmittelverlust","dampf aus motorraum"], cat:"reparatur", service:"Kühlmittelverlust", guess:"Kühlsystem undicht, Thermostat oder Wasserpumpe defekt", conf:"hoch", sev:"hoch", why:"Kühlmittelverlust oder ein hängendes Thermostat lassen die Temperatur steigen. Weißer Dampf = akutes Leck.", risk:"Überhitzung verzieht den Zylinderkopf – einer der teuersten Motorschäden.", action:"Bei steigender Temperatur sofort anhalten, abkühlen lassen, abschleppen statt weiterfahren." },
+  { kw:["süßlicher geruch","riecht süßlich"], cat:"reparatur", service:"Kühlmittelverlust", guess:"Kühlmittel verdampft an heißen Teilen", conf:"mittel", why:"Kühlmittel riecht süßlich – tritt der Geruch innen auf, ist oft der Wärmetauscher der Heizung undicht.", risk:"Kühlmittelverlust mit Überhitzungsgefahr.", action:"Kühlsystem abdrücken lassen." },
+  { kw:["weißer rauch","weisser qualm"], cat:"reparatur", service:"Zylinderkopfdichtung", guess:"Kühlmittel im Brennraum – Zylinderkopfdichtung", conf:"mittel", sev:"hoch", why:"Dauerhaft weißer, süßlich riechender Rauch deutet auf verbrennendes Kühlmittel hin (kurz nach Kaltstart ist Wasserdampf normal).", risk:"Motorschaden durch Überhitzung oder Wasserschlag.", action:"CO2-Test im Kühlwasser machen lassen, wenig fahren." },
+  { kw:["blauer rauch","blau qualmt"], cat:"reparatur", service:"Motor", guess:"Motor verbrennt Öl", conf:"mittel", why:"Blauer Rauch = Ölverbrennung, z.B. über Ventilschaftdichtungen, Kolbenringe oder einen defekten Turbolader.", risk:"Kat-/Turboschaden, steigender Ölverbrauch.", action:"Ursache eingrenzen lassen (kalt vs. unter Last qualmt unterschiedlich)." },
+  { kw:["schwarzer rauch","rußt","qualmt schwarz"], cat:"reparatur", service:"Motor", guess:"Zu fettes Gemisch – Einspritzung, Luftmasse oder AGR", conf:"mittel", why:"Schwarzer Rauch bedeutet unverbrannten Kraftstoff – oft Luftmassenmesser, Injektoren oder AGR-Ventil.", risk:"DPF verstopft, Mehrverbrauch, HU-Durchfall.", action:"Diagnose der Einspritz-/Luftwerte machen lassen." },
+
+  // ---------- Turbo, Abgas, Diesel ----------
+  { kw:["turbo","pfeift beim beschleunigen","ladedruck","pfeifendes ger"], cat:"reparatur", service:"Turbolader", guess:"Turbolader oder Ladeluftschlauch undicht", conf:"mittel", why:"Lautes Pfeifen unter Last kommt oft von undichten Ladeluftschläuchen oder einem Turbolader mit Lagerspiel.", risk:"Turboschaden wird schnell teuer; Ölnebel kann in den Motor gelangen.", action:"Ladedrucksystem abdrücken lassen, Turbospiel prüfen." },
+  { kw:["dpf","partikelfilter","regeneriert","russpartikel","filter voll"], cat:"reparatur", service:"Dieselpartikelfilter", guess:"DPF beladen oder Regeneration schlägt fehl", conf:"hoch", why:"Viele Kurzstrecken verhindern die Selbstreinigung des Partikelfilters – die Leuchte fordert eine Regenerationsfahrt.", risk:"Voller DPF → Notlauf und teurer Filtertausch.", action:"Zügige Autobahnfahrt (ca. 20 Min) oder Zwangsregeneration in der Werkstatt." },
+  { kw:["agr","abgasrückführung"], cat:"reparatur", service:"AGR-Ventil", guess:"AGR-Ventil verkokt oder klemmt", conf:"hoch", why:"Das AGR-Ventil verrußt mit der Zeit und klemmt – typisch bei Diesel mit viel Stadtverkehr.", risk:"Notlauf, erhöhter Verbrauch, HU-Probleme.", action:"AGR reinigen oder tauschen lassen." },
+  { kw:["adblue","harnstoff","scr"], cat:"reparatur", service:"Motorkontrollleuchte", guess:"AdBlue-System: Füllstand, Sensor oder Dosierung", conf:"hoch", why:"AdBlue-Warnungen kommen von leerem Tank, defekten NOx-Sensoren oder der Dosiereinheit.", risk:"Ohne Behebung verweigert das Auto irgendwann den Start (gesetzlich vorgeschrieben).", action:"Erst AdBlue auffüllen; bleibt die Meldung, Diagnose machen lassen." },
+  { kw:["auspuff laut","auspuff","dröhnt","brummt laut","knattert"], cat:"reparatur", service:"Auspuff", guess:"Undichte oder durchgerostete Abgasanlage", conf:"hoch", why:"Auspuffanlagen rosten von innen; Übergänge und Flexrohre werden zuerst undicht.", risk:"Abgase können in den Innenraum gelangen; HU-Durchfall.", action:"Anlage auf der Bühne prüfen – oft reicht ein Teilstück." },
+  { kw:["klappert unterm auto","hitzeblech","scheppert unten"], cat:"reparatur", service:"Auspuff", guess:"Loses Hitzeschutzblech oder Auspuffhalter", conf:"hoch", why:"Hitzeschutzbleche rosten an den Befestigungen und scheppern dann bei bestimmten Drehzahlen.", risk:"Meist harmlos, kann aber abfallen.", action:"Schnell gemacht: neu befestigen oder Schelle setzen." },
+  { kw:["faule eier","schwefel","stinkt nach abgas"], cat:"reparatur", service:"Katalysator", guess:"Katalysator arbeitet nicht richtig", conf:"mittel", why:"Schwefelgeruch (faule Eier) entsteht, wenn der Kat das Gemisch nicht sauber umsetzt.", risk:"Kat-Schaden, HU-Durchfall.", action:"Lambdasonden und Kat prüfen lassen." },
+
+  // ---------- Getriebe & Kupplung ----------
+  { kw:["kupplung rutscht","drehzahl steigt aber","kupplung riecht","verbrannt beim anfahren"], cat:"reparatur", service:"Kupplung", guess:"Kupplung verschlissen", conf:"hoch", why:"Steigt die Drehzahl ohne Vortrieb, überträgt die Kupplung die Kraft nicht mehr – sie ist am Ende ihrer Lebensdauer.", risk:"Irgendwann fährt das Auto nicht mehr an; Schwungrad kann mitleiden.", action:"Kupplung ersetzen lassen, Zweimassenschwungrad mit prüfen." },
+  { kw:["gang geht schwer rein","gänge hakeln","kratzt beim schalten","gang springt raus"], cat:"reparatur", service:"Getriebe", guess:"Kupplung trennt nicht oder Getriebeverschleiß", conf:"mittel", why:"Hakelige Gänge kommen von schlecht trennender Kupplung, verschlissenen Synchronringen oder zu wenig Getriebeöl.", risk:"Getriebeschaden mit hohen Kosten.", action:"Kupplungshydraulik und Getriebeöl prüfen lassen." },
+  { kw:["automatik ruckt","dsg ruckelt","schaltet hart","schaltet verzögert","wandler"], cat:"reparatur", service:"Automatikgetriebe-Service", guess:"Automatik-/DSG-Problem – oft Ölstand oder Mechatronik", conf:"mittel", why:"Hartes oder verzögertes Schalten liegt oft an altem Getriebeöl oder der Mechatronik – viele Automaten brauchen entgegen der Werksangabe regelmäßige Ölwechsel.", risk:"Teurer Getriebeschaden.", action:"Getriebespülung/Ölwechsel und Anpassungsfahrt machen lassen." },
+  { kw:["heult beim fahren","getriebe heult","singt","differenzial"], cat:"reparatur", service:"Getriebe", guess:"Lagergeräusch in Getriebe oder Differenzial", conf:"mittel", why:"Ein drehzahl- oder lastabhängiges Heulen deutet auf verschlissene Lager oder Zahnflanken hin.", risk:"Bis zum Blockieren fortschreitend.", action:"Probefahrt mit Fachmann, Ölstand prüfen." },
+
+  // ---------- Fahrwerk & Lenkung ----------
+  { kw:["klappert","poltert","poltern","schlägt beim fahren","über bodenwellen"], cat:"reparatur", service:"Fahrwerk", guess:"Koppelstange, Traggelenk oder Stabilager ausgeschlagen", conf:"hoch", why:"Poltern über Unebenheiten kommt fast immer von ausgeschlagenen Gummilagern oder Gelenken der Radaufhängung – Koppelstangen sind der Klassiker.", risk:"Verschlechtertes Fahrverhalten, erhöhter Reifenverschleiß, HU-Mangel.", action:"Fahrwerk auf der Bühne durchrütteln lassen – die Ursache ist meist schnell gefunden." },
+  { kw:["knackt beim lenken","knacken beim lenken","knacken beim einschlagen","knackt beim anfahren","knackt in kurven","knacken","knackt"], cat:"reparatur", service:"Antriebswelle", guess:"Antriebswellengelenk (Gleichlaufgelenk) verschlissen", conf:"hoch", why:"Rhythmisches Knacken bei eingeschlagener Lenkung ist das typische Zeichen eines defekten Gleichlaufgelenks – oft ist die Manschette gerissen und das Fett raus.", risk:"Das Gelenk kann blockieren oder brechen.", action:"Gelenk/Manschette ersetzen lassen, je früher desto günstiger." },
+  { kw:["brummt beim fahren","brummen wird schneller","radlager","dröhnen geschwindigkeit"], cat:"reparatur", service:"Radlager", guess:"Radlager defekt", conf:"hoch", why:"Ein Brummen, das mit der Geschwindigkeit lauter wird (und sich in Kurven ändert), ist meist ein verschlissenes Radlager.", risk:"Ein blockierendes Radlager ist gefährlich; das Rad kann sich lockern.", action:"Betroffenes Lager orten und tauschen lassen." },
+  { kw:["lenkung schwergängig","servo","lenkt sich schwer","lenkung macht ger"], cat:"reparatur", service:"Servolenkung", guess:"Servolenkung: Flüssigkeit, Pumpe oder E-Motor", conf:"mittel", sev:"hoch", why:"Schwere Lenkung = Servounterstützung fällt aus – hydraulisch (Ölstand/Pumpe) oder elektrisch (Steuergerät).", risk:"In Notsituationen fehlt Lenkkraft – sicherheitskritisch.", action:"Umgehend prüfen lassen." },
+  { kw:["zieht nach links","zieht nach rechts","fährt schief","lenkrad steht schief"], cat:"reifen", service:"Achsvermessung", guess:"Achsgeometrie verstellt oder ungleicher Reifendruck", conf:"hoch", why:"Nach Bordsteinkontakt oder Schlagloch stimmt oft die Spur nicht mehr – das Auto zieht zur Seite.", risk:"Einseitig abgefahrene Reifen in wenigen tausend Kilometern.", action:"Reifendruck prüfen, dann Achsvermessung machen lassen." },
+  { kw:["lenkrad vibriert","flattert","unwucht","vibriert ab 100","vibriert ab 120"], cat:"reifen", service:"Wuchten", guess:"Unwucht der Räder", conf:"hoch", why:"Vibrationen ab ~90–130 km/h im Lenkrad sind fast immer eine Reifen-Unwucht – z.B. durch ein verlorenes Auswuchtgewicht.", risk:"Erhöhter Verschleiß an Lenkung und Radlagern.", action:"Räder feinwuchten lassen – schnell und günstig." },
+  { kw:["schwammig","schaukelt","stoßdämpfer","federt nach","liegt unruhig"], cat:"reparatur", service:"Stoßdämpfer", guess:"Stoßdämpfer verschlissen", conf:"mittel", why:"Müde Dämpfer merkt man am Nachschwingen und unruhigem Geradeauslauf – schleichender Verschleiß ab ca. 80.000 km.", risk:"Deutlich längerer Bremsweg, besonders bei Nässe.", action:"Dämpfertest machen lassen, achsweise erneuern." },
+  { kw:["feder gebrochen","knarzt vorne","quietscht beim einfedern"], cat:"reparatur", service:"Federn", guess:"Gebrochene Fahrwerksfeder oder trockene Lager", conf:"mittel", why:"Federn brechen gern am unteren Ende – hörbar als Knarzen oder sichtbar an hängender Ecke.", risk:"Gebrochene Feder kann den Reifen beschädigen – HU-relevant.", action:"Sichtprüfung, Federn immer paarweise ersetzen." },
+
+  // ---------- Elektrik ----------
+  { kw:["batterie leer","über nacht leer","immer wieder leer","ruhestrom"], cat:"reparatur", service:"Batterie", guess:"Alte Batterie oder heimlicher Verbraucher (Ruhestrom)", conf:"hoch", why:"Ist die Batterie öfter leer, ist sie entweder altersschwach oder ein Steuergerät schläft nicht ein und zieht Strom.", risk:"Liegenbleiben; Tiefentladung zerstört die Batterie endgültig.", action:"Batterietest + Ruhestrommessung machen lassen." },
+  { kw:["lichtmaschine","lädt nicht","ladekontrolle","generator"], cat:"reparatur", service:"Lichtmaschine", guess:"Lichtmaschine oder Regler defekt", conf:"hoch", sev:"hoch", why:"Leuchtet die rote Batterielampe während der Fahrt, lädt der Generator nicht mehr – das Auto fährt nur noch auf Batteriereserve.", risk:"Nach 30–60 Minuten bleibt das Auto liegen.", action:"Direkt zur Werkstatt fahren, lange Strecken vermeiden." },
+  { kw:["fensterheber","fenster geht nicht","scheibe klemmt"], cat:"reparatur", service:"Fensterheber", guess:"Fensterheber-Motor oder Seilzug defekt", conf:"hoch", why:"Die Seilzüge der Fensterheber verschleißen; oft kündigt sich das mit Knacken oder schiefem Lauf an.", risk:"Scheibe kann in die Tür fallen – Regen/Einbruchrisiko.", action:"Reparatursatz oder Motor tauschen lassen." },
+  { kw:["zentralverriegelung","schließt nicht ab","tür entriegelt nicht"], cat:"reparatur", service:"Zentralverriegelung", guess:"Türschloss-Stellmotor oder Funkempfänger", conf:"mittel", why:"Meist ist der kleine Stellmotor im betroffenen Türschloss verschlissen.", risk:"Fahrzeug nicht sicher verschlossen.", action:"Betroffene Tür diagnostizieren lassen." },
+  { kw:["licht flackert","scheinwerfer flackert","birne","abblendlicht ausgefallen","glühbirne"], cat:"reparatur", service:"Elektrik", guess:"Leuchtmittel, Stecker oder Masseproblem", conf:"hoch", why:"Flackerndes Licht kommt von Wackelkontakten oder sterbenden Leuchtmitteln; bei LED oft vom Steuergerät.", risk:"Lichtausfall = Bußgeld und HU-Mangel.", action:"Leuchtmittel/Anschlüsse prüfen lassen – oft Minutensache." },
+  { kw:["sicherung fliegt","kurzschluss","kabelbrand","schmorgeruch","riecht verschmort"], cat:"reparatur", service:"Kabelbaum-Reparatur", guess:"Kurzschluss im Bordnetz", conf:"mittel", sev:"hoch", why:"Wiederholt fliegende Sicherungen oder Schmorgeruch deuten auf beschädigte Leitungen – häufig nach Marderbesuch oder Feuchtigkeit.", risk:"Brandgefahr!", action:"Nicht weiterfahren bei Schmorgeruch – Elektrik-Diagnose machen lassen." },
+  { kw:["marder","biss","angeknabbert","kabel angebissen"], cat:"reparatur", service:"Marderschaden", guess:"Marderbiss an Kabeln oder Schläuchen", conf:"hoch", why:"Marder beißen bevorzugt Zündkabel, Kühlschläuche und Dämmmatten an – oft unbemerkt.", risk:"Von Zündaussetzern bis Motorüberhitzung.", action:"Motorraum kontrollieren und Bissschäden fachgerecht reparieren lassen; Marderschutz nachrüsten." },
+
+  // ---------- Klima & Heizung ----------
+  { kw:["klima kühlt nicht","klimaanlage","warme luft","kühlt schlecht"], cat:"klima", service:"Klimaservice", guess:"Kältemittel zu wenig oder Kompressor-Problem", conf:"hoch", why:"Klimaanlagen verlieren pro Jahr bis zu 10 % Kältemittel – irgendwann reicht es nicht mehr zum Kühlen.", risk:"Ohne Kältemittel wird der Kompressor nicht geschmiert – Folgeschaden droht.", action:"Klimaservice mit Lecksuche machen lassen." },
+  { kw:["klima stinkt","muffig","riecht aus der lüftung"], cat:"klima", service:"Klimadesinfektion", guess:"Bakterien/Pilze am Verdampfer", conf:"hoch", why:"Am feuchten Verdampfer siedeln sich Mikroorganismen an – daher der muffige Geruch beim Einschalten.", risk:"Unangenehm und für Allergiker problematisch.", action:"Desinfektion + Innenraumfilter wechseln lassen." },
+  { kw:["heizung bleibt kalt","heizt nicht","keine warme luft"], cat:"reparatur", service:"Kühlung", guess:"Thermostat, Wärmetauscher oder zu wenig Kühlmittel", conf:"mittel", why:"Kalte Heizung bei warmgefahrenem Motor deutet auf ein hängendes Thermostat oder verstopften Wärmetauscher.", risk:"Ein offen hängendes Thermostat erhöht Verbrauch und Verschleiß.", action:"Kühlsystem prüfen lassen." },
+  { kw:["gebläse","lüftung geht nicht","lüfter laut"], cat:"reparatur", service:"Elektrik", guess:"Gebläsemotor oder Vorwiderstand defekt", conf:"mittel", why:"Fällt das Gebläse auf einzelnen Stufen aus, ist meist der Vorwiderstand durch – kompletter Ausfall spricht für den Motor.", risk:"Beschlagene Scheiben ohne Lüftung.", action:"Gebläseregler/Motor tauschen lassen." },
+  { kw:["scheiben beschlagen","feucht im auto","nasser teppich","wasser im fußraum"], cat:"reparatur", service:"Geräusche", guess:"Wassereintritt – Abläufe verstopft oder Türfolie undicht", conf:"mittel", why:"Verstopfte Wasserabläufe (Windlauf, Schiebedach) oder undichte Türfolien lassen Wasser in den Innenraum.", risk:"Schimmel und Elektronikschäden durch Feuchtigkeit.", action:"Abläufe reinigen und Eintrittsstelle suchen lassen." },
+
+  // ---------- Reifen ----------
+  { kw:["reifen platt","luft verliert","schleichender plattfuß","reifendruck sinkt"], cat:"reifen", service:"Reifenreparatur", guess:"Nagel/Schraube im Reifen oder undichtes Ventil", conf:"hoch", why:"Langsamer Druckverlust kommt meist von eingefahrenen Fremdkörpern oder korrodierten Felgenrändern.", risk:"Plötzlicher Luftverlust bei Autobahntempo ist gefährlich.", action:"Reifen prüfen – viele Schäden sind reparabel." },
+  { kw:["sägezahn","ungleichmäßig abgefahren","innen abgefahren","außen abgefahren"], cat:"reifen", service:"Achsvermessung", guess:"Verschleißbild deutet auf Spur-/Sturzfehler", conf:"hoch", why:"Einseitiger Verschleiß = Achsgeometrie; Sägezahn = oft Dämpfer oder Luftdruck.", risk:"Reifen halten nur einen Bruchteil der normalen Laufleistung.", action:"Achsvermessung + Fahrwerkcheck machen lassen." },
+  { kw:["reifen wechseln","winterreifen","sommerreifen","räder tauschen"], cat:"reifen", service:"Reifenwechsel", guess:"Saisonaler Radwechsel", conf:"hoch", why:"Von O bis O: Oktober bis Ostern gilt als Faustregel für Winterreifen.", risk:"Mit Sommerreifen bei Glätte drohen Unfall und Versicherungsprobleme.", action:"Termin zum Umstecken inkl. Wuchten buchen." },
+
+  // ---------- Karosserie, Glas, Pflege ----------
+  { kw:["steinschlag","riss in der scheibe","scheibe gerissen","windschutzscheibe"], cat:"autoglas", service:"Steinschlagreparatur", guess:"Glasschaden – oft ohne Scheibentausch reparabel", conf:"hoch", why:"Kleine Steinschläge (bis ~5 mm, außerhalb des Sichtfelds) lassen sich mit Harz auffüllen – Kasko übernimmt das meist komplett.", risk:"Aus dem Steinschlag wird bei Kälte/Erschütterung schnell ein Riss – dann muss die ganze Scheibe neu.", action:"Schnell reparieren lassen, bevor ein Riss entsteht." },
+  { kw:["delle","beule","parkrempler","hagelschaden"], cat:"karosserie", service:"Ausbeulen ohne Lackieren", guess:"Blechschaden – oft per Smart Repair lösbar", conf:"hoch", why:"Dellen ohne Lackschaden lassen sich meist lackschadenfrei ausdrücken – deutlich günstiger als eine Lackierung.", risk:"Bei beschädigtem Lack droht Rost.", action:"Foto machen und Angebote für Smart Repair einholen." },
+  { kw:["rost","gammel","durchgerostet","blase im lack"], cat:"karosserie", service:"Rostbeseitigung", guess:"Korrosion – je früher behandelt, desto günstiger", conf:"hoch", why:"Rost wandert unter dem Lack weiter; Blasen zeigen, dass es darunter schon arbeitet.", risk:"Tragende Teile mit Durchrostung sind ein HU-K.o.", action:"Professionell entfernen und versiegeln lassen." },
+  { kw:["kratzer","lack zerkratzt","vandalismus"], cat:"lack", service:"Smart Repair", guess:"Lackschaden – Ausbesserung meist punktuell möglich", conf:"hoch", why:"Oberflächliche Kratzer lassen sich polieren, tiefere per Smart Repair beilackieren.", risk:"Bis aufs Blech durchgehende Kratzer rosten.", action:"Tiefe mit Fingernagel-Test prüfen und Angebot einholen." },
+  { kw:["tür schließt nicht","kofferraum geht nicht auf","heckklappe","schiebedach klemmt"], cat:"reparatur", service:"Zentralverriegelung", guess:"Schloss, Scharnier oder Mechanik defekt", conf:"mittel", why:"Schlösser und Mechaniken verschleißen oder verstellen sich.", risk:"Sicherheits- und Diebstahlrisiko.", action:"Mechanik einstellen oder Schloss ersetzen lassen." },
+
+  // ---------- Schlüssel ----------
+  { kw:["schlüssel","funkschlüssel","keyless","fernbedienung geht nicht","schlüssel verloren"], cat:"schluessel", service:"Schlüssel nachmachen", guess:"Funkschlüssel defekt oder Ersatzschlüssel nötig", conf:"hoch", why:"Oft ist nur die Batterie im Schlüssel leer; bei Verlust muss ein neuer Schlüssel codiert und der alte gesperrt werden.", risk:"Ohne Zweitschlüssel wird ein Verlust teuer und aufwendig.", action:"Batterie wechseln; sonst Schlüsseldienst mit Codiergerät aufsuchen." },
+  { kw:["wegfahrsperre","schlüssel nicht erkannt"], cat:"schluessel", service:"Wegfahrsperre", guess:"Transponder oder Antennenring defekt", conf:"mittel", why:"Erkennt das Auto den Schlüssel nicht, ist der Transponderchip oder der Antennenring am Zündschloss gestört.", risk:"Fahrzeug lässt sich nicht starten.", action:"Zweitschlüssel testen – funktioniert er, liegt es am Schlüssel." },
+
+  // ---------- E-Auto & Hybrid ----------
+  { kw:["lädt nicht","ladesäule","wallbox","ladeklappe","ladekabel"], cat:"eauto", service:"Ladeelektronik", guess:"Ladeproblem – Kabel, Onboard-Lader oder Freigabe", conf:"mittel", why:"Ladeabbrüche haben viele Ursachen: Kabel, Ladesäulen-Kommunikation oder das Ladegerät im Auto.", risk:"Im Alltag stark einschränkend.", action:"An anderer Säule/anderem Kabel gegentesten, dann Diagnose." },
+  { kw:["reichweite","batterie schnell leer","akku schwach","soh"], cat:"eauto", service:"HV-Batterie-Check", guess:"HV-Batterie: Kapazität prüfen lassen", conf:"mittel", why:"Reichweitenverlust ist im Winter normal; dauerhaft deutlich weniger km deutet auf gealterte Zellen.", risk:"Wertverlust; einzelne Modultausche sind günstiger als zu warten.", action:"Batteriezertifikat / SoH-Messung machen lassen." },
+  { kw:["hybrid","hv-warnung","hochvolt"], cat:"eauto", service:"HV-Reparatur", guess:"Hochvoltsystem meldet Fehler", conf:"mittel", sev:"hoch", why:"HV-Warnungen können von Sensoren bis Isolationsfehlern reichen – hier darf nur geschultes Personal ran.", risk:"Sicherheitsrelevant; Fahrzeug kann sich abschalten.", action:"HV-qualifizierte Werkstatt aufsuchen." },
+
+  // ---------- TÜV & Termine ----------
+  { kw:["tüv","hu fällig","plakette","hauptuntersuchung","tüv abgelaufen"], cat:"tuev", service:"HU", guess:"Hauptuntersuchung fällig", conf:"hoch", why:"Die HU ist alle 2 Jahre fällig; überziehen kostet Bußgeld und ab 8 Monaten eine erweiterte Prüfung.", risk:"Bußgeld, Punkte und Probleme mit der Versicherung.", action:"HU-Termin buchen – gern mit Vorab-Check, damit es beim ersten Mal klappt." },
+  { kw:["durchgefallen","mängelbericht","nachprüfung","erhebliche mängel"], cat:"tuev", service:"Mängelbeseitigung vor HU", guess:"Mängel aus HU-Bericht beheben", conf:"hoch", why:"Nach nicht bestandener HU hast du 4 Wochen für die Nachprüfung – sonst wird die komplette HU erneut fällig.", risk:"Fristablauf = doppelte Kosten.", action:"Mängelliste an Werkstätten schicken und Festpreis anfragen." },
+  { kw:["inspektion","service fällig","wartung","serviceintervall","ölwechsel"], cat:"inspektion", service:"Kleine Inspektion", guess:"Wartung nach Herstellervorgabe", conf:"hoch", why:"Regelmäßige Wartung erhält Garantie/Kulanz und den Wiederverkaufswert – Ölwechsel ist die wichtigste Einzelmaßnahme.", risk:"Ausgelassene Services kosten spätestens beim Verkauf.", action:"Inspektionsangebote mit Scheckheft-Eintrag vergleichen." },
+
+  // ---------- Assistenz & Komfort ----------
+  { kw:["piept dauerhaft","einparkhilfe","pdc","parksensor"], cat:"reparatur", service:"Sensoren", guess:"Parksensor defekt oder verschmutzt", conf:"hoch", why:"Ein dauerpiepsender PDC-Sensor ist meist feucht, verdreckt oder intern defekt – der fehlerhafte Sensor klickt hörbar nicht mit.", risk:"Nur Komfortverlust, aber nervig.", action:"Sensoren reinigen; bleibt es, defekten Sensor tauschen." },
+  { kw:["tempomat","abstandsregel","acc ausgefallen","spurhalte"], cat:"reparatur", service:"Sensoren", guess:"Assistenzsystem-Sensor gestört", conf:"mittel", why:"Radar-/Kamerasensoren fallen bei Verschmutzung, Steinschlag oder Dejustage aus.", risk:"Assistenzfunktionen fehlen; nach Scheibentausch ist oft Kalibrierung nötig.", action:"Sensorbereich reinigen, sonst Kalibrierung machen lassen." },
+  { kw:["scheibenwischer","wischt schlieren","wischwasser","spritzt nicht"], cat:"reparatur", service:"Scheibenwischer / Waschanlage", guess:"Wischblätter verschlissen oder Düsen/Pumpe zu", conf:"hoch", why:"Wischgummis altern durch UV und sollten jährlich neu; verstopfte Düsen sind meist Kalk/Schmutz.", risk:"Schlechte Sicht – HU-Mangel.", action:"Wischer erneuern, Düsen reinigen lassen." },
+  { kw:["standheizung"], cat:"reparatur", service:"Standheizung-Service", guess:"Standheizung startet nicht – oft Verrußung oder Unterspannung", conf:"mittel", why:"Standheizungen verrußen bei seltener Nutzung; bei schwacher Batterie verweigern sie den Start bewusst.", risk:"Gerät verschleißt weiter.", action:"Einmal monatlich laufen lassen; sonst Diagnose beim Spezialisten." },
+  { kw:["tacho","kombiinstrument","anzeige tot","display schwarz"], cat:"reparatur", service:"Elektrik", guess:"Kombiinstrument oder Spannungsversorgung", conf:"mittel", why:"Tote Anzeigen kommen von Steckern, Masse oder dem Instrument selbst.", risk:"Ohne Tacho drohen unbemerkte Warnungen und Bußgeld.", action:"Elektrik-Diagnose machen lassen." },
+
+  // ---------- Geräusche allgemein ----------
+  { kw:["rasselt beim start","rasselt beim kaltstart","kette rasselt","rasseln kalt","rasselt","rasseln"], cat:"reparatur", service:"Steuerkette", guess:"Steuerkette gelängt oder Spanner schwach", conf:"hoch", sev:"hoch", why:"Kurzes Rasseln beim Kaltstart ist das typische Frühzeichen einer gelängten Steuerkette – der Spanner baut erst Öldruck auf.", risk:"Überspringt die Kette, ist der Motorschaden kapital.", action:"Nicht aussitzen – Kettenzustand prüfen lassen." },
+  { kw:["quietscht beim starten","riemen quietscht","pfeift kalt"], cat:"reparatur", service:"Zahnriemen", guess:"Keilrippenriemen oder Spannrolle verschlissen", conf:"hoch", why:"Ein quietschender Riemen rutscht – Gummi ist verhärtet oder die Spannrolle schwach.", risk:"Reißt der Riemen, fallen Lichtmaschine, Servo und Wasserpumpe aus.", action:"Riemen + Rollen ersetzen lassen (günstiger Standard-Job)." },
+  { kw:["zischt","zischen","luft entweicht"], cat:"reparatur", service:"Motor", guess:"Undichtigkeit im Unterdruck- oder Ladeluftsystem", conf:"mittel", why:"Zischen deutet auf entweichende Luft – Unterdruckschläuche oder Ladeluftstrecke.", risk:"Falschluft bringt Motorlauf und Abgaswerte durcheinander.", action:"Abdrücken/Rauchtest machen lassen." },
+  { kw:["surrt","summt elektrisch","pumpe läuft nach"], cat:"reparatur", service:"Elektrik", guess:"Elektrische Pumpe oder Stellmotor läuft dauerhaft", conf:"mittel", why:"Nachlaufende Pumpen (Kraftstoff, Kühlmittel) können normal sein – dauerhaftes Surren deutet auf ein hängendes Relais.", risk:"Leergesaugte Batterie.", action:"Verursacher orten lassen." },
+
+  // ---------- Kraftstoff & Geruch ----------
+  { kw:["riecht nach benzin","spritgeruch","kraftstoffgeruch","riecht nach diesel"], cat:"reparatur", service:"Kraftstoffpumpe", guess:"Undichtigkeit im Kraftstoffsystem", conf:"mittel", sev:"hoch", why:"Kraftstoffgeruch entsteht durch poröse Leitungen, undichte Injektor-Dichtungen oder den Aktivkohlefilter.", risk:"Brandgefahr – ernst nehmen!", action:"Zeitnah prüfen lassen, nicht in geschlossenen Räumen parken." },
+  { kw:["verbraucht mehr","hoher verbrauch","mehrverbrauch"], cat:"reparatur", service:"Motor", guess:"Lambdasonde, Luftmassenmesser oder Thermostat", conf:"mittel", why:"Deutlicher Mehrverbrauch ohne Fahrstiländerung kommt oft von alternden Sensoren oder einem dauerhaft offenen Thermostat.", risk:"Unnötige Spritkosten, mögliche Kat-Belastung.", action:"Istwerte auslesen lassen." },
+  { kw:["falsch getankt","benzin statt diesel","diesel statt benzin"], cat:"reparatur", service:"Kraftstoffpumpe", guess:"Falschbetankung", conf:"hoch", sev:"hoch", why:"Benzin im Diesel zerstört die Schmierung der Hochdruckpumpe – Diesel im Benziner ist meist glimpflicher.", risk:"Motor NICHT starten! Sonst wird aus Absaugen ein Pumpentausch.", action:"Stehen lassen, Werkstatt/Pannendienst rufen und Tank leerpumpen lassen." },
 ];
-function aiAnalyze(text) {
-  const t = (text || "").toLowerCase();
-  return AI_RULES.filter(r => r.kw.some(k => t.includes(k))).slice(0, 3);
+
+// Normalisierung + Scoring: Phrasen zählen doppelt, mehr Treffer = höhere Konfidenz
+function aiAnalyze(text, max = 4) {
+  const t = " " + String(text || "").toLowerCase().replace(/\s+/g, " ") + " ";
+  const scored = [];
+  for (const r of AI_RULES) {
+    let score = 0;
+    for (const k of r.kw) if (t.includes(k)) score += k.includes(" ") ? 2 : 1;
+    if (score > 0) scored.push(Object.assign({}, r, { score, conf: score >= 3 ? "hoch" : r.conf }));
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, max);
 }
 
 // ---------- Helfer ----------
 function carLabel(v) {
   if (!v) return "";
   const parts = [v.make + " " + v.model];
-  if (v.series && v.series !== "Keine Angabe") parts[0] += " " + v.series;
-  if (v.engine) parts.push(v.engine);
+  if (v.variant) parts[0] += " " + v.variant;
+  else if (v.series && v.series !== "Keine Angabe") parts[0] += " " + v.series;
   if (v.fuel) parts.push(v.fuel);
   if (v.power_ps) parts.push(v.power_ps + " PS");
-  if (v.year) parts.push("BJ " + v.year);
+  if (v.year) parts.push("EZ " + (v.ez_month ? String(v.ez_month).padStart(2, "0") + "/" : "") + v.year);
+  if (v.mileage) parts.push(Number(v.mileage).toLocaleString("de-DE") + " km");
   return parts.join(" · ");
 }
 function distKm(a, b) {
