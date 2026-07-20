@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Carfixo – Finde die richtige Werkstatt für dein Auto</title>
-<meta name="description" content="Carfixo verbindet Autofahrer mit Werkstätten, Tuning-Betrieben, Aufbereitern und Prüfstellen. Anfrage erstellen, Angebote vergleichen, buchen.">
+<title>Carfixo – Werkstätten, Tuning, Aufbereitung & Teile vergleichen</title>
+<meta name="description" content="Carfixo verbindet Autofahrer mit Werkstätten, Tuning-Betrieben, Aufbereitern und Prüfstellen. Angebote vergleichen, Teile kaufen, direkt buchen.">
 <style>
 /* ================= Design Tokens ================= */
 :root{
@@ -14,7 +14,6 @@
   --blue:#1E6BFF; --blue2:#4D8DFF; --cyan:#38BDF8;
   --green:#2BD58A; --gold:#FFB020; --red:#FF5C5C;
   --glow:rgba(30,107,255,.55);
-  --r:18px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth}
@@ -26,29 +25,20 @@ body{
 a{color:inherit;text-decoration:none}
 img,svg{display:block;max-width:100%}
 .wrap{max-width:1140px;margin:0 auto;padding:0 22px}
-
 ::selection{background:rgba(30,107,255,.4)}
 
-/* ================= Reveal / Scroll-Animationen ================= */
-.rv{opacity:0;transform:translateY(30px);transition:opacity .8s cubic-bezier(.22,.61,.36,1),transform .8s cubic-bezier(.22,.61,.36,1);transition-delay:var(--d,0s)}
-.rv-l{transform:translateX(-40px)}
-.rv-r{transform:translateX(40px)}
-.rv-z{transform:scale(.92) translateY(16px)}
-.in .rv,.rv.in{opacity:1;transform:none}
-@media(prefers-reduced-motion:reduce){
-  .rv,.rv-l,.rv-r,.rv-z{opacity:1!important;transform:none!important;transition:none!important}
-  *{animation:none!important}
-  html{scroll-behavior:auto}
-}
+/* ================= Reveal ================= */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s cubic-bezier(.22,.61,.36,1),transform .7s cubic-bezier(.22,.61,.36,1);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1!important;transform:none!important;transition:none!important}*{animation:none!important}html{scroll-behavior:auto}}
 
 /* ================= Nav ================= */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:background .35s,border-color .35s;border-bottom:1px solid transparent}
-nav.scrolled{background:rgba(5,7,13,.78);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-color:var(--line)}
+nav.scrolled{background:rgba(5,7,13,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-color:var(--line)}
 .navIn{display:flex;align-items:center;gap:26px;height:64px;max-width:1140px;margin:0 auto;padding:0 22px}
 .logo{font-size:21px;font-weight:800;letter-spacing:-.5px}
 .logo b{color:var(--blue2)}
-.logo .beta{font-size:9px;font-weight:800;background:var(--gold);color:#442e00;padding:2px 7px;border-radius:99px;vertical-align:middle;margin-left:7px;letter-spacing:.5px}
-.navLinks{display:flex;gap:22px;margin-left:auto;font-size:13.5px;font-weight:600;color:var(--muted)}
+.navLinks{display:flex;gap:22px;margin-left:auto;font-size:13.5px;font-weight:600;color:var(--muted);align-items:center}
 .navLinks a{transition:color .2s}
 .navLinks a:hover{color:#fff}
 .navCta{margin-left:6px;background:var(--blue);color:#fff;font-size:13px;font-weight:700;padding:9px 16px;border-radius:99px;box-shadow:0 0 22px rgba(30,107,255,.35);transition:transform .15s,box-shadow .2s}
@@ -56,77 +46,30 @@ nav.scrolled{background:rgba(5,7,13,.78);backdrop-filter:blur(16px);-webkit-back
 @media(max-width:720px){.navLinks a:not(.navCta){display:none}}
 
 /* ================= Buttons ================= */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 26px;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:transform .15s,box-shadow .25s,background .2s;position:relative;overflow:hidden}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:50px;padding:0 24px;border-radius:14px;font-size:14.5px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:transform .15s,box-shadow .25s,background .2s}
 .btn:active{transform:scale(.97)}
 .btn-p{background:linear-gradient(135deg,#2E77FF,#0A47C2);color:#fff;box-shadow:0 10px 34px rgba(30,107,255,.4)}
 .btn-p:hover{box-shadow:0 14px 44px rgba(30,107,255,.6);transform:translateY(-2px)}
-.btn-p::after{content:"";position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(110deg,transparent,rgba(255,255,255,.28),transparent);transform:translateX(-160%) skewX(-18deg);animation:shim 4s ease-in-out infinite}
-@keyframes shim{0%{transform:translateX(-160%) skewX(-18deg)}55%,100%{transform:translateX(340%) skewX(-18deg)}}
-.btn-g{background:rgba(255,255,255,.05);color:var(--ink);border:1px solid var(--line2);backdrop-filter:blur(8px)}
+.btn-g{background:rgba(255,255,255,.05);color:var(--ink);border:1px solid var(--line2)}
 .btn-g:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
 
-/* ================= Hero ================= */
-.hero{position:relative;min-height:100svh;display:flex;align-items:center;overflow:hidden;padding:110px 0 80px}
-.heroBgGrid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 90% 70% at 50% 40%,#000 30%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 40%,#000 30%,transparent 75%)}
-.orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;will-change:transform}
-.orb1{width:560px;height:560px;background:radial-gradient(circle,rgba(30,107,255,.34),transparent 65%);top:-140px;left:-120px}
-.orb2{width:480px;height:480px;background:radial-gradient(circle,rgba(56,189,248,.16),transparent 65%);bottom:-160px;right:-100px}
-/* blaue Lichtlinien */
-.beam{position:absolute;height:1.5px;width:42%;background:linear-gradient(90deg,transparent,var(--blue2),var(--cyan),transparent);opacity:.5;animation:beam 7s linear infinite;pointer-events:none}
-.beam.b1{top:24%;animation-duration:8s}
-.beam.b2{top:58%;animation-duration:11s;animation-delay:-4s;opacity:.3}
-.beam.b3{top:82%;animation-duration:9s;animation-delay:-2s;opacity:.35}
-@keyframes beam{0%{transform:translateX(-60vw)}100%{transform:translateX(160vw)}}
-@media(max-width:720px){.beam{display:none}.orb{filter:blur(60px)}}
-
-.heroIn{position:relative;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;width:100%}
-@media(max-width:940px){.heroIn{grid-template-columns:1fr;gap:56px}}
-.kicker{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue2);background:rgba(30,107,255,.1);border:1px solid rgba(30,107,255,.3);padding:7px 14px;border-radius:99px;margin-bottom:22px}
+/* ================= Hero (kompakt, Portal) ================= */
+.hero{position:relative;overflow:hidden;padding:118px 0 34px}
+.heroBgGrid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 90% 80% at 50% 0%,#000 30%,transparent 78%);-webkit-mask-image:radial-gradient(ellipse 90% 80% at 50% 0%,#000 30%,transparent 78%)}
+.orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
+.orb1{width:520px;height:520px;background:radial-gradient(circle,rgba(30,107,255,.30),transparent 65%);top:-180px;left:-120px}
+.orb2{width:440px;height:440px;background:radial-gradient(circle,rgba(56,189,248,.14),transparent 65%);top:-120px;right:-120px}
+@media(max-width:720px){.orb{filter:blur(60px)}}
+.heroHome{position:relative;width:100%;max-width:920px;margin:0 auto;text-align:center}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue2);background:rgba(30,107,255,.1);border:1px solid rgba(30,107,255,.3);padding:6px 13px;border-radius:99px;margin-bottom:18px}
 .kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-h1{font-size:clamp(38px,6vw,64px);line-height:1.06;font-weight:800;letter-spacing:-2px}
+h1{font-size:clamp(30px,4.6vw,48px);line-height:1.08;font-weight:800;letter-spacing:-1.6px}
 h1 .grad{background:linear-gradient(100deg,#4D8DFF 10%,#38BDF8 55%,#7C5CFF 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.heroSub{font-size:clamp(15px,1.8vw,18px);color:var(--muted);margin-top:20px;max-width:520px;line-height:1.65}
-.heroBtns{display:flex;gap:14px;margin-top:34px;flex-wrap:wrap}
-.trust{display:flex;gap:26px;margin-top:40px;flex-wrap:wrap}
-.trust div{font-size:12.5px;color:var(--muted)}
-.trust b{display:block;font-size:19px;color:#fff;font-weight:800;letter-spacing:-.5px}
+.heroSub{font-size:clamp(14px,1.6vw,16.5px);color:var(--muted);margin:14px auto 0;max-width:540px;line-height:1.6}
 
-/* schwebende UI-Karten im Hero */
-.heroStage{position:relative;height:480px;perspective:1200px}
-@media(max-width:940px){.heroStage{height:430px;max-width:460px;margin:0 auto;width:100%}}
-.fcard{position:absolute;background:rgba(14,20,34,.82);border:1px solid var(--line2);border-radius:16px;padding:14px 16px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 0 1px rgba(30,107,255,.06) inset;will-change:transform;animation:float 7s ease-in-out infinite}
-@keyframes float{0%,100%{transform:translateY(0) rotate(var(--rot,0deg))}50%{transform:translateY(-13px) rotate(var(--rot,0deg))}}
-.fcard .ft{font-size:13px;font-weight:700}
-.fcard .fm{font-size:11px;color:var(--muted);margin-top:2px}
-.fcard .head{display:flex;align-items:center;gap:10px}
-.fico{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
-.f1{top:6%;left:4%;--rot:-2deg;width:250px;animation-delay:-1s}
-.f2{top:34%;right:0;--rot:2deg;width:240px;animation-delay:-3s}
-.f3{bottom:14%;left:10%;--rot:-1deg;width:262px;animation-delay:-5s}
-.f4{bottom:-2%;right:8%;--rot:1.5deg;width:200px;animation-delay:-2s}
-@media(max-width:480px){.f1{left:0}.f3{left:0}.f4{right:0}}
-.price{font-size:17px;font-weight:800;color:#fff;margin-left:auto}
-.stars{color:var(--gold);font-size:12px;letter-spacing:2px}
-.tagOk{font-size:9.5px;font-weight:800;background:rgba(43,213,138,.14);color:var(--green);padding:3px 9px;border-radius:99px}
-.tagWarn{font-size:9.5px;font-weight:800;background:rgba(255,176,32,.14);color:var(--gold);padding:3px 9px;border-radius:99px}
-.heroRing{position:absolute;top:50%;left:50%;width:340px;height:340px;transform:translate(-50%,-50%);border-radius:50%;border:1px dashed rgba(77,141,255,.25);animation:spin 40s linear infinite}
-@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
-.scrollHint{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);font-size:11px;letter-spacing:1.5px;text-transform:uppercase}
-.mouse{width:24px;height:38px;border:1.5px solid var(--muted);border-radius:14px;position:relative}
-.mouse::after{content:"";position:absolute;top:7px;left:50%;width:3px;height:7px;margin-left:-1.5px;border-radius:3px;background:var(--blue2);animation:wheel 1.8s infinite}
-@keyframes wheel{0%{transform:translateY(0);opacity:1}70%{transform:translateY(12px);opacity:0}100%{opacity:0}}
-
-/* ================= Startseite: sofort loslegen ================= */
-.heroHome{position:relative;width:100%;max-width:920px;margin:0 auto;text-align:center}
-.heroHome h1{font-size:clamp(32px,5vw,54px)}
-.heroHome .heroSub{margin-left:auto;margin-right:auto;max-width:560px}
-.heroHome .trust{justify-content:center}
-.catStrip{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:26px}
-.catStrip a{font-size:12.5px;font-weight:700;color:#C7D4E8;border:1px solid var(--line2);background:rgba(255,255,255,.04);padding:8px 15px;border-radius:99px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
-.catStrip a:hover{border-color:var(--blue2);color:#fff;background:rgba(30,107,255,.14)}
-.catStrip a.more{color:var(--blue2);border-color:rgba(30,107,255,.4)}
-.searchBox{display:flex;align-items:stretch;gap:0;background:rgba(12,17,29,.92);border:1px solid var(--line2);border-radius:18px;padding:8px;margin-top:28px;text-align:left;box-shadow:0 24px 70px rgba(0,0,0,.45),0 0 0 1px rgba(30,107,255,.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+/* Suchwidget */
+.searchBox{display:flex;align-items:stretch;gap:0;background:rgba(12,17,29,.92);border:1px solid var(--line2);border-radius:18px;padding:8px;margin-top:26px;text-align:left;box-shadow:0 24px 70px rgba(0,0,0,.45),0 0 0 1px rgba(30,107,255,.1);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .sbField{flex:1;padding:8px 16px;min-width:0}
 .sbField.grow{flex:1.7}
 .sbField label{display:block;font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
@@ -140,230 +83,92 @@ h1 .grad{background:linear-gradient(100deg,#4D8DFF 10%,#38BDF8 55%,#7C5CFF 95%);
   .sbDivider{width:auto;height:1px;margin:2px 12px}
   .sbGo{width:100%;align-self:stretch}
 }
-.quickTiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}
-@media(max-width:720px){.quickTiles{grid-template-columns:1fr 1fr;gap:10px}}
-.qt{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;transition:transform .2s,border-color .2s}
+
+/* Kategorie-Chips */
+.catStrip{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:22px}
+.catStrip a{font-size:12.5px;font-weight:700;color:#C7D4E8;border:1px solid var(--line2);background:rgba(255,255,255,.04);padding:8px 15px;border-radius:99px;white-space:nowrap;transition:border-color .15s,background .15s,color .15s}
+.catStrip a:hover{border-color:var(--blue2);color:#fff;background:rgba(30,107,255,.14)}
+.catStrip a.more{color:var(--blue2);border-color:rgba(30,107,255,.4)}
+
+/* Trust-Leiste */
+.trustStrip{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:24px}
+.trustStrip span{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--muted);background:rgba(255,255,255,.03);border:1px solid var(--line);padding:8px 14px;border-radius:99px}
+.trustStrip b{color:var(--green)}
+
+/* ================= Sections ================= */
+section{position:relative;padding:34px 0}
+.rowHead{display:flex;align-items:baseline;gap:14px;margin-bottom:18px}
+.rowHead h2{font-size:clamp(19px,2.4vw,24px);font-weight:800;letter-spacing:-.5px}
+.rowHead .sub{font-size:12.5px;color:var(--muted)}
+.rowHead .all{margin-left:auto;font-size:13px;font-weight:700;color:var(--blue2);white-space:nowrap}
+.rowHead .all:hover{text-decoration:underline}
+
+/* Kacheln (Schnell-Einstiege) */
+.quickTiles{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+@media(max-width:940px){.quickTiles{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){.quickTiles{grid-template-columns:repeat(2,1fr);gap:10px}}
+.qt{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;transition:transform .2s,border-color .2s}
 .qt:hover{transform:translateY(-3px);border-color:rgba(77,141,255,.45)}
-.qt .qe{font-size:26px}
-.qt .qn{font-size:13px;font-weight:800}
-.qt .qm{font-size:11px;color:var(--muted);line-height:1.45}
+.qt .qe{font-size:24px}
+.qt .qn{font-size:12.5px;font-weight:800}
+.qt .qm{font-size:10.5px;color:var(--muted);line-height:1.4}
+@media(max-width:940px){.qt .qm{display:none}}
 
+/* Content-Karten (Werkstätten & Teile) */
+.cardsGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:940px){.cardsGrid{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.cardsGrid{grid-template-columns:1fr}}
+.cCard{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:16px;transition:transform .2s,border-color .2s;display:block}
+.cCard:hover{transform:translateY(-3px);border-color:rgba(77,141,255,.45)}
+.cHead{display:flex;align-items:center;gap:12px}
+.cAv{width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,rgba(77,141,255,.3),rgba(56,189,248,.12));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--blue2);flex-shrink:0;background-size:cover;background-position:center}
+.cT{font-size:14px;font-weight:800;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cM{font-size:11.5px;color:var(--muted);margin-top:2px}
+.stars{color:var(--gold);font-size:11.5px;letter-spacing:1.5px}
+.cPills{display:flex;gap:6px;flex-wrap:wrap;margin-top:11px}
+.pill{font-size:10.5px;font-weight:700;color:#C7D4E8;background:rgba(255,255,255,.05);border:1px solid var(--line);padding:5px 10px;border-radius:99px}
+.cPrice{font-size:17px;font-weight:800;letter-spacing:-.3px;margin-top:10px}
+.cPrice .pn{font-size:11px;color:var(--muted);font-weight:600}
+.pImg{width:100%;height:120px;object-fit:cover;border-radius:12px;margin-bottom:11px;border:1px solid var(--line)}
+.pImgPh{width:100%;height:120px;border-radius:12px;margin-bottom:11px;border:1px solid var(--line);background:rgba(30,107,255,.08);display:flex;align-items:center;justify-content:center;font-size:34px}
+.badge{font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.b-green{background:rgba(43,213,138,.14);color:var(--green)}
+.b-grey{background:rgba(255,255,255,.07);color:var(--muted)}
+.b-gold{background:rgba(255,176,32,.14);color:var(--gold)}
+.skRow{height:150px;border-radius:18px;background:linear-gradient(90deg,rgba(255,255,255,.03),rgba(255,255,255,.07),rgba(255,255,255,.03));background-size:200% 100%;animation:sk 1.4s infinite}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-/* ================= City-Netz (leuchtende Wege) ================= */
-#cityNet{padding:110px 0 90px;position:relative;overflow:hidden}
-.cityStage{position:relative;margin-top:10px}
-.cityStage svg{width:100%;height:auto;display:block}
-/* Basis-Straßen */
-.cityRoad{fill:none;stroke:rgba(160,190,255,.1);stroke-linecap:round;stroke-linejoin:round}
-/* Leuchtender Puls: läuft per Dash-Animation den Pfad entlang */
-.puls{fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0}
-#cityNet.in .puls{opacity:1;animation:pulsRun var(--dur,4.5s) linear infinite;animation-delay:var(--del,0s)}
-@keyframes pulsRun{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:calc(-1 * var(--seg))}}
-/* Werkstatt-Gebäude leuchten auf, wenn der Puls ankommt */
-.wsGlow{opacity:.25}
-#cityNet.in .wsGlow{animation:wsGlow var(--dur,4.5s) ease-in-out infinite;animation-delay:var(--gdel,2s)}
-@keyframes wsGlow{0%,55%{opacity:.25}70%,82%{opacity:1}100%{opacity:.3}}
-#cityNet.in .wsPin{animation:pinHop var(--dur,4.5s) ease-in-out infinite;animation-delay:var(--gdel,2s)}
-@keyframes pinHop{0%,55%,100%{transform:translateY(0)}68%{transform:translateY(-7px)}78%{transform:translateY(0)}}
-.wsPin{will-change:transform}
-/* Start-Pin (Kunde) pulsiert dauerhaft */
-#cityNet.in .startRing{animation:startRing 2.4s ease-out infinite;transform-origin:center;transform-box:fill-box}
-@keyframes startRing{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(2.6)}}
-/* Schwebende Werkstatt-Karten über der Szene */
-.cityCard{position:absolute;background:rgba(16,23,40,.96);border:1px solid var(--line2);border-radius:15px;padding:12px 14px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 20px 55px rgba(0,0,0,.55),0 0 0 1px rgba(30,107,255,.07) inset;width:235px;transition:transform .2s,border-color .2s;opacity:0;transform:translateY(14px)}
-#cityNet.in .cityCard{animation:cardIn .7s cubic-bezier(.22,.61,.36,1) forwards;animation-delay:var(--cdel,1s)}
-@keyframes cardIn{to{opacity:1;transform:translateY(0)}}
-.cityCard:hover{transform:translateY(-3px)!important;border-color:rgba(77,141,255,.55)}
-.cityCard .head{display:flex;align-items:center;gap:10px}
-.cityCard .ft{font-size:12.5px;font-weight:700}
-.cityCard .fm{font-size:10.5px;color:var(--muted);margin-top:2px}
-.cityCard .go{font-size:11px;font-weight:800;color:var(--blue2);margin-top:8px;display:block}
-@media(max-width:760px){
-  .cityCard{position:static;width:auto;margin-top:10px;opacity:1;transform:none;animation:none!important}
-  .cityCards{display:grid;grid-template-columns:1fr;gap:0}
-}
-@media(prefers-reduced-motion:reduce){
-  #cityNet.in .puls{animation:none;opacity:.85;stroke-dasharray:none!important}
-  #cityNet.in .wsGlow{animation:none;opacity:.9}
-  #cityNet.in .cityCard{animation:none;opacity:1;transform:none}
-}
+/* Beliebte Leistungen */
+.popular{display:flex;gap:9px;flex-wrap:wrap}
+.popular a{font-size:12.5px;font-weight:700;color:#C7D4E8;border:1px solid var(--line);background:rgba(255,255,255,.03);padding:9px 15px;border-radius:99px;transition:border-color .15s,color .15s,background .15s}
+.popular a:hover{border-color:var(--blue2);color:#fff;background:rgba(30,107,255,.12)}
 
-/* ================= Sections allgemein ================= */
-section{position:relative;padding:110px 0}
-.secHead{text-align:center;max-width:640px;margin:0 auto 70px}
-.secKick{font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--blue2);margin-bottom:14px}
-h2{font-size:clamp(28px,4.2vw,44px);font-weight:800;letter-spacing:-1.2px;line-height:1.12}
-.secSub{color:var(--muted);margin-top:16px;font-size:15.5px;line-height:1.65}
-
-/* ================= Story (6 Kapitel) ================= */
-#story{padding-top:60px}
-.rail{position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);background:rgba(255,255,255,.06)}
-.railFill{position:absolute;left:0;top:0;width:100%;height:100%;background:linear-gradient(180deg,var(--blue2),var(--cyan));transform-origin:top;transform:scaleY(0);box-shadow:0 0 14px var(--glow);will-change:transform}
-@media(max-width:940px){.rail{left:14px}}
-.chapter{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:70px;align-items:center;padding:90px 0;min-height:70vh}
-@media(max-width:940px){.chapter{grid-template-columns:1fr;gap:40px;padding:70px 0 70px 40px;min-height:0}}
-.chapter.flip .chTxt{order:2}
-.chapter.flip .chVis{order:1}
-@media(max-width:940px){.chapter.flip .chTxt{order:1}.chapter.flip .chVis{order:2}}
-.chNum{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:var(--bg);border:2px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--muted);z-index:3;transition:border-color .5s,color .5s,box-shadow .5s}
-.chapter.in .chNum{border-color:var(--blue2);color:#fff;box-shadow:0 0 24px var(--glow)}
-@media(max-width:940px){.chNum{left:14px;width:32px;height:32px;font-size:12px}}
-.chTxt .step{font-size:11.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--blue2);margin-bottom:14px}
-.chTxt h3{font-size:clamp(24px,3.2vw,34px);font-weight:800;letter-spacing:-1px;line-height:1.15}
-.chTxt p{color:var(--muted);margin-top:16px;font-size:15px;line-height:1.7;max-width:440px}
-.chTxt .mini{display:flex;gap:9px;margin-top:22px;flex-wrap:wrap}
-.pill{font-size:12px;font-weight:700;color:#C7D4E8;background:rgba(255,255,255,.05);border:1px solid var(--line);padding:8px 14px;border-radius:99px}
-.chVis{position:relative}
-.stage{position:relative;background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:24px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.45);overflow:hidden}
-.stage::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(30,107,255,.1),transparent 70%);pointer-events:none}
-
-/* --- Kap. 1: Auto mit Problem --- */
-.carScene{position:relative;padding:20px 0 8px}
-.carSvg{width:100%;height:auto}
-.warnLamp{animation:warnPulse 1.1s ease-in-out infinite}
-@keyframes warnPulse{0%,100%{opacity:1}50%{opacity:.15}}
-.alertCard{position:absolute;top:-6px;right:-4px;background:rgba(20,14,16,.92);border:1px solid rgba(255,92,92,.35);border-radius:14px;padding:12px 14px;backdrop-filter:blur(10px);box-shadow:0 16px 44px rgba(0,0,0,.5);width:218px}
-.alertCard .ft{font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:7px}
-.alertCard .fm{font-size:11px;color:var(--muted);margin-top:3px}
-.blinkDot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 12px var(--red);animation:pulse 1.1s infinite;flex-shrink:0}
-.smoke{position:absolute;border-radius:50%;background:rgba(255,255,255,.06);filter:blur(6px);animation:smoke 3.2s ease-out infinite}
-@keyframes smoke{0%{transform:translateY(0) scale(.6);opacity:.7}100%{transform:translateY(-46px) scale(1.5);opacity:0}}
-
-/* --- Kap. 2: Anfrage (Phone) --- */
-.phone{width:min(290px,80%);margin:0 auto;background:#070A12;border:1px solid var(--line2);border-radius:34px;padding:12px;box-shadow:0 34px 90px rgba(0,0,0,.6),0 0 40px rgba(30,107,255,.1)}
-.phoneScreen{background:#0B1120;border-radius:24px;padding:16px 14px 18px;min-height:400px}
-.notch{width:86px;height:5px;border-radius:99px;background:rgba(255,255,255,.12);margin:0 auto 16px}
-.pTitle{font-size:14.5px;font-weight:800;letter-spacing:-.3px}
-.pLbl{font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:13px 0 6px}
-.pField{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:11px;padding:10px 12px;font-size:12px;color:#CBD7E8;display:flex;align-items:center;gap:8px}
-.pField .caret{width:1.5px;height:13px;background:var(--blue2);animation:caret 1s steps(1) infinite}
-@keyframes caret{50%{opacity:0}}
-.pChips{display:flex;gap:6px;flex-wrap:wrap}
-.pChip{font-size:10.5px;font-weight:700;padding:7px 11px;border-radius:99px;border:1px solid var(--line);color:var(--muted);background:rgba(255,255,255,.03)}
-.pChip.on{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 4px 16px rgba(30,107,255,.4)}
-.aiTile{margin-top:13px;border:1.5px dashed rgba(124,92,255,.5);border-radius:13px;padding:13px;display:flex;gap:10px;align-items:center;background:rgba(124,92,255,.07)}
-.aiTile .t{font-size:11.5px;font-weight:700}
-.aiTile .m{font-size:10px;color:var(--muted)}
-.pBtn{margin-top:15px;background:linear-gradient(135deg,#2E77FF,#0A47C2);border-radius:12px;text-align:center;padding:12px;font-size:12.5px;font-weight:800;color:#fff;box-shadow:0 8px 24px rgba(30,107,255,.4)}
-
-/* --- Kap. 3: Karte --- */
-.mapBox{position:relative;border-radius:18px;overflow:hidden;background:#0A101E;border:1px solid var(--line);aspect-ratio:16/12}
-.mapGrid{position:absolute;inset:0;background-image:linear-gradient(rgba(77,141,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(77,141,255,.07) 1px,transparent 1px);background-size:38px 38px}
-.road{position:absolute;background:rgba(255,255,255,.05)}
-.rd1{top:32%;left:0;right:0;height:9px;transform:rotate(-4deg)}
-.rd2{top:0;bottom:0;left:58%;width:9px;transform:rotate(7deg)}
-.rd3{top:68%;left:0;right:0;height:6px;transform:rotate(3deg)}
-.radar{position:absolute;top:52%;left:44%;width:16px;height:16px;margin:-8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 16px var(--cyan);z-index:2}
-.radar::before,.radar::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid rgba(56,189,248,.55);animation:radar 2.4s ease-out infinite}
-.radar::after{animation-delay:1.2s}
-@keyframes radar{0%{transform:scale(.5);opacity:1}100%{transform:scale(7);opacity:0}}
-.pin{position:absolute;width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg) scale(0);background:linear-gradient(135deg,#2E77FF,#0A47C2);box-shadow:0 8px 20px rgba(30,107,255,.5);transform-origin:bottom left;display:flex;align-items:center;justify-content:center;transition:transform .55s cubic-bezier(.34,1.56,.64,1)}
-.pin span{transform:rotate(45deg);font-size:12px}
-.pin.gold{background:linear-gradient(135deg,#FFB020,#D97706);box-shadow:0 8px 20px rgba(255,176,32,.4)}
-.in .pin{transform:rotate(-45deg) scale(1)}
-.p1{top:22%;left:24%;transition-delay:.15s}.p2{top:38%;left:66%;transition-delay:.35s}
-.p3{top:64%;left:30%;transition-delay:.55s}.p4{top:14%;left:76%;transition-delay:.75s}
-.p5{top:74%;left:62%;transition-delay:.95s}
-.mapCard{position:absolute;bottom:12px;left:12px;right:12px;background:rgba(10,14,24,.9);border:1px solid var(--line2);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:11px;backdrop-filter:blur(12px)}
-.mapCard .fico{background:rgba(30,107,255,.15)}
-.distTag{margin-left:auto;font-size:11px;font-weight:800;color:var(--cyan);white-space:nowrap}
-
-/* --- Kap. 4: Angebote --- */
-.offerStack{display:flex;flex-direction:column;gap:13px}
-.oCard{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;align-items:center;gap:13px;transition:transform .25s,border-color .25s,box-shadow .25s;cursor:pointer}
-.oCard:hover{transform:translateX(6px) scale(1.01);border-color:rgba(77,141,255,.5)}
-.oCard.best{border-color:rgba(43,213,138,.45);background:rgba(43,213,138,.05);position:relative}
-.bestTag{position:absolute;top:-9px;right:14px;font-size:9px;font-weight:800;letter-spacing:1px;background:var(--green);color:#04140c;padding:3px 10px;border-radius:99px;text-transform:uppercase}
-.oAv{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,rgba(77,141,255,.25),rgba(56,189,248,.12));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--blue2);flex-shrink:0}
-.oInfo{flex:1;min-width:0}
-.oName{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.oMeta{font-size:11px;color:var(--muted);margin-top:2px}
-.oPrice{text-align:right}
-.oPrice b{font-size:19px;font-weight:800;letter-spacing:-.5px}
-.oPrice span{display:block;font-size:9.5px;color:var(--muted)}
-.sortRow{display:flex;gap:8px;margin-bottom:15px}
-.sortChip{font-size:10.5px;font-weight:700;padding:7px 12px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
-.sortChip.on{background:rgba(30,107,255,.15);border-color:rgba(30,107,255,.5);color:var(--blue2)}
-
-/* --- Kap. 5: Auswahl --- */
-.pickCard{background:rgba(255,255,255,.04);border:1.5px solid rgba(43,213,138,.5);border-radius:18px;padding:20px;box-shadow:0 0 44px rgba(43,213,138,.12)}
-.checkRing{width:58px;height:58px;flex-shrink:0}
-.checkRing circle{fill:none;stroke:rgba(43,213,138,.25);stroke-width:3}
-.checkRing .ring{stroke:var(--green);stroke-dasharray:163;stroke-dashoffset:163;stroke-linecap:round}
-.checkRing .tick{fill:none;stroke:var(--green);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40}
-.in .checkRing .ring{animation:draw 1s .3s cubic-bezier(.65,0,.35,1) forwards}
-.in .checkRing .tick{animation:draw .5s 1.1s ease-out forwards}
-@keyframes draw{to{stroke-dashoffset:0}}
-.chatBub{max-width:82%;padding:10px 13px;border-radius:14px;font-size:12.5px;line-height:1.45;margin-top:10px}
-.chatBub.w{background:rgba(255,255,255,.07);border-bottom-left-radius:4px}
-.chatBub.me{background:var(--blue);color:#fff;border-bottom-right-radius:4px;margin-left:auto}
-.termin{display:flex;align-items:center;gap:10px;margin-top:16px;background:rgba(30,107,255,.1);border:1px solid rgba(30,107,255,.3);border-radius:12px;padding:11px 14px;font-size:12.5px;font-weight:700}
-
-/* --- Kap. 6: Fertig --- */
-.doneWrap{text-align:center;padding:14px 0 6px}
-.bigStars{font-size:26px;letter-spacing:6px;color:var(--gold);margin-top:16px}
-.bigStars span{display:inline-block;opacity:0;transform:scale(.3);transition:opacity .4s,transform .5s cubic-bezier(.34,1.56,.64,1)}
-.in .bigStars span{opacity:1;transform:scale(1)}
-.in .bigStars span:nth-child(1){transition-delay:.9s}.in .bigStars span:nth-child(2){transition-delay:1.02s}
-.in .bigStars span:nth-child(3){transition-delay:1.14s}.in .bigStars span:nth-child(4){transition-delay:1.26s}
-.in .bigStars span:nth-child(5){transition-delay:1.38s}
-.kpiRow{display:flex;gap:12px;margin-top:26px}
-.kpi{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:15px 10px}
-.kpi b{font-size:clamp(18px,2.4vw,24px);font-weight:800;letter-spacing:-.5px;display:block}
-.kpi .kl{font-size:10.5px;color:var(--muted)}
-
-/* ================= Features ================= */
-#features{background:linear-gradient(180deg,transparent,rgba(30,107,255,.04) 30%,transparent)}
-.featGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-@media(max-width:940px){.featGrid{grid-template-columns:1fr 1fr}}
-@media(max-width:620px){.featGrid{grid-template-columns:1fr}}
-.feat{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:20px;padding:26px 24px;transition:transform .3s,border-color .3s,box-shadow .3s;position:relative;overflow:hidden}
-.feat:hover{transform:translateY(-6px);border-color:rgba(77,141,255,.4);box-shadow:0 24px 60px rgba(0,0,0,.4),0 0 30px rgba(30,107,255,.08)}
-.feat .fico{width:46px;height:46px;border-radius:14px;font-size:21px;margin-bottom:16px}
-.feat h4{font-size:16.5px;font-weight:800;letter-spacing:-.3px}
-.feat p{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.65}
-.feat .tag{position:absolute;top:20px;right:20px;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;border-radius:99px}
-.tag.prem{background:rgba(255,176,32,.14);color:var(--gold)}
-.tag.ki{background:rgba(124,92,255,.16);color:#A78BFF}
-.icoBlue{background:rgba(30,107,255,.14)}.icoPurple{background:rgba(124,92,255,.14)}
-.icoGreen{background:rgba(43,213,138,.12)}.icoGold{background:rgba(255,176,32,.12)}
-.icoCyan{background:rgba(56,189,248,.12)}.icoRed{background:rgba(255,92,92,.1)}
-
-/* ================= Kategorien ================= */
-.catRow{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
-@media(max-width:940px){.catRow{grid-template-columns:1fr 1fr}}
-.cat{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:18px;padding:24px 20px;text-align:center;transition:transform .3s,border-color .3s,background .3s}
-.cat:hover{transform:translateY(-5px);border-color:rgba(77,141,255,.45);background:rgba(30,107,255,.06)}
-.cat .ce{font-size:32px}
-.cat h5{font-size:14.5px;font-weight:800;margin-top:12px}
-.cat p{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.55}
-
-/* ================= Für Werkstätten ================= */
-#pro .proBox{background:linear-gradient(150deg,#0A1428,#0A0F1C 60%);border:1px solid rgba(30,107,255,.25);border-radius:28px;padding:60px 54px;display:grid;grid-template-columns:1.1fr .9fr;gap:54px;align-items:center;position:relative;overflow:hidden}
+/* ================= Für Betriebe ================= */
+#pro{padding:46px 0}
+#pro .proBox{background:linear-gradient(150deg,#0A1428,#0A0F1C 60%);border:1px solid rgba(30,107,255,.25);border-radius:28px;padding:48px 50px;display:grid;grid-template-columns:1.1fr .9fr;gap:50px;align-items:center;position:relative;overflow:hidden}
 #pro .proBox::before{content:"";position:absolute;top:-120px;right:-120px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(30,107,255,.22),transparent 65%);filter:blur(50px)}
-@media(max-width:940px){#pro .proBox{grid-template-columns:1fr;padding:40px 26px}}
+@media(max-width:940px){#pro .proBox{grid-template-columns:1fr;padding:36px 24px}}
+.secKick{font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--blue2);margin-bottom:12px}
+#pro h2{font-size:clamp(24px,3.4vw,36px);font-weight:800;letter-spacing:-1px;line-height:1.15}
+.checkList{margin-top:22px;display:flex;flex-direction:column;gap:11px}
+.checkList div{display:flex;gap:11px;font-size:13.5px;color:#C7D4E8;align-items:flex-start}
+.checkList .ck{color:var(--green);font-weight:800;flex-shrink:0}
+.heroBtns{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
 .leadCard{background:rgba(10,14,24,.85);border:1px solid var(--line2);border-radius:18px;padding:18px;backdrop-filter:blur(10px)}
 .leadRow{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
 .leadRow:last-child{border:none}
-.leadRow .fico{width:34px;height:34px;font-size:15px;border-radius:10px}
+.fico{width:34px;height:34px;font-size:15px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icoBlue{background:rgba(30,107,255,.14)}.icoPurple{background:rgba(124,92,255,.14)}
+.icoGreen{background:rgba(43,213,138,.12)}.icoGold{background:rgba(255,176,32,.12)}
 .leadRow .t{font-size:12.5px;font-weight:700}
 .leadRow .m{font-size:10.5px;color:var(--muted)}
 .leadRow .newTag{margin-left:auto;font-size:9px;font-weight:800;background:rgba(30,107,255,.18);color:var(--blue2);padding:3px 9px;border-radius:99px;animation:pulse 2s infinite}
-.checkList{margin-top:24px;display:flex;flex-direction:column;gap:12px}
-.checkList div{display:flex;gap:11px;font-size:14px;color:#C7D4E8;align-items:flex-start}
-.checkList .ck{color:var(--green);font-weight:800;flex-shrink:0}
-
-/* ================= Final CTA ================= */
-#cta{text-align:center;padding:140px 0 120px;position:relative;overflow:hidden}
-#cta .orbC{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(30,107,255,.16),transparent 60%);filter:blur(40px);pointer-events:none}
-#cta h2{font-size:clamp(32px,5vw,54px)}
-#cta .heroBtns{justify-content:center}
 
 /* ================= Footer ================= */
-footer{border-top:1px solid var(--line);padding:38px 0;font-size:12.5px;color:var(--muted)}
+footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:var(--muted);margin-top:26px}
 .footIn{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
 .footIn .logo{font-size:16px}
-.footLinks{margin-left:auto;display:flex;gap:20px}
+.footLinks{margin-left:auto;display:flex;gap:20px;flex-wrap:wrap}
 .footLinks a:hover{color:#fff}
 </style>
 </head>
@@ -374,29 +179,27 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:12.5px;color:va
   <div class="navIn">
     <a class="logo" href="#top">car<b>fixo</b></a>
     <div class="navLinks">
-      <a href="#story">So funktioniert's</a>
-      <a href="#features">Funktionen</a>
-      <a href="#kategorien">Kategorien</a>
+      <a href="app.html#/search">Werkstätten</a>
+      <a href="app.html#/teile">Teile</a>
+      <a href="app.html#/diagnose">KI-Diagnose</a>
       <a href="#pro">Für Betriebe</a>
       <a class="navCta" href="app.html">App öffnen</a>
     </div>
   </div>
 </nav>
 
-<!-- ================= HERO ================= -->
+<!-- ================= HERO: Direkt loslegen ================= -->
 <header class="hero" id="top">
   <div class="heroBgGrid"></div>
-  <div class="orb orb1" data-plx="0.25"></div>
-  <div class="orb orb2" data-plx="-0.15"></div>
-  <div class="beam b1"></div><div class="beam b2"></div><div class="beam b3"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
 
   <div class="wrap heroHome">
     <div class="kicker rv"><span class="dot"></span> Live in Köln</div>
-    <h1 class="rv" style="--d:.06s">Was braucht <span class="grad">dein Auto?</span></h1>
-    <p class="heroSub rv" style="--d:.12s">Werkstatt, Tuning, Aufbereitung, TÜV oder Teile – vergleiche echte Angebote von geprüften Betrieben. Kostenlos für Kunden.</p>
+    <h1 class="rv" style="--d:.05s">Was braucht <span class="grad">dein Auto?</span></h1>
+    <p class="heroSub rv" style="--d:.1s">Werkstatt, Tuning, Aufbereitung, TÜV oder Teile – vergleiche echte Angebote von geprüften Betrieben. Kostenlos für Kunden.</p>
 
-    <!-- Direkt-Suche -->
-    <form class="searchBox rv" style="--d:.18s" id="homeSearch">
+    <form class="searchBox rv" style="--d:.15s" id="homeSearch">
       <div class="sbField grow">
         <label for="hq">Was?</label>
         <input id="hq" placeholder="z.B. Ölwechsel, TÜV, Chiptuning, Felgen aufbereiten…" autocomplete="off">
@@ -409,8 +212,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:12.5px;color:va
       <button class="sbGo" type="submit">🔍 Suchen</button>
     </form>
 
-    <!-- Kategorie-Schnellzugriff -->
-    <div class="catStrip rv" style="--d:.24s">
+    <div class="catStrip rv" style="--d:.2s">
       <a href="app.html#/search?cat=reparatur">🔧 Reparatur</a>
       <a href="app.html#/search?cat=inspektion">🛠️ Inspektion</a>
       <a href="app.html#/search?cat=reifen">🛞 Reifen &amp; Felgen</a>
@@ -424,428 +226,95 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:12.5px;color:va
       <a class="more" href="app.html#/search">Alle Kategorien →</a>
     </div>
 
-    <!-- Schnell-Einstiege -->
-    <div class="quickTiles rv" style="--d:.3s">
+    <div class="trustStrip rv" style="--d:.25s">
+      <span><b>✓</b> Geprüfte &amp; verifizierte Betriebe</span>
+      <span><b>✓</b> 100 % kostenlos für Kunden</span>
+      <span><b>✓</b> 1 Anfrage – mehrere Angebote</span>
+      <span><b>✓</b> Teile direkt vom Betrieb</span>
+    </div>
+  </div>
+</header>
+
+<!-- ================= SCHNELL-EINSTIEGE ================= -->
+<section>
+  <div class="wrap">
+    <div class="quickTiles rv">
       <a class="qt" href="app.html#/search">
         <span class="qe">🔍</span><span class="qn">Betrieb finden</span>
-        <span class="qm">Werkstätten &amp; Spezialisten in deiner Nähe vergleichen</span>
+        <span class="qm">Vergleichen &amp; anfragen</span>
       </a>
       <a class="qt" href="app.html#/diagnose">
         <span class="qe">🤖</span><span class="qn">KI-Diagnose</span>
-        <span class="qm">Problem beschreiben – kostenlose Ersteinschätzung mit Preisrahmen</span>
+        <span class="qm">Ersteinschätzung + Preisrahmen</span>
       </a>
       <a class="qt" href="app.html#/teile">
         <span class="qe">🧩</span><span class="qn">Teile kaufen</span>
-        <span class="qm">Neue &amp; gebrauchte Teile direkt vom Betrieb, auf Wunsch mit Einbau</span>
+        <span class="qm">Neu &amp; gebraucht, mit Einbau</span>
       </a>
       <a class="qt" href="app.html#/new-request">
         <span class="qe">📢</span><span class="qn">Anfrage erstellen</span>
-        <span class="qm">Einmal beschreiben – passende Betriebe melden sich mit Angeboten</span>
+        <span class="qm">Betriebe melden sich bei dir</span>
       </a>
       <a class="qt" href="app.html#/notfall">
         <span class="qe">🚨</span><span class="qn">Notfall-Hilfe</span>
-        <span class="qm">Panne oder dringendes Problem? Betriebe mit Notdienst finden</span>
+        <span class="qm">Notdienst &amp; mobile Hilfe</span>
       </a>
       <a class="qt" href="#pro">
         <span class="qe">🏪</span><span class="qn">Für Betriebe</span>
-        <span class="qm">Neue Kunden gewinnen &amp; Teile verkaufen – aktuell kostenlos</span>
+        <span class="qm">Kunden gewinnen, Teile verkaufen</span>
       </a>
     </div>
-
-    <div class="trust rv" style="--d:.36s">
-      <div><b>14</b>Service-Kategorien</div>
-      <div><b>100 %</b>kostenlos für Kunden</div>
-      <div><b>1</b>Anfrage – viele Angebote</div>
-    </div>
   </div>
+</section>
 
-</header>
-
-<script>
-// Startseiten-Suche → App-Suche mit Stichwort + Ort
-document.getElementById("homeSearch").addEventListener("submit", function (e) {
-  e.preventDefault();
-  var q = document.getElementById("hq").value.trim();
-  var loc = document.getElementById("hloc").value.trim();
-  var params = [];
-  if (q) params.push("q=" + encodeURIComponent(q));
-  if (loc) params.push("loc=" + encodeURIComponent(loc));
-  location.href = "app.html#/search" + (params.length ? "?" + params.join("&") : "");
-});
-</script>
-
-<!-- ================= STORY ================= -->
-<section id="story">
+<!-- ================= TOP-BETRIEBE (live) ================= -->
+<section id="topWs">
   <div class="wrap">
-    <div class="secHead rv">
-      <div class="secKick">So funktioniert Carfixo</div>
-      <h2>Vom Problem zur gebuchten<br>Werkstatt – in einer Story.</h2>
-      <p class="secSub">Scroll weiter und erlebe den kompletten Weg: von der ersten Warnlampe bis zum abgeschlossenen Auftrag.</p>
+    <div class="rowHead rv">
+      <h2>⭐ Top-Betriebe in Köln</h2>
+      <span class="sub">nach Bewertung</span>
+      <a class="all" href="app.html#/search">Alle Betriebe →</a>
     </div>
-  </div>
-
-  <div class="wrap" style="position:relative">
-    <div class="rail"><div class="railFill" id="railFill"></div></div>
-
-    <!-- Kapitel 1 -->
-    <div class="chapter" data-ch>
-      <div class="chNum">1</div>
-      <div class="chTxt rv rv-l">
-        <div class="step">Kapitel 01 · Das Problem</div>
-        <h3>Eine Warnlampe.<br>Ein komisches Geräusch.</h3>
-        <p>Motorkontrollleuchte an, Bremsen quietschen oder der TÜV steht an – du weißt nur: Da muss jemand ran. Aber wer? Und was kostet das?</p>
-        <div class="mini">
-          <span class="pill">⚠️ Warnlampe</span><span class="pill">🔊 Geräusch</span><span class="pill">📋 TÜV fällig</span>
-        </div>
-      </div>
-      <div class="chVis rv rv-r" style="--d:.15s">
-        <div class="stage">
-          <div class="carScene">
-            <svg class="carSvg" viewBox="0 0 460 200" fill="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="#24344f"/><stop offset="1" stop-color="#0d1524"/>
-                </linearGradient>
-                <linearGradient id="carGlass" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="rgba(140,185,255,.32)"/><stop offset="1" stop-color="rgba(70,110,190,.10)"/>
-                </linearGradient>
-                <radialGradient id="carHead" cx="0.5" cy="0.5" r="0.5">
-                  <stop offset="0" stop-color="#FFF4C8"/><stop offset="1" stop-color="rgba(255,220,120,.15)"/>
-                </radialGradient>
-              </defs>
-              <!-- Bodenschatten -->
-              <ellipse cx="230" cy="181" rx="198" ry="11" fill="rgba(30,107,255,.10)"/>
-              <!-- Greenhouse / Kabine -->
-              <path d="M150 100 C160 74 174 62 194 60 L286 60 C303 60 315 69 321 83 L321 100 Z" fill="url(#carGlass)" stroke="rgba(255,255,255,.14)" stroke-width="1.5"/>
-              <line x1="236" y1="61" x2="236" y2="100" stroke="rgba(10,15,26,.85)" stroke-width="4"/>
-              <!-- Karosserie -->
-              <path d="M50 150 C50 137 60 131 76 127 L150 100 L321 100 L360 116 C389 120 410 128 410 148 L410 156 C410 163 406 167 400 167 L60 167 C54 167 50 163 50 156 Z" fill="url(#carBody)" stroke="rgba(255,255,255,.17)" stroke-width="2"/>
-              <!-- Bodyline + Türen -->
-              <path d="M68 138 L404 138" stroke="rgba(255,255,255,.08)" stroke-width="2"/>
-              <line x1="236" y1="104" x2="236" y2="150" stroke="rgba(0,0,0,.35)" stroke-width="1.4"/>
-              <line x1="150" y1="102" x2="150" y2="150" stroke="rgba(0,0,0,.22)" stroke-width="1.2"/>
-              <rect x="188" y="120" width="22" height="5" rx="2.5" fill="rgba(255,255,255,.24)"/>
-              <rect x="266" y="120" width="22" height="5" rx="2.5" fill="rgba(255,255,255,.24)"/>
-              <!-- Seitenspiegel -->
-              <path d="M151 101 l-13 -5 3 11 z" fill="#16223a" stroke="rgba(255,255,255,.12)"/>
-              <!-- Radkästen -->
-              <path d="M104 167 a31 31 0 0 1 62 0 Z" fill="#0A0F1C"/>
-              <path d="M300 167 a31 31 0 0 1 62 0 Z" fill="#0A0F1C"/>
-              <!-- Räder + Alufelgen -->
-              <circle cx="135" cy="165" r="29" fill="#0A0F1C" stroke="rgba(255,255,255,.22)" stroke-width="3"/>
-              <circle cx="135" cy="165" r="14" fill="#1A2438" stroke="rgba(120,160,230,.45)" stroke-width="1.5"/>
-              <path d="M135 165 L149 165 M135 165 L139 178 M135 165 L124 173 M135 165 L124 157 M135 165 L139 152" stroke="rgba(130,170,235,.55)" stroke-width="1.5"/>
-              <circle cx="135" cy="165" r="3.4" fill="#2a3a58"/>
-              <circle cx="331" cy="165" r="29" fill="#0A0F1C" stroke="rgba(255,255,255,.22)" stroke-width="3"/>
-              <circle cx="331" cy="165" r="14" fill="#1A2438" stroke="rgba(120,160,230,.45)" stroke-width="1.5"/>
-              <path d="M331 165 L345 165 M331 165 L335 178 M331 165 L320 173 M331 165 L320 157 M331 165 L335 152" stroke="rgba(130,170,235,.55)" stroke-width="1.5"/>
-              <circle cx="331" cy="165" r="3.4" fill="#2a3a58"/>
-              <!-- Scheinwerfer / Rücklicht -->
-              <path d="M50 126 q10 0 12 8 l-14 3 q-2 -6 2 -11 Z" fill="url(#carHead)"/>
-              <rect x="396" y="126" width="16" height="10" rx="3" fill="rgba(255,92,92,.85)"/>
-              <!-- Motorkontrollleuchte -->
-              <g class="warnLamp">
-                <circle cx="230" cy="34" r="17" fill="rgba(255,176,32,.14)" stroke="#FFB020" stroke-width="2"/>
-                <path d="M230 24 L239 41 L221 41 Z" fill="none" stroke="#FFB020" stroke-width="2.4" stroke-linejoin="round"/>
-                <line x1="230" y1="31" x2="230" y2="36" stroke="#FFB020" stroke-width="2.4" stroke-linecap="round"/>
-                <circle cx="230" cy="39" r="0.8" fill="#FFB020"/>
-              </g>
-              <line x1="230" y1="52" x2="230" y2="60" stroke="rgba(255,176,32,.5)" stroke-width="1.5" stroke-dasharray="3 4"/>
-            </svg>
-            <div class="smoke" style="width:18px;height:18px;top:44%;left:20%"></div>
-            <div class="smoke" style="width:13px;height:13px;top:48%;left:24%;animation-delay:1.2s"></div>
-            <div class="alertCard">
-              <div class="ft"><span class="blinkDot"></span> Motorkontrollleuchte</div>
-              <div class="fm">Fehler erkannt · Werkstatt empfohlen</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Kapitel 2 -->
-    <div class="chapter flip" data-ch>
-      <div class="chNum">2</div>
-      <div class="chTxt rv rv-r">
-        <div class="step">Kapitel 02 · Deine Anfrage</div>
-        <h3>Beschreib es einmal.<br>Oder lass die KI ran.</h3>
-        <p>Fahrzeug aus deiner Garage wählen, Kategorie antippen, Problem beschreiben. Optional: Foto oder Video hochladen – die KI-Analyse gibt dir sofort eine erste Einschätzung, was es sein könnte.</p>
-        <div class="mini">
-          <span class="pill">🚗 Fahrzeug gespeichert</span><span class="pill">🤖 KI-Vorschlag</span><span class="pill">📍 Umkreis wählbar</span>
-        </div>
-      </div>
-      <div class="chVis rv rv-l" style="--d:.15s">
-        <div class="phone">
-          <div class="phoneScreen">
-            <div class="notch"></div>
-            <div class="pTitle">Neue Anfrage</div>
-            <div class="pLbl">Fahrzeug</div>
-            <div class="pField rv" style="--d:.3s">🚗&nbsp; BMW 3er F30 · 320d · 2016</div>
-            <div class="pLbl">Kategorie</div>
-            <div class="pChips">
-              <span class="pChip on rv" style="--d:.45s">🔧 Reparatur</span>
-              <span class="pChip rv" style="--d:.52s">🛞 Reifen</span>
-              <span class="pChip rv" style="--d:.59s">📋 TÜV</span>
-              <span class="pChip rv" style="--d:.66s">🏎️ Tuning</span>
-            </div>
-            <div class="pLbl">Beschreibung</div>
-            <div class="pField rv" style="--d:.75s">Quietscht beim Bremsen vorne&nbsp;<span class="caret"></span></div>
-            <div class="aiTile rv rv-z" style="--d:.9s">
-              <div class="fico icoPurple">🤖</div>
-              <div><div class="t">KI-Analyse: Foto / Video hochladen</div><div class="m">Vorschlag: „Bremsbeläge vorne verschlissen"</div></div>
-            </div>
-            <div class="pBtn rv" style="--d:1.05s">Anfrage veröffentlichen&nbsp;→</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Kapitel 3 -->
-    <div class="chapter" data-ch>
-      <div class="chNum">3</div>
-      <div class="chTxt rv rv-l">
-        <div class="step">Kapitel 03 · Werkstätten entdecken</div>
-        <h3>Passende Betriebe,<br>direkt in deiner Nähe.</h3>
-        <p>Carfixo matcht deine Anfrage mit Betrieben, die genau dein Auto und genau dein Problem können – gefiltert nach Entfernung, Bewertung, Preis und Spezialisierung.</p>
-        <div class="mini">
-          <span class="pill">📍 Nach Entfernung</span><span class="pill">★ Nach Bewertung</span><span class="pill">💶 Nach Preis</span>
-        </div>
-      </div>
-      <div class="chVis rv rv-r" style="--d:.15s">
-        <div class="stage" style="padding:16px">
-          <div class="mapBox">
-            <div class="mapGrid"></div>
-            <div class="road rd1"></div><div class="road rd2"></div><div class="road rd3"></div>
-            <div class="radar"></div>
-            <div class="pin p1"><span>🔧</span></div>
-            <div class="pin p2 gold"><span>★</span></div>
-            <div class="pin p3"><span>🛞</span></div>
-            <div class="pin p4"><span>📋</span></div>
-            <div class="pin p5"><span>✨</span></div>
-            <div class="mapCard rv" style="--d:1.1s">
-              <div class="fico icoBlue">🔧</div>
-              <div><div class="ft" style="font-size:12.5px;font-weight:700">Meister Auto Köln-Ehrenfeld</div>
-              <div class="fm" style="font-size:10.5px;color:var(--muted)"><span class="stars">★★★★★</span> 4,9 · BMW-Spezialist</div></div>
-              <div class="distTag">1,2 km</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Kapitel 4 -->
-    <div class="chapter flip" data-ch>
-      <div class="chNum">4</div>
-      <div class="chTxt rv rv-r">
-        <div class="step">Kapitel 04 · Angebote vergleichen</div>
-        <h3>Die Werkstätten kommen<br>zu dir – mit echten Preisen.</h3>
-        <p>Keine Anrufe, kein Hinterherlaufen. Interessierte Betriebe senden dir konkrete Angebote mit Einzelpositionen. Du vergleichst Preis, Bewertung und Termin – transparent an einem Ort.</p>
-        <div class="mini">
-          <span class="pill">🧾 Einzelpositionen</span><span class="pill">💬 Rückfragen im Chat</span>
-        </div>
-      </div>
-      <div class="chVis rv rv-l" style="--d:.15s">
-        <div class="stage">
-          <div class="sortRow">
-            <span class="sortChip on">Bester Preis</span><span class="sortChip">Beste Bewertung</span><span class="sortChip">Nähe</span>
-          </div>
-          <div class="offerStack">
-            <div class="oCard best rv" style="--d:.3s">
-              <span class="bestTag">Bester Preis</span>
-              <div class="oAv">MA</div>
-              <div class="oInfo"><div class="oName">Meister Auto Köln</div><div class="oMeta"><span class="stars">★★★★★</span> 4,9 · 1,2 km · Termin: Do.</div></div>
-              <div class="oPrice"><b>189&nbsp;€</b><span>inkl. MwSt.</span></div>
-            </div>
-            <div class="oCard rv" style="--d:.5s">
-              <div class="oAv">BS</div>
-              <div class="oInfo"><div class="oName">Bremsen-Service Deutz</div><div class="oMeta"><span class="stars">★★★★☆</span> 4,6 · 3,4 km · Termin: Fr.</div></div>
-              <div class="oPrice"><b>205&nbsp;€</b><span>inkl. MwSt.</span></div>
-            </div>
-            <div class="oCard rv" style="--d:.7s">
-              <div class="oAv">KA</div>
-              <div class="oInfo"><div class="oName">KFZ Arslan &amp; Söhne</div><div class="oMeta"><span class="stars">★★★★★</span> 4,8 · 5,1 km · mobil möglich</div></div>
-              <div class="oPrice"><b>219&nbsp;€</b><span>inkl. MwSt.</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Kapitel 5 -->
-    <div class="chapter" data-ch>
-      <div class="chNum">5</div>
-      <div class="chTxt rv rv-l">
-        <div class="step">Kapitel 05 · Auswahl &amp; Termin</div>
-        <h3>Ein Klick.<br>Verbindlich gebucht.</h3>
-        <p>Du nimmst das beste Angebot an – alle anderen werden automatisch abgesagt. Termin, Details und Rückfragen klärst du direkt im Chat mit deiner Werkstatt.</p>
-        <div class="mini">
-          <span class="pill">🔒 Verbindliche Annahme</span><span class="pill">📅 Terminbestätigung</span>
-        </div>
-      </div>
-      <div class="chVis rv rv-r" style="--d:.15s">
-        <div class="stage">
-          <div class="pickCard">
-            <div style="display:flex;gap:16px;align-items:center">
-              <svg class="checkRing" viewBox="0 0 60 60">
-                <circle cx="30" cy="30" r="26"/>
-                <circle class="ring" cx="30" cy="30" r="26" transform="rotate(-90 30 30)"/>
-                <path class="tick" d="M20 30.5 L27 37.5 L41 23.5"/>
-              </svg>
-              <div>
-                <div style="font-size:15px;font-weight:800">Angebot angenommen</div>
-                <div style="font-size:12px;color:var(--muted);margin-top:3px">Meister Auto Köln · 189&nbsp;€ · Bremsbeläge vorne</div>
-              </div>
-            </div>
-            <div class="chatBub w rv" style="--d:.6s">Hallo! Passt Donnerstag 9:00 Uhr bei Ihnen? Dauert ca. 2 Stunden. 👍</div>
-            <div class="chatBub me rv" style="--d:.85s">Perfekt, bin da. Danke!</div>
-            <div class="termin rv" style="--d:1.1s">📅&nbsp; Donnerstag, 9:00 Uhr &nbsp;·&nbsp; <span style="color:var(--green)">Termin bestätigt ✓</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Kapitel 6 -->
-    <div class="chapter flip" data-ch>
-      <div class="chNum">6</div>
-      <div class="chTxt rv rv-r">
-        <div class="step">Kapitel 06 · Abgeschlossen</div>
-        <h3>Auto repariert.<br>Auftrag abgeschlossen.</h3>
-        <p>Nach der Reparatur bestätigst du den Auftrag und bewertest den Betrieb. Deine Fahrzeughistorie wächst mit – und Carfixo erinnert dich, bevor der nächste Service ansteht.</p>
-        <div class="mini">
-          <span class="pill">★ Bewertung abgeben</span><span class="pill">🗂️ Historie im Profil</span>
-        </div>
-      </div>
-      <div class="chVis rv rv-l" style="--d:.15s">
-        <div class="stage">
-          <div class="doneWrap">
-            <svg class="checkRing" viewBox="0 0 60 60" style="width:74px;height:74px;margin:0 auto">
-              <circle cx="30" cy="30" r="26"/>
-              <circle class="ring" cx="30" cy="30" r="26" transform="rotate(-90 30 30)"/>
-              <path class="tick" d="M20 30.5 L27 37.5 L41 23.5"/>
-            </svg>
-            <div style="font-size:18px;font-weight:800;margin-top:14px">Auftrag erfolgreich abgeschlossen</div>
-            <div style="font-size:12.5px;color:var(--muted);margin-top:5px">BMW 3er F30 · Bremsbeläge vorne · 189&nbsp;€</div>
-            <div class="bigStars"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
-            <div class="kpiRow">
-              <div class="kpi"><b><span data-count="86">0</span>&nbsp;€</b><span class="kl">gespart vs. teuerstem Angebot</span></div>
-              <div class="kpi"><b><span data-count="3">0</span></b><span class="kl">Angebote erhalten</span></div>
-              <div class="kpi"><b><span data-count="24">0</span>&nbsp;h</b><span class="kl">bis zum ersten Angebot</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="cardsGrid" id="wsRow">
+      <div class="skRow"></div><div class="skRow"></div><div class="skRow"></div>
     </div>
   </div>
 </section>
 
-
-<!-- ================= CITY-NETZ: Leuchtende Wege zu Werkstätten ================= -->
-<section id="cityNet" class="rv">
+<!-- ================= TEILE-MARKTPLATZ (live) ================= -->
+<section id="topParts">
   <div class="wrap">
-    <div class="secHead rv">
-      <div class="secKick">Das Carfixo-Netz</div>
-      <h2>Eine Anfrage.<br>Alle Wege führen zur richtigen Werkstatt.</h2>
-      <p class="secSub">Deine Anfrage fließt durch das Carfixo-Netz – und landet genau bei den Betrieben, die dein Auto können. In Echtzeit.</p>
+    <div class="rowHead rv">
+      <h2>🧩 Neu im Teile-Marktplatz</h2>
+      <span class="sub">direkt vom Betrieb</span>
+      <a class="all" href="app.html#/teile">Alle Teile →</a>
     </div>
-    <div class="cityStage">
-      <div id="citySvgHost"></div>
-      <div class="cityCards">
-        <a class="cityCard" style="top:14%;left:2%;--cdel:1.6s" href="app.html#/search">
-          <div class="head"><div class="fico icoBlue">🔧</div>
-          <div><div class="ft">Meister Auto Köln</div><div class="fm"><span class="stars">★★★★★</span> 5,0 · 1,2 km · Reparatur</div></div></div>
-          <span class="go">Profil ansehen →</span>
-        </a>
-        <a class="cityCard" style="top:6%;right:3%;--cdel:2.6s" href="app.html#/search">
-          <div class="head"><div class="fico icoPurple">🏎️</div>
-          <div><div class="ft">TunerZone Cologne</div><div class="fm"><span class="stars">★★★★★</span> 4,8 · 4,1 km · Tuning</div></div></div>
-          <span class="go">Profil ansehen →</span>
-        </a>
-        <a class="cityCard" style="bottom:8%;right:8%;--cdel:3.4s" href="app.html#/diagnose">
-          <div class="head"><div class="fico icoGold">📋</div>
-          <div><div class="ft">Prüfzentrum Porz</div><div class="fm">TÜV heute frei · 6,3 km</div></div></div>
-          <span class="go">Termin sichern →</span>
-        </a>
-      </div>
-    </div>
-    <div class="heroBtns rv" style="justify-content:center;margin-top:26px">
-      <a class="btn btn-p" href="app.html#/search">Werkstätten in deiner Nähe finden</a>
+    <div class="cardsGrid" id="partsRow">
+      <div class="skRow"></div><div class="skRow"></div><div class="skRow"></div>
     </div>
   </div>
 </section>
 
-<!-- ================= FEATURES ================= -->
-<section id="features">
+<!-- ================= BELIEBTE LEISTUNGEN ================= -->
+<section>
   <div class="wrap">
-    <div class="secHead rv">
-      <div class="secKick">Mehr als eine Suche</div>
-      <h2>Alles rund um dein Auto.<br>In einer Plattform.</h2>
-    </div>
-    <div class="featGrid">
-      <div class="feat rv" style="--d:0s">
-        <span class="tag ki">KI</span>
-        <div class="fico icoPurple">🤖</div>
-        <h4>KI-Problem-Analyse</h4>
-        <p>Foto oder Video hochladen, Problem beschreiben – die KI schlägt vor, was es sein könnte, und deine Anfrage landet bei den richtigen Spezialisten.</p>
-      </div>
-      <div class="feat rv" style="--d:.08s">
-        <span class="tag prem">Premium</span>
-        <div class="fico icoGold">🔔</div>
-        <h4>Smarte Erinnerungen</h4>
-        <p>TÜV läuft ab, Inspektion fällig, Reifenwechsel zur Saison: Carfixo Premium erinnert dich rechtzeitig – inklusive passender Angebote.</p>
-      </div>
-      <div class="feat rv" style="--d:.16s">
-        <div class="fico icoBlue">🚗</div>
-        <h4>Deine Fahrzeug-Garage</h4>
-        <p>Fahrzeuge Schritt für Schritt anlegen – Marke, Modell, Baureihe, Motor – oder einfach den Fahrzeugschein hochladen. Jede Anfrage kennt dein Auto.</p>
-      </div>
-      <div class="feat rv" style="--d:.24s">
-        <div class="fico icoCyan">📢</div>
-        <h4>Ausschreibungen</h4>
-        <p>Du bestimmst: Wunschpreis, Standort, mobiler Service, Termin. Betriebe bewerben sich aktiv bei dir – nicht umgekehrt.</p>
-      </div>
-      <div class="feat rv" style="--d:.32s">
-        <div class="fico icoGreen">💬</div>
-        <h4>Live-Chat &amp; Angebote</h4>
-        <p>Rückfragen, Terminabsprachen und Angebote mit Einzelpositionen – alles in Echtzeit an einem Ort, ohne Telefonschleife.</p>
-      </div>
-      <div class="feat rv" style="--d:.4s">
-        <div class="fico icoRed">🛡️</div>
-        <h4>Verifizierte Betriebe</h4>
-        <p>Echte Bewertungen nach abgeschlossenen Aufträgen und Verifizierungs-Badges sorgen für Vertrauen auf beiden Seiten.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================= KATEGORIEN ================= -->
-<section id="kategorien" style="padding-top:40px">
-  <div class="wrap">
-    <div class="secHead rv">
-      <div class="secKick">Fünf Welten · Ein Marktplatz</div>
-      <h2>Nicht nur Werkstätten.</h2>
-      <p class="secSub">Jede Kategorie mit vielen spezialisierten Unterbereichen – vom Ölwechsel bis zur Leistungssteigerung.</p>
-    </div>
-    <div class="catRow">
-      <div class="cat rv" style="--d:0s">
-        <div class="ce">🔧</div><h5>Werkstätten</h5>
-        <p>Reparatur, Diagnose, Inspektion, Bremsen, Klima, Elektrik, Reifen &amp; mehr</p>
-      </div>
-      <div class="cat rv" style="--d:.08s">
-        <div class="ce">🏎️</div><h5>Tuning</h5>
-        <p>Softwareoptimierung, Codierung, Fahrwerk, Auspuff, Felgen, Optik</p>
-      </div>
-      <div class="cat rv" style="--d:.16s">
-        <div class="ce">✨</div><h5>Aufbereitung</h5>
-        <p>Innen- &amp; Außenaufbereitung, Politur, Keramikversiegelung, Folierung</p>
-      </div>
-      <div class="cat rv" style="--d:.24s">
-        <div class="ce">📋</div><h5>TÜV &amp; Prüfung</h5>
-        <p>HU/AU, Vorabcheck, Nachuntersuchung, Gutachten &amp; Eintragungen</p>
-      </div>
-      <div class="cat rv" style="--d:.32s">
-        <div class="ce">🧩</div><h5>Teile-Marktplatz</h5>
-        <p>Neue &amp; gebrauchte Teile direkt vom Betrieb – auf Wunsch mit Einbau</p>
-      </div>
+    <div class="rowHead rv"><h2>🔥 Beliebte Leistungen</h2></div>
+    <div class="popular rv">
+      <a href="app.html#/search?q=%C3%96lwechsel">Ölwechsel</a>
+      <a href="app.html#/search?q=HU">TÜV / HU + AU</a>
+      <a href="app.html#/search?q=Bremsen">Bremsen erneuern</a>
+      <a href="app.html#/search?q=Reifenwechsel">Reifenwechsel</a>
+      <a href="app.html#/search?q=Klimaservice">Klimaservice</a>
+      <a href="app.html#/search?q=Chiptuning">Chiptuning</a>
+      <a href="app.html#/search?q=Felgenaufbereitung">Felgenaufbereitung</a>
+      <a href="app.html#/search?q=Felgen%20hochglanzverdichten">Felgen hochglanzverdichten</a>
+      <a href="app.html#/search?q=Keramikversiegelung">Keramikversiegelung</a>
+      <a href="app.html#/search?q=Folierung">Folierung</a>
+      <a href="app.html#/search?q=Scheibent%C3%B6nung">Scheibentönung</a>
+      <a href="app.html#/search?q=Steinschlagreparatur">Steinschlag-Reparatur</a>
+      <a href="app.html#/search?q=Inspektion">Inspektion</a>
+      <a href="app.html#/search?q=Zahnriemen">Zahnriemenwechsel</a>
+      <a href="app.html#/search?q=Aufbereitung">Komplettaufbereitung</a>
     </div>
   </div>
 </section>
@@ -853,22 +322,22 @@ document.getElementById("homeSearch").addEventListener("submit", function (e) {
 <!-- ================= FÜR BETRIEBE ================= -->
 <section id="pro">
   <div class="wrap">
-    <div class="proBox rv rv-z">
+    <div class="proBox rv">
       <div>
         <div class="secKick">Für Werkstätten &amp; Betriebe</div>
-        <h2 style="font-size:clamp(26px,3.6vw,38px)">Kunden kommen zu dir.<br>Nicht umgekehrt.</h2>
+        <h2>Kunden kommen zu dir.<br>Nicht umgekehrt.</h2>
         <div class="checkList">
           <div><span class="ck">✓</span> Sieh offene Ausschreibungen live – gefiltert nach deinen Kategorien, Marken und deinem Umkreis</div>
           <div><span class="ck">✓</span> Sende Angebote mit Einzelpositionen und gewinne neue Stammkunden</div>
           <div><span class="ck">✓</span> Profil mit Leistungen, Fahrzeugmarken, Standort &amp; Bewertungen</div>
           <div><span class="ck">✓</span> Verkaufe Teile über den Carfixo-Teile-Marktplatz – neu, gebraucht oder mit Einbau</div>
-          <div><span class="ck">✓</span> Aufträge, Status und Kundenchat in einem Dashboard</div>
         </div>
         <div class="heroBtns">
-          <a class="btn btn-p" href="app.html">Als Betrieb registrieren</a>
+          <a class="btn btn-p" href="app.html#/register">Als Betrieb registrieren</a>
+          <a class="btn btn-g" href="app.html#/search">Betriebe ansehen</a>
         </div>
       </div>
-      <div class="leadCard rv rv-r" style="--d:.2s">
+      <div class="leadCard">
         <div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Offene Ausschreibungen <span style="color:var(--green)">● live</span></div>
         <div class="leadRow">
           <div class="fico icoBlue">🔧</div>
@@ -893,192 +362,112 @@ document.getElementById("homeSearch").addEventListener("submit", function (e) {
   </div>
 </section>
 
-<!-- ================= FINAL CTA ================= -->
-<section id="cta">
-  <div class="orbC"></div>
-  <div class="wrap">
-    <div class="secKick rv">Bereit?</div>
-    <h2 class="rv" style="--d:.08s">Dein Auto verdient<br><span class="grad" style="background:linear-gradient(100deg,#4D8DFF,#38BDF8);-webkit-background-clip:text;background-clip:text;color:transparent">die richtige Werkstatt.</span></h2>
-    <p class="secSub rv" style="--d:.16s;max-width:460px;margin-left:auto;margin-right:auto">Erstelle deine erste Anfrage in unter zwei Minuten – kostenlos und unverbindlich.</p>
-    <div class="heroBtns rv" style="--d:.24s;margin-top:34px">
-      <a class="btn btn-p" href="app.html">Jetzt starten</a>
-      <a class="btn btn-g" href="#story">Story nochmal ansehen</a>
-    </div>
-  </div>
-</section>
-
 <!-- ================= FOOTER ================= -->
 <footer>
   <div class="wrap footIn">
     <span class="logo">car<b>fixo</b></span>
     <span>© 2026 Carfixo</span>
     <div class="footLinks">
-      <a href="#story">So funktioniert's</a>
+      <a href="app.html#/search">Werkstatt-Suche</a>
+      <a href="app.html#/teile">Teile-Marktplatz</a>
       <a href="#pro">Für Betriebe</a>
-      <a href="legal.html">Datenschutz & Impressum</a>
+      <a href="legal.html">Datenschutz &amp; Impressum</a>
       <a href="app.html#/notfall">🚨 Notfall</a>
       <a href="app.html">App öffnen</a>
     </div>
   </div>
 </footer>
 
+<script src="assets/config.js"></script>
 <script>
-"use strict";
-const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-/* Nav-Hintergrund beim Scrollen */
-const nav=document.getElementById("nav");
-const onNav=()=>nav.classList.toggle("scrolled",scrollY>24);
+/* ---------- Nav-Zustand ---------- */
+const nav = document.getElementById("nav");
+const onNav = () => nav.classList.toggle("scrolled", scrollY > 8);
+addEventListener("scroll", onNav, { passive: true });
 onNav();
 
-/* Reveal per IntersectionObserver (Kapitel als Gruppe, Einzel-Elemente sonst) */
-const io=new IntersectionObserver(entries=>{
-  for(const e of entries){
-    if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}
-  }
-},{threshold:.18,rootMargin:"0px 0px -8% 0px"});
-document.querySelectorAll("[data-ch]").forEach(ch=>io.observe(ch));
-document.querySelectorAll(".rv").forEach(el=>{if(!el.closest("[data-ch]"))io.observe(el);});
+/* ---------- Reveal ---------- */
+const io = new IntersectionObserver((es) => {
+  es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+}, { threshold: .12 });
+document.querySelectorAll(".rv").forEach(el => io.observe(el));
 
-/* Zähler-Animation */
-const cio=new IntersectionObserver(entries=>{
-  for(const e of entries){
-    if(!e.isIntersecting)continue;
-    cio.unobserve(e.target);
-    const el=e.target,target=+el.dataset.count,t0=performance.now(),dur=1400;
-    if(reduced){el.textContent=target;continue;}
-    const tick=t=>{
-      const p=Math.min((t-t0)/dur,1),ease=1-Math.pow(1-p,3);
-      el.textContent=Math.round(target*ease);
-      if(p<1)requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }
-},{threshold:.6});
-document.querySelectorAll("[data-count]").forEach(el=>cio.observe(el));
+/* ---------- Startseiten-Suche → App-Suche ---------- */
+document.getElementById("homeSearch").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var q = document.getElementById("hq").value.trim();
+  var loc = document.getElementById("hloc").value.trim();
+  var params = [];
+  if (q) params.push("q=" + encodeURIComponent(q));
+  if (loc) params.push("loc=" + encodeURIComponent(loc));
+  location.href = "app.html#/search" + (params.length ? "?" + params.join("&") : "");
+});
 
-/* Scroll-Handler: Rail-Fortschritt + Parallax (nur transform, rAF-gedrosselt) */
-const railFill=document.getElementById("railFill");
-const railBox=railFill.closest(".rail").parentElement;
-const plx=[...document.querySelectorAll("[data-plx]")];
-let ticking=false;
-function frame(){
-  ticking=false;
-  onNav();
-  const r=railBox.getBoundingClientRect();
-  const vh=innerHeight;
-  const prog=Math.min(Math.max((vh*.55-r.top)/r.height,0),1);
-  railFill.style.transform="scaleY("+prog+")";
-  if(!reduced){
-    for(const el of plx){
-      const s=+el.dataset.plx;
-      el.style.transform="translateY("+(scrollY*s*-.35)+"px)";
-    }
-  }
+/* ---------- Live-Inhalte: Top-Betriebe & Teile (Supabase REST, anonym lesbar) ---------- */
+const CAT_ICONS = { reparatur:"🔧", inspektion:"🛠️", reifen:"🛞", karosserie:"🚘", lack:"🎨", pflege:"✨", klima:"❄️", tuev:"📋", tuning:"🏎️", autoglas:"🪟", schluessel:"🔑", oldtimer:"🚗", eauto:"⚡", teile:"🧩" };
+const CAT_NAMES = { reparatur:"Reparatur", inspektion:"Inspektion", reifen:"Reifen & Felgen", karosserie:"Karosserie", lack:"Lack & Folierung", pflege:"Aufbereitung", klima:"Klima", tuev:"TÜV & Prüfung", tuning:"Tuning", autoglas:"Autoglas", schluessel:"Schlüssel", oldtimer:"Oldtimer", eauto:"E-Auto", teile:"Teile" };
+const COND = { neu:"Neu", gebraucht:"Gebraucht", generalueberholt:"Generalüberholt" };
+const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+const stars = n => { const r = Math.round(Number(n) || 0); return "★".repeat(r) + "☆".repeat(5 - r); };
+const eur = n => (Math.round(Number(n) * 100) / 100).toLocaleString("de-DE", { maximumFractionDigits: 2 }) + " €";
+
+async function sbGet(path) {
+  const res = await fetch(CARFIXO.SUPABASE_URL + "/rest/v1/" + path, {
+    headers: { apikey: CARFIXO.SUPABASE_KEY, Authorization: "Bearer " + CARFIXO.SUPABASE_KEY }
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
 }
 
-/* ---------- City-Netz: isometrische Stadt mit Leuchtwegen ---------- */
-(function buildCity(){
-  const host = document.getElementById("citySvgHost");
-  if (!host) return;
-  const U = 34, H2 = .5;                       // Iso-Einheit
-  const CX = 600, CY = 120;
-  const iso = (x, y, z) => [CX + (x - y) * U, CY + (x + y) * U * H2 - z];
-  const P = (pts) => pts.map(p => p.join(",")).join(" ");
-  // deterministischer Zufall
-  let seed = 7;
-  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-
-  const GX = 15, GY = 11;
-  const streetX = [3, 8, 12], streetY = [3, 7]; // Straßen-Korridore
-  const isStreet = (x, y) => streetX.includes(x) || streetY.includes(y);
-
-  // Werkstatt-Gebäude (Zelle, Icon, Farbe, Name)
-  const shops = [
-    { x: 1,  y: 1, icon: "🔧", col: "#1E6BFF" },
-    { x: 10, y: 1, icon: "🏎️", col: "#A78BFF" },
-    { x: 13, y: 8, icon: "📋", col: "#FFB020" },
-    { x: 5,  y: 9, icon: "✨", col: "#2BD58A" },
-  ];
-  const start = { x: 8, y: 5 }; // Kunde (Straßenkreuzung)
-  const isShop = (x, y) => shops.some(s => s.x === x && s.y === y);
-
-  let bodyMain = "", bodyShops = "", roads = "", pulses = "", defs = "";
-
-  // Boden
-  const g0 = iso(-1, -1, 0), g1 = iso(GX + 1, -1, 0), g2 = iso(GX + 1, GY + 1, 0), g3 = iso(-1, GY + 1, 0);
-  bodyMain += `<polygon points="${P([g0, g1, g2, g3])}" fill="#04060C" stroke="rgba(255,255,255,.06)"/>`;
-
-  // Gebäude-Prisma zeichnen
-  function prism(x, y, h, s, topFill, sideR, sideL, extra) {
-    const A = iso(x, y, h), B = iso(x + s, y, h), C = iso(x + s, y + s, h), D = iso(x, y + s, h);
-    const B0 = iso(x + s, y, 0), C0 = iso(x + s, y + s, 0), D0 = iso(x, y + s, 0);
-    return `<g${extra || ""}>
-      <polygon points="${P([B, C, C0, B0])}" fill="${sideR}"/>
-      <polygon points="${P([D, C, C0, D0])}" fill="${sideL}"/>
-      <polygon points="${P([A, B, C, D])}" fill="${topFill}" stroke="rgba(130,170,255,.16)" stroke-width="1"/>
-    </g>`;
+(async () => {
+  const row = document.getElementById("wsRow");
+  try {
+    const ws = await sbGet("workshops?is_verified=eq.true&select=id,name,district,city,rating_avg,rating_count,categories,logo_url,price_level,pickup_service,emergency_service&order=rating_avg.desc,rating_count.desc&limit=6");
+    if (!ws.length) throw new Error("leer");
+    row.innerHTML = ws.map(w => `
+      <a class="cCard" href="app.html#/workshop/${w.id}">
+        <div class="cHead">
+          <div class="cAv" ${w.logo_url ? `style="background-image:url('${esc(w.logo_url)}');color:transparent"` : ""}>${esc((w.name || "?").split(/\s+/).slice(0, 2).map(x => x[0]).join("").toUpperCase())}</div>
+          <div style="flex:1;min-width:0">
+            <div class="cT">${esc(w.name)}</div>
+            <div class="cM"><span class="stars">${stars(w.rating_avg)}</span> ${w.rating_avg > 0 ? Number(w.rating_avg).toLocaleString("de-DE") : "Neu"} (${w.rating_count || 0}) · 📍 ${esc(w.district || w.city || "Köln")}</div>
+          </div>
+          <span class="badge b-green">✓</span>
+        </div>
+        <div class="cPills">
+          ${(w.categories || []).slice(0, 3).map(c => `<span class="pill">${CAT_ICONS[c] || ""} ${CAT_NAMES[c] || c}</span>`).join("")}
+          ${w.pickup_service ? '<span class="pill">🔁 Hol/Bring</span>' : ""}
+          ${w.emergency_service ? '<span class="pill">🚨 Notdienst</span>' : ""}
+        </div>
+      </a>`).join("");
+  } catch (e) {
+    document.getElementById("topWs").style.display = "none";
   }
-
-  // Stadtblöcke (hinten → vorne zeichnen, damit Überdeckung stimmt)
-  for (let y = 0; y < GY; y++) {
-    for (let x = GX - 1; x >= 0; x--) {
-      if (isStreet(x, y)) continue;
-      if (isShop(x, y)) continue;
-      if (rnd() < .14) continue;                     // Lücken
-      const h = 14 + rnd() * 46 + (rnd() < .08 ? 40 : 0);
-      const m = .08 + rnd() * .1;
-      bodyMain += prism(x + m, y + m, h, .84, "#1A2440", "#111B33", "#0C1424");
-    }
-  }
-  // Werkstatt-Gebäude + Pins (über allem)
-  shops.forEach((sh, i) => {
-    const h = 46;
-    const [px, py] = iso(sh.x + .5, sh.y + .5, h + 26);
-    bodyShops += `<g class="wsGlow" style="--gdel:${(1.1 + i * 0.9).toFixed(1)}s;--dur:4.5s">
-      ${prism(sh.x + .06, sh.y + .06, h, .88, sh.col + "88", sh.col + "45", sh.col + "30")}
-      <ellipse cx="${px}" cy="${py + 34 + h - 26}" rx="30" ry="12" fill="${sh.col}" opacity=".28" filter="url(#cityGlow)"/>
-    </g>
-    <g class="wsPin" style="--gdel:${(1.1 + i * 0.9).toFixed(1)}s;--dur:4.5s">
-      <circle cx="${px}" cy="${py}" r="15" fill="${sh.col}" filter="url(#cityGlow)"/>
-      <text x="${px}" y="${py + 5}" text-anchor="middle" font-size="15">${sh.icon}</text>
-    </g>`;
-  });
-  // Start: Kunde
-  const [sx, sy] = iso(start.x + .5, start.y + .5, 4);
-  bodyShops += `<circle class="startRing" cx="${sx}" cy="${sy}" r="12" fill="none" stroke="#38BDF8" stroke-width="2"/>
-    <circle cx="${sx}" cy="${sy}" r="7" fill="#38BDF8" filter="url(#cityGlow)"/>
-    <text x="${sx}" y="${sy - 16}" text-anchor="middle" font-size="12" fill="#9fd7ff" font-weight="700">Deine Anfrage</text>`;
-
-  // Wege entlang der Straßen (Wegpunkte in Zellkoordinaten, z leicht über Boden)
-  const routes = [
-    { to: 0, pts: [[8.5, 5.5], [8.5, 3.5], [3.5, 3.5], [1.5, 3.5], [1.5, 2.2]] },
-    { to: 1, pts: [[8.5, 5.5], [8.5, 3.5], [10.6, 3.5], [10.6, 2.2]] },
-    { to: 2, pts: [[8.5, 5.5], [12.5, 5.5], [12.5, 7.5], [13.5, 7.5], [13.5, 8.2]] },
-    { to: 3, pts: [[8.5, 5.5], [8.5, 7.5], [5.8, 7.5], [5.8, 8.9]] },
-  ];
-  routes.forEach((r, i) => {
-    const pts = r.pts.map(p => iso(p[0], p[1], 3));
-    const d = "M " + pts.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L ");
-    let len = 0;
-    for (let k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
-    const seg = Math.max(70, len * .22);
-    const col = shops[r.to].col;
-    roads += `<path class="cityRoad" d="${d}" stroke-width="13"/>`;
-    pulses += `<path class="puls" d="${d}" stroke="url(#pulsGrad${i})" stroke-width="5.5" filter="url(#cityGlow)"
-      stroke-dasharray="${seg.toFixed(0)} ${len.toFixed(0)}"
-      style="--len:${len.toFixed(0)};--seg:${seg.toFixed(0)};--dur:4.5s;--del:${(i * 0.9).toFixed(1)}s"/>`;
-    defs += `<linearGradient id="pulsGrad${i}"><stop offset="0" stop-color="#38BDF8"/><stop offset="1" stop-color="${col}"/></linearGradient>`;
-  });
-
-  host.innerHTML = `<svg viewBox="90 60 1030 520" role="img" aria-label="Karte: Anfrage fließt zu Werkstätten">
-    <defs>${defs}<filter id="cityGlow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="3.2"/></filter></defs>
-    ${bodyMain}${roads}${pulses}${bodyShops}
-  </svg>`;
 })();
 
-addEventListener("scroll",()=>{if(!ticking){ticking=true;requestAnimationFrame(frame);}},{passive:true});
-frame();
+(async () => {
+  const row = document.getElementById("partsRow");
+  try {
+    const parts = await sbGet("parts?active=eq.true&select=id,title,price,price_note,condition,category,images,install_service,shipping,workshops(name,district)&order=created_at.desc&limit=6");
+    if (!parts.length) throw new Error("leer");
+    row.innerHTML = parts.map(p => {
+      const img = (p.images || [])[0];
+      return `
+      <a class="cCard" href="app.html#/teile">
+        ${img ? `<img class="pImg" src="${esc(img)}" loading="lazy" alt="">` : `<div class="pImgPh">🧩</div>`}
+        <div class="cT">${esc(p.title)}</div>
+        <div class="cM">
+          <span class="badge ${p.condition === "neu" ? "b-green" : "b-grey"}">${COND[p.condition] || esc(p.condition)}</span>
+          ${p.install_service ? ' · 🔧 Einbau möglich' : ""}${p.shipping ? ' · 📦 Versand' : ""}
+        </div>
+        <div class="cPrice">${p.price != null ? eur(p.price) : "Preis auf Anfrage"}${p.price_note ? ` <span class="pn">${esc(p.price_note)}</span>` : ""}</div>
+        <div class="cM" style="margin-top:4px">🏪 ${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}</div>
+      </a>`;
+    }).join("");
+  } catch (e) {
+    document.getElementById("topParts").style.display = "none";
+  }
+})();
 </script>
 </body>
 </html>
