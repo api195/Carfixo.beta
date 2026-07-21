@@ -61,6 +61,11 @@
     shield: '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
     clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>',
     lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+    trash: '<path d="M5 7h14M10 7V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M10 11v6M14 11v6"/>',
+    flag: '<path d="M6 21V4M6 4h11l-2 3.5L17 11H6"/>',
+    send: '<path d="M4 12l16-8-6 16-3-6-7-2z"/>',
+    close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    edit: '<path d="M14 5l5 5M4 20l1-4L16 5l3 3L8 19l-4 1z"/>',
   };
   // Alias-Zuordnung Kategorie-Schlüssel → Icon
   const ALIAS = {

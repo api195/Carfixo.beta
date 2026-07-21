@@ -975,6 +975,26 @@ function isOpenNow(opening_hours) {
   const now = new Date().getHours() * 60 + new Date().getMinutes();
   return now >= (+m[1] * 60 + +m[2]) && now <= (+m[3] * 60 + +m[4]);
 }
+// Öffnungsstatus-Zeile: "Jetzt geöffnet · bis 18:00" / "Geschlossen · öffnet Mo 08:00"
+function openStatusLine(opening_hours) {
+  if (!opening_hours) return "";
+  const dayKeys = ["so", "mo", "di", "mi", "do", "fr", "sa"];
+  const dayNames = { mo: "Mo", di: "Di", mi: "Mi", do: "Do", fr: "Fr", sa: "Sa", so: "So" };
+  const parse = (t) => { const m = String(t || "").match(/(\d{1,2})[:.](\d{2})\s*[–\-—]\s*(\d{1,2})[:.](\d{2})/); return m ? { o: +m[1] * 60 + +m[2], c: +m[3] * 60 + +m[4], oh: m[1] + ":" + m[2], ch: m[3] + ":" + m[4] } : null; };
+  const d = new Date().getDay();
+  const today = parse(opening_hours[dayKeys[d]]);
+  const now = new Date().getHours() * 60 + new Date().getMinutes();
+  if (today && now >= today.o && now <= today.c)
+    return `<div class="mm" style="margin-top:3px"><span class="badge b-green">Jetzt geöffnet</span> heute bis ${today.ch} Uhr</div>`;
+  if (today && now < today.o)
+    return `<div class="mm" style="margin-top:3px"><span class="badge b-grey">Geschlossen</span> öffnet heute ${today.oh} Uhr</div>`;
+  // nächsten geöffneten Tag suchen
+  for (let i = 1; i <= 7; i++) {
+    const k = dayKeys[(d + i) % 7]; const p = parse(opening_hours[k]);
+    if (p) return `<div class="mm" style="margin-top:3px"><span class="badge b-grey">Geschlossen</span> öffnet ${dayNames[k]} ${p.oh} Uhr</div>`;
+  }
+  return "";
+}
 function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
 function fmtDate(d){ try { return new Date(d).toLocaleDateString("de-DE",{day:"2-digit",month:"short",year:"numeric"}); } catch(e){ return String(d); } }
 function fmtDateTime(d){ try { return new Date(d).toLocaleString("de-DE",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}); } catch(e){ return String(d); } }
