@@ -620,6 +620,7 @@ async function vWorkshopProfile(id) {
     <div style="flex:1">
       <h1>${esc(ws.name)} ${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:6px">Gesponsert</span>' : ""} ${ws.is_verified ? '<span class="badge b-green" style="vertical-align:6px">✓ Verifiziert durch Carfixo</span>' : ""}</h1>
       <div class="ratingLine" style="margin-top:4px">${stars(ws.rating_avg)}<span class="cnt">${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${ws.rating_count || 0} Bewertungen · ${esc(ws.district || ws.city || "Köln")}</span></div>
+      ${openStatusLine(ws.opening_hours)}
     </div>
     <div class="right">
       <button class="btn ghost sm" id="wsFav">Merken</button>
@@ -647,7 +648,7 @@ async function vWorkshopProfile(id) {
       </div>
       ${(ws.gallery || []).length ? `<div class="card" style="margin-bottom:14px">
         <div class="tt">Einblicke & Referenzen</div>
-        <div class="thumbs" style="margin-top:10px">${ws.gallery.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" loading="lazy" style="width:110px;height:110px" alt="Werkstattbild"></a>`).join("")}</div>
+        <div class="thumbs" id="wsGallery" style="margin-top:10px">${ws.gallery.map(u => `<img src="${esc(u)}" loading="lazy" data-full="${esc(u)}" style="width:110px;height:110px;cursor:zoom-in" alt="Werkstattbild">`).join("")}</div>
       </div>` : ""}
       <div class="card" style="margin-bottom:14px">
         <div class="tt">Leistungen</div>
@@ -687,6 +688,7 @@ async function vWorkshopProfile(id) {
     go("new-request?ws=" + ws.id);
   };
   $("wsFav").onclick = () => toggleFavorite(ws.id, $("wsFav"));
+  document.querySelectorAll("#wsGallery img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));
   if (me) {
     sb.from("favorites").select("workshop_id").eq("user_id", me.id).eq("workshop_id", ws.id).maybeSingle()
       .then(({ data }) => { if (data && $("wsFav")) $("wsFav").textContent = "Gemerkt"; });
@@ -1664,43 +1666,59 @@ function kmLabel(m) { if (!m) return ""; const f = KM_STEPS.find(k => k[0] === N
 // TEILE-MARKTPLATZ
 // ============================================================
 let allParts = null;
-async function vPartsMarket() {
+// Verfügbarkeit als Badge (null = auf Anfrage, 0 = vergriffen, >0 = Stückzahl)
+function partAvail(p) {
+  if (p.quantity === 0) return { txt: "Vergriffen", cls: "b-grey", sold: true };
+  if (p.quantity > 0) return { txt: p.quantity === 1 ? "Noch 1 verfügbar" : `${p.quantity} verfügbar`, cls: "b-green", sold: false };
+  return { txt: "Verfügbar", cls: "b-green", sold: false };
+}
+async function vPartsMarket(_p, query) {
+  const preQ = query?.q || "", preCat = (query?.cat && PART_CATS[query.cat]) ? query.cat : "";
   main.innerHTML = `
   <div class="pageHead">
-    <div><h1>Teile-Marktplatz</h1><div class="sub">Neue und gebrauchte Teile direkt von geprüften Betrieben – auf Wunsch mit Einbau.</div></div>
+    <div><h1>Teile-Marktplatz</h1><div class="sub">Neue und gebrauchte Teile direkt von geprüften Betrieben – kaufen (Versand/Abholung) oder anfragen.</div></div>
     ${myWorkshop ? `<div class="right"><a class="btn sm" href="#/ws/parts">Meine Teile verwalten</a></div>` : ""}
   </div>
   <div class="card" style="margin-bottom:14px">
     <div class="split">
-      <input id="ptQ" placeholder="Teil, Marke, OE-Nummer oder Fahrzeug suchen…">
-      <select id="ptCat"><option value="">Alle Kategorien</option>${Object.entries(PART_CATS).map(([k, [ic, n]]) => `<option value="${k}">${n}</option>`).join("")}</select>
+      <input id="ptQ" placeholder="Teil, Marke, OE-Nummer oder Fahrzeug suchen…" value="${esc(preQ)}">
+      <select id="ptCat"><option value="">Alle Kategorien</option>${Object.entries(PART_CATS).map(([k, [ic, n]]) => `<option value="${k}" ${k === preCat ? "selected" : ""}>${n}</option>`).join("")}</select>
     </div>
     <div class="split" style="margin-top:8px">
       <select id="ptCond"><option value="">Zustand: alle</option>${Object.entries(PART_CONDITIONS).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</select>
-      <select id="ptSort"><option value="new">Neueste zuerst</option><option value="cheap">Preis: günstigste zuerst</option><option value="exp">Preis: teuerste zuerst</option></select>
+      <select id="ptSort">
+        <option value="new">Neueste zuerst</option>
+        <option value="near">Nächste zuerst</option>
+        <option value="cheap">Preis: günstigste zuerst</option>
+        <option value="exp">Preis: teuerste zuerst</option>
+      </select>
     </div>
+    <label class="inline" style="margin-top:8px"><input type="checkbox" id="ptAvail"> Nur verfügbare anzeigen</label>
   </div>
   <div id="ptList" class="grid2"><div class="sk" style="height:130px"></div><div class="sk" style="height:130px"></div></div>
   <div id="myPartOrders" style="margin-top:22px"></div>`;
   if (me && !myWorkshop) loadMyPartOrders();
   if (!allParts) {
     const { data, error } = await sb.from("parts")
-      .select("*, workshops(id,name,district,city,phone)")
+      .select("*, workshops(id,name,district,city,phone,lat,lng)")
       .eq("active", true).order("created_at", { ascending: false }).limit(500);
     if (!$("ptList")) return; // Nutzer hat die Seite inzwischen verlassen
     if (error) { $("ptList").innerHTML = `<div class="warn" style="grid-column:1/-1">${esc(error.message)}</div>`; return; }
     allParts = data || [];
   }
-  ["ptQ", "ptCat", "ptCond", "ptSort"].forEach(id => { const el = $(id); if (el) { el.oninput = renderPartList; el.onchange = renderPartList; } });
+  ["ptQ", "ptCat", "ptCond", "ptSort", "ptAvail"].forEach(id => { const el = $(id); if (el) { el.oninput = renderPartList; el.onchange = renderPartList; } });
   renderPartList();
 }
 function renderPartList() {
   const box = $("ptList"); if (!box) return;
   const q = ($("ptQ").value || "").trim().toLowerCase();
   const cat = $("ptCat").value, cond = $("ptCond").value, sort = $("ptSort").value;
-  let list = (allParts || []).filter(p => {
+  const onlyAvail = $("ptAvail")?.checked;
+  const origin = searchOrigin || CITY_CENTER;
+  let list = (allParts || []).map(p => ({ ...p, _dist: distKm(origin, [p.workshops?.lat, p.workshops?.lng]) })).filter(p => {
     if (cat && p.category !== cat) return false;
     if (cond && p.condition !== cond) return false;
+    if (onlyAvail && p.quantity === 0) return false;
     if (q) {
       const hay = [p.title, p.brand, p.oem_number, p.fits, p.description, p.workshops?.name].join(" ").toLowerCase();
       if (!q.split(/\s+/).every(w => hay.includes(w))) return false;
@@ -1709,6 +1727,7 @@ function renderPartList() {
   });
   if (sort === "cheap") list.sort((a, b) => (a.price ?? 1e12) - (b.price ?? 1e12));
   else if (sort === "exp") list.sort((a, b) => (b.price ?? -1) - (a.price ?? -1));
+  else if (sort === "near") list.sort((a, b) => (a._dist ?? 9999) - (b._dist ?? 9999));
   box.innerHTML = list.length === 0
     ? `<div class="empty" style="grid-column:1/-1"><div class="e">${ico("puzzle",40)}</div>Keine Teile gefunden.${(allParts || []).length === 0 ? "<br><span class='mm'>Sobald Betriebe Teile einstellen, erscheinen sie hier.</span>" : ""}</div>`
     : list.map(partCardHtml).join("");
@@ -1716,45 +1735,57 @@ function renderPartList() {
 function partCardHtml(p) {
   const img = (p.images || [])[0];
   const c = PART_CATS[p.category] || ["", p.category];
-  return `<div class="card tap" onclick="openPartDetail('${p.id}')">
+  const av = partAvail(p);
+  return `<div class="card tap" onclick="openPartDetail('${p.id}')" style="${av.sold ? "opacity:.72" : ""}">
     <div style="display:flex;gap:12px">
       ${img ? `<img src="${esc(img)}" loading="lazy" alt="" style="width:86px;height:86px;object-fit:cover;border-radius:12px;flex:0 0 auto">`
             : `<div class="ico icoBlue" style="width:86px;height:86px;font-size:32px;flex:0 0 auto;display:flex;align-items:center;justify-content:center">${ico(p.category)}</div>`}
       <div style="flex:1;min-width:0">
         <div class="tt">${esc(p.title)}</div>
-        <div class="mm">${ico(p.category)} ${esc(c[1])} · <span class="badge ${p.condition === "neu" ? "b-green" : "b-grey"}">${esc(PART_CONDITIONS[p.condition] || p.condition)}</span>${p.install_service ? " · Einbau möglich" : ""}${p.shipping ? " · Versand" : ""}</div>
-        ${p.fits ? `<div class="mm">Passend für: ${esc(p.fits)}</div>` : ""}
+        <div class="mm">${ico(p.category)} ${esc(c[1])} · <span class="badge ${p.condition === "neu" ? "b-green" : "b-grey"}">${esc(PART_CONDITIONS[p.condition] || p.condition)}</span> · <span class="badge ${av.cls}">${av.txt}</span></div>
+        <div class="mm">${p.install_service ? "Einbau möglich · " : ""}${p.shipping ? "Versand · " : ""}${p.fits ? "Passend für: " + esc(p.fits) : ""}</div>
         <div style="font-weight:800;font-size:16px;margin-top:6px">${p.price != null ? fmtEur(p.price) : "Preis auf Anfrage"}${p.price_note ? ` <span class="mm">${esc(p.price_note)}</span>` : ""}</div>
-        <div class="mm" style="margin-top:2px">${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}</div>
+        <div class="mm" style="margin-top:2px">${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}${p._dist != null ? " · " + p._dist.toFixed(1).replace(".", ",") + " km" : ""}</div>
       </div>
     </div></div>`;
+}
+// Bild-Lightbox (Vollansicht)
+function openLightbox(url) {
+  const host = document.createElement("div");
+  host.style.cssText = "position:fixed;inset:0;z-index:300;background:rgba(3,5,10,.92);display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out";
+  host.innerHTML = `<img src="${esc(url)}" alt="" style="max-width:96vw;max-height:92vh;border-radius:12px;box-shadow:0 24px 80px rgba(0,0,0,.6)">`;
+  host.onclick = () => host.remove();
+  document.body.appendChild(host);
 }
 function openPartDetail(id) {
   const p = (allParts || []).find(x => x.id === id);
   if (!p) return;
   const c = PART_CATS[p.category] || ["", p.category];
   const imgs = p.images || [];
+  const av = partAvail(p);
   openModal(`
     <h2 style="font-size:19px;font-weight:800">${esc(p.title)}</h2>
-    <div class="mm" style="margin-top:4px">${ico(p.category)} ${esc(c[1])} · <span class="badge ${p.condition === "neu" ? "b-green" : "b-grey"}">${esc(PART_CONDITIONS[p.condition] || p.condition)}</span></div>
-    ${imgs.length ? `<div class="thumbs" style="margin-top:12px">${imgs.map(u => `<img src="${esc(u)}" loading="lazy" alt="" style="width:110px;height:110px;object-fit:cover;border-radius:12px">`).join("")}</div>` : ""}
+    <div class="mm" style="margin-top:4px">${ico(p.category)} ${esc(c[1])} · <span class="badge ${p.condition === "neu" ? "b-green" : "b-grey"}">${esc(PART_CONDITIONS[p.condition] || p.condition)}</span> · <span class="badge ${av.cls}">${av.txt}</span></div>
+    ${imgs.length ? `<div class="thumbs" id="ptGallery" style="margin-top:12px">${imgs.map(u => `<img src="${esc(u)}" loading="lazy" alt="" data-full="${esc(u)}" style="width:110px;height:110px;object-fit:cover;border-radius:12px;cursor:zoom-in">`).join("")}</div>` : ""}
     <div style="font-weight:800;font-size:22px;margin-top:12px">${p.price != null ? fmtEur(p.price) : "Preis auf Anfrage"}${p.price_note ? ` <span class="mm" style="font-size:13px">${esc(p.price_note)}</span>` : ""}</div>
     ${p.description ? `<p class="mm" style="margin-top:10px;white-space:pre-wrap">${esc(p.description)}</p>` : ""}
     <div style="margin-top:12px">
       ${p.brand ? `<div class="offerLine"><span>Hersteller / Marke</span><span>${esc(p.brand)}</span></div>` : ""}
       ${p.fits ? `<div class="offerLine"><span>Passend für</span><span>${esc(p.fits)}</span></div>` : ""}
       ${p.oem_number ? `<div class="offerLine"><span>OE-/Teilenummer</span><span>${esc(p.oem_number)}</span></div>` : ""}
+      <div class="offerLine"><span>Verfügbarkeit</span><span>${av.txt}</span></div>
       <div class="offerLine"><span>Einbau durch Betrieb</span><span>${p.install_service ? "✓ möglich" : "–"}</span></div>
       <div class="offerLine"><span>Versand</span><span>${p.shipping ? "✓ möglich" : "– nur Abholung"}</span></div>
-      <div class="offerLine"><span>Anbieter</span><span>${esc(p.workshops?.name || "")}</span></div>
+      <div class="offerLine"><span>Anbieter</span><span>${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}</span></div>
     </div>
     <div class="btnRow">
-      <button class="btn green" id="ptBuy">Direkt kaufen</button>
+      <button class="btn green" id="ptBuy" ${av.sold ? "disabled" : ""}>${av.sold ? "Vergriffen" : "Direkt kaufen"}</button>
       <button class="btn ghost" id="ptAsk">Frage stellen</button>
       <a class="btn ghost" href="#/workshop/${p.workshop_id}" onclick="closeModal()">Zum Betrieb</a>
     </div>
     <p class="mm" style="margin-top:10px;font-size:11px">Kauf und Abwicklung erfolgen direkt mit dem Betrieb – Verfügbarkeit, Versand/Abholung und Bezahlung werden vor dem Kauf mit dem Betrieb abgestimmt. Carfixo vermittelt.</p>`);
-  $("ptBuy").onclick = () => openPartBuy(p);
+  document.querySelectorAll("#ptGallery img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));
+  if (!av.sold) $("ptBuy").onclick = () => openPartBuy(p);
   $("ptAsk").onclick = () => {
     const title = "Teile-Anfrage: " + p.title;
     const desc = "Hallo, ich interessiere mich für: " + p.title + (p.price != null ? " (" + p.price + " €)" : "") +
@@ -1916,6 +1947,7 @@ function openPartForm(editId) {
       <div><div class="label">Preis in € (leer = auf Anfrage)</div><input id="pfPrice" inputmode="decimal" placeholder="z.B. 899" value="${p.price != null ? esc(p.price) : ""}"></div>
       <div><div class="label">Preiszusatz (optional)</div><input id="pfPriceNote" maxlength="30" placeholder="z.B. VB / pro Satz" value="${esc(p.price_note || "")}"></div>
     </div>
+    <div><div class="label">Verfügbare Stückzahl (leer = auf Anfrage)</div><input id="pfQty" inputmode="numeric" placeholder="z.B. 4 · 0 = vergriffen" value="${p.quantity != null ? esc(p.quantity) : ""}"></div>
     <div class="split">
       <div><div class="label">Hersteller / Marke (optional)</div><input id="pfBrand" maxlength="60" placeholder="z.B. Bosch, BBS, Original BMW" value="${esc(p.brand || "")}"></div>
       <div><div class="label">OE-/Teilenummer (optional)</div><input id="pfOem" maxlength="60" placeholder="z.B. 36116787778" value="${esc(p.oem_number || "")}"></div>
@@ -1961,6 +1993,7 @@ async function savePart(editId, prev) {
     fits: $("pfFits").value.trim() || null,
     description: $("pfDesc").value.trim() || null,
     install_service: $("pfInstall").checked, shipping: $("pfShip").checked,
+    quantity: $("pfQty").value.trim() === "" ? null : Math.max(0, parseInt($("pfQty").value, 10) || 0),
     images,
   };
   const q = editId ? sb.from("parts").update(row).eq("id", editId) : sb.from("parts").insert(row);
@@ -3300,12 +3333,34 @@ function runDiagnose() {
     <p class="mm" style="margin-top:10px;font-size:11px">Unverbindliche Ersteinschätzung – keine Diagnose und keine Preiszusage. Der endgültige Preis wird nach Prüfung durch die Werkstatt festgelegt.</p>
     <div class="btnRow">
       ${me && !myWorkshop ? `<a class="btn" href="#/new-request?${qs}">Ausschreibung mit diesen Angaben</a>` : `<a class="btn" href="#/${me ? "search" : "register"}">${me ? "Werkstatt suchen" : "Kostenlos registrieren & anfragen"}</a>`}
+      ${top[0] ? `<a class="btn ghost" href="#/teile?q=${encodeURIComponent(top[0].service)}">Passende Teile im Marktplatz</a>` : ""}
       ${urgency !== "normal" ? `<a class="btn red" href="#/notfall">Notfallmodus</a>` : ""}
     </div>
   </div>
+  <div id="dgParts"></div>
   ${recs.length ? `<div class="card"><div class="tt">Passende Betriebe in der Nähe</div>
     <div style="margin-top:12px">${recs.map(ws => wsCardHtml({ ...ws, _dist: distKm(searchOrigin || CITY_CENTER, [ws.lat, ws.lng]) })).join("")}</div></div>` : ""}`;
+  // Passende Teile aus dem Marktplatz (direkt zum Teil)
+  if (top[0]) loadDiagnoseParts(top);
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+async function loadDiagnoseParts(top) {
+  const box = $("dgParts"); if (!box) return;
+  if (!allParts) {
+    const { data } = await sb.from("parts").select("*, workshops(id,name,district,city,phone,lat,lng)")
+      .eq("active", true).order("created_at", { ascending: false }).limit(500);
+    allParts = data || [];
+  }
+  if (!$("dgParts")) return;
+  const terms = top.flatMap(h => [h.service, ...(h.guess || "").split(/[\s,()/]+/)]).map(x => (x || "").toLowerCase()).filter(x => x.length > 3);
+  const matches = (allParts || []).filter(p => p.quantity !== 0).filter(p => {
+    const hay = [p.title, p.brand, p.fits, p.description, p.category].join(" ").toLowerCase();
+    return terms.some(t => hay.includes(t));
+  }).slice(0, 3);
+  if (!matches.length) return;
+  box.innerHTML = `<div class="card" style="margin-top:14px"><div class="tt">Passende Teile im Marktplatz</div>
+    <div style="margin-top:12px">${matches.map(partCardHtml).join("")}</div>
+    <a class="btn ghost sm" style="margin-top:10px" href="#/teile?q=${encodeURIComponent(top[0].service)}">Alle passenden Teile ansehen</a></div>`;
 }
 
 // ============================================================
