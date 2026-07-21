@@ -17,9 +17,14 @@ Die Bibliotheken (supabase-js, Leaflet) liegen lokal unter `assets/vendor/`.
 ## Funktionen
 
 **Kunden**
-- Registrierung/Login, Fahrzeug-Garage (mit Fahrzeugschein-Upload, TÜV-Datum)
-  – nur Marke + Modell sind Pflicht, ~80 Marken / ~900 Modelle in der Auswahl, Freitext für alles andere erlaubt
-- Teile-Marktplatz: neue & gebrauchte Teile von verifizierten Betrieben durchsuchen (Kategorie, Zustand, Preis) und direkt anfragen
+- Registrierung/Login, Fahrzeug-Garage im mobile.de-Aufbau – nur Marke + Modell Pflicht,
+  ~80 Marken / ~950 Modelle (inkl. ausgeschriebener M/S/RS/AMG-Modelle), Freitext erlaubt
+- **Fahrzeugschein scannen** (OCR, ohne API-Key via Tesseract.js): liest die genormten
+  Feldcodes der Zulassungsbescheinigung Teil I und füllt Marke, Modell, PS, Erstzulassung,
+  Kraftstoff, Sitzplätze automatisch vor
+- Teile-Marktplatz: neue & gebrauchte Teile durchsuchen und **direkt kaufen** (Versand oder
+  Abholung, vorab mit dem Betrieb abgestimmt) oder unverbindlich anfragen
+- Einheitliches, eigenes SVG-Icon-Set statt Emojis auf der ganzen Website
 - Werkstatt-Suche mit Filtern (Kategorie, Leistung, Marke, Stadtteil, Bewertung, mobil), Karte + Liste
 - Vollständige Werkstattprofile mit Bewertungen und Öffnungszeiten
 - Direktanfrage an einen Betrieb **oder** öffentliche Ausschreibung an alle passenden Betriebe

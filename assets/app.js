@@ -1305,6 +1305,87 @@ async function deleteVehicle(id) {
   const { error } = await sb.from("vehicles").delete().eq("id", id);
   if (error) toast(error.message); else { toast("Gelöscht."); loadVehicles(); }
 }
+// ---------- Fahrzeugschein-Scan (OCR, Zulassungsbescheinigung Teil I) ----------
+// Liest die genormten Feldcodes: D.1 Marke, D.3 Modell, D.2 Typ/Variante,
+// P.2 Leistung (kW→PS), P.3 Kraftstoff, (B) Erstzulassung, S.1 Sitzplätze.
+function parseFahrzeugschein(raw) {
+  const U = (" " + String(raw || "").replace(/\r/g, "").replace(/[ \t]+/g, " ") + " ").toUpperCase();
+  const out = {};
+  // Wert nach einem Code lesen, aber am nächsten Feldcode / Zeilenende abschneiden
+  const cut = (v) => v ? v.split(/(?=\s(?:[A-Z]\.\d|\([A-Z]\)))|\n/)[0].replace(/\s{2,}.*$/, "").trim() : null;
+  const grab = (re) => { const m = U.match(re); return m ? cut(m[1]) : null; };
+  out.make = grab(/D[\.\s]*1[^A-Z0-9]{0,4}([A-ZÄÖÜ][A-ZÄÖÜ\- ]{1,24})/);
+  out.model = grab(/D[\.\s]*3[^A-Z0-9]{0,4}([A-Z0-9][A-Z0-9\-\. ]{0,24})/);
+  out.variant = grab(/D[\.\s]*2[^A-Z0-9]{0,4}([A-Z0-9][A-Z0-9\-\/ ]{0,24})/);
+  const kw = (U.match(/P[\.\s]*2[^0-9]{0,4}(\d{2,3})/) || [])[1];
+  if (kw) out.ps = Math.round(+kw / 0.7355);
+  const fuelRaw = grab(/P[\.\s]*3[^A-Z]{0,4}([A-ZÄÖÜ\/ ]{3,24})/) || U;
+  for (const [k, val] of [["DIESEL", "Diesel"], ["BENZIN", "Benzin"], ["OTTO", "Benzin"],
+    ["PLUG", "Plug-in-Hybrid"], ["HYBRID", "Hybrid (Benzin/Elektro)"], ["ELEKTR", "Elektro"],
+    ["FLÜSSIG", "Autogas (LPG)"], ["LPG", "Autogas (LPG)"], ["ERDGAS", "Erdgas (CNG)"],
+    ["CNG", "Erdgas (CNG)"], ["WASSERSTOFF", "Wasserstoff"]]) {
+    if ((fuelRaw || "").includes(k)) { out.fuel = val; break; }
+  }
+  const ez = U.match(/\(?\bB\)?[^0-9]{0,4}(\d{2})[.\/](\d{2})[.\/](\d{4})/);
+  if (ez) { out.ez_month = +ez[2]; out.ez_year = +ez[3]; }
+  const seats = (U.match(/S[\.\s]*1[^0-9]{0,4}(\d)/) || [])[1];
+  if (seats) out.seats = +seats;
+  const plate = U.match(/\b([A-ZÖÜÄ]{1,3})[-\s]([A-Z]{1,2})[-\s](\d{1,4})\b/);
+  if (plate) out.plate = `${plate[1]}-${plate[2]} ${plate[3]}`;
+  return out;
+}
+let _tesseractLoading = null;
+function loadTesseract() {
+  if (window.Tesseract) return Promise.resolve();
+  if (_tesseractLoading) return _tesseractLoading;
+  _tesseractLoading = new Promise((res, rej) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    sc.onload = res; sc.onerror = () => rej(new Error("OCR-Bibliothek konnte nicht geladen werden."));
+    document.head.appendChild(sc);
+  });
+  return _tesseractLoading;
+}
+// Übernimmt erkannte Werte ins offene Fahrzeugformular
+function applyScheinData(d, statusEl) {
+  const filled = [];
+  const setVal = (id, val, label) => { if (val != null && val !== "" && $(id)) { $(id).value = val; filled.push(label); } };
+  let canonMake = "";
+  if (d.make) {
+    canonMake = VehicleData.brands().find(x => x.toLowerCase() === d.make.toLowerCase())
+      || d.make.charAt(0) + d.make.slice(1).toLowerCase();
+    setVal("cMake", canonMake, "Marke"); $("cMake").dispatchEvent(new Event("input"));
+  }
+  if (d.model) {
+    const canonModel = (canonMake ? VehicleData.models(canonMake) : []).find(x => x.toLowerCase() === d.model.toLowerCase()) || d.model;
+    setVal("cModel", canonModel, "Modell"); $("cModel").dispatchEvent(new Event("input"));
+  }
+  setVal("cVariant", d.variant, "Variante");
+  if (d.ez_month && $("cEzMonth")) setVal("cEzMonth", String(d.ez_month).padStart(2, "0"), "EZ-Monat");
+  if (d.ez_year && $("cYear")) setVal("cYear", d.ez_year, "EZ-Jahr");
+  setVal("cPs", d.ps, "Leistung");
+  if (d.fuel && $("cFuel")) setVal("cFuel", d.fuel, "Kraftstoff");
+  if (d.seats && $("cSeats")) setVal("cSeats", d.seats, "Sitzplätze");
+  setVal("cPlate", d.plate, "Kennzeichen");
+  if (statusEl) statusEl.innerHTML = filled.length
+    ? `<span style="color:var(--green)">${ico("check")} Übernommen: ${filled.join(", ")}. Bitte kurz prüfen und ergänzen.</span>`
+    : `<span style="color:var(--gold)">${ico("alert")} Keine Felder sicher erkannt – bitte manuell ausfüllen (Foto möglichst gerade & scharf).</span>`;
+}
+async function scanFahrzeugschein(file, statusEl) {
+  if (!file) return;
+  statusEl.innerHTML = `${ico("scan")} Lade Texterkennung…`;
+  try {
+    await loadTesseract();
+    statusEl.innerHTML = `${ico("scan")} Scanne Fahrzeugschein… <span id="ocrPct">0%</span>`;
+    const { data } = await window.Tesseract.recognize(file, "deu", {
+      logger: (m) => { if (m.status === "recognizing text" && $("ocrPct")) $("ocrPct").textContent = Math.round(m.progress * 100) + "%"; },
+    });
+    applyScheinData(parseFahrzeugschein(data.text || ""), statusEl);
+  } catch (e) {
+    statusEl.innerHTML = `<span style="color:var(--gold)">${ico("alert")} Scan nicht möglich (${esc(e.message || e)}). Bitte manuell ausfüllen.</span>`;
+  }
+}
+
 // Fahrzeug anlegen – Aufbau und Auswahllisten nach mobile.de-Vorbild.
 // Pflicht sind nur Marke + Modell; Motorisierung aus der Datenbank füllt
 // Kraftstoff/Leistung automatisch vor. Freitext ist überall erlaubt.
@@ -1315,6 +1396,14 @@ async function openVehicleForm(editId) {
   openModal(`
     <h2 style="font-size:20px;font-weight:800">${editId ? "Fahrzeug bearbeiten" : "Fahrzeug anlegen"}</h2>
     <p class="mm" style="margin-top:4px">Nur <b>Marke und Modell</b> sind Pflicht. Nicht in der Liste? Einfach eintippen – Freitext ist erlaubt.</p>
+
+    <div class="uploadTile" style="margin-top:12px" onclick="$('cScan').click()">
+      <div class="ico icoPurple">${ico("scan", 20)}</div>
+      <div><div class="tt" style="font-size:12.5px">Fahrzeugschein scannen &amp; automatisch ausfüllen</div>
+      <div class="mm">Foto der Zulassungsbescheinigung Teil I – Marke, Modell, PS, Erstzulassung u.&nbsp;a. werden übernommen</div></div>
+    </div>
+    <input type="file" id="cScan" accept="image/*" capture="environment" class="hidden">
+    <div class="mm" id="cScanStatus" style="margin-top:8px"></div>
 
     <div class="label" style="margin-top:14px">Fahrzeugdaten</div>
     <div class="split">
@@ -1468,6 +1557,11 @@ async function openVehicleForm(editId) {
   ["cVariant", "cBody", "cEzMonth", "cYear", "cKm", "cOwners", "cFuel", "cTrans", "cPs", "cDoors", "cSeats", "cColor"].forEach(id => {
     $(id).oninput = refresh; $(id).onchange = refresh;
   });
+  // Fahrzeugschein-Scan → Felder automatisch füllen
+  $("cScan").onchange = async () => {
+    const f = $("cScan").files[0];
+    if (f) { await scanFahrzeugschein(f, $("cScanStatus")); refresh(); }
+  };
   refresh();
 
   $("cSave").onclick = async () => {
