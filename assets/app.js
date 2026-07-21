@@ -90,7 +90,7 @@ function renderNav(active) {
   $("tabbar").innerHTML = items.map(([r, ic, label]) =>
     `<a href="#/${r}" class="${active === r ? "on" : ""}"><span class="ti">${ico(ic, 22)}</span>${label}</a>`).join("") +
     `<a href="#/${me ? "account" : "login"}" class="${active === "account" || active === "login" ? "on" : ""}"><span class="ti">${ico("user", 22)}</span>${me ? "Konto" : "Login"}</a>`;
-  const av = $("avatarBtn");
+  const av = $("avatarBtn"); if (av) av.setAttribute("aria-label", "Konto");
   if (me) {
     av.classList.remove("hidden");
     av.textContent = initials(myProfile?.full_name || me.email);
@@ -268,6 +268,7 @@ async function vSearch(_p, query) {
     if (query.world && WORLDS.some(w => w.key === query.world)) searchState.world = query.world;
   }
   const pendingLoc = query?.loc || "";
+  searchMap = null; mapMarkers = []; // Karte wird beim Einblenden neu initialisiert
   const s = searchState;
   main.innerHTML = `
   <div class="pageHead">
@@ -280,12 +281,12 @@ async function vSearch(_p, query) {
     <span style="font-size:18px"></span>
     <input id="fQ" value="${esc(s.q || "")}" placeholder="Wonach suchst du? z.B. Ölwechsel, Chiptuning, Felgen aufbereiten, Betriebsname…"
       style="border:none;background:none;font-size:15.5px;padding:12px 0" autocomplete="off">
-    ${s.q ? `<button class="btn ghost sm" id="fQClear" style="flex:0 0 auto">✕</button>` : ""}
+    ${s.q ? `<button class="btn ghost sm" id="fQClear" style="flex:0 0 auto" aria-label="Suche zurücksetzen">✕</button>` : ""}
   </div>
 
   <div class="card" style="margin-bottom:16px;border-color:rgba(124,92,255,.35);background:linear-gradient(120deg,rgba(124,92,255,.1),var(--panel))">
     <div class="cardHead">
-      <div class="ico icoPurple" style="width:48px;height:48px;font-size:22px"></div>
+      <div class="ico icoPurple" style="width:48px;height:48px;font-size:22px">${ico("robot", 22)}</div>
       <div style="flex:1"><div class="tt">Nicht sicher, was dein Auto hat?</div>
       <div class="mm">Beschreibe das Problem, wähle Warnleuchten oder lade ein Foto hoch – die KI-Diagnose gibt dir eine unverbindliche Ersteinschätzung mit Preisorientierung.</div></div>
       <a class="btn sm" href="#/diagnose">KI-Diagnose starten</a>
@@ -316,29 +317,34 @@ async function vSearch(_p, query) {
         <span class="chip ${!s.world ? "on" : ""}" data-w="">Alle</span>
         ${WORLDS.map(w => `<span class="chip ${s.world === w.key ? "on" : ""}" data-w="${w.key}">${ico(w.key)} ${w.name}</span>`).join("")}
       </div>
-      <div class="label">Kategorie</div>
-      <select id="fCat"></select>
-      <div class="label">Leistung</div>
-      <select id="fService"></select>
-      <div class="label">Fahrzeugmarke</div>
-      <select id="fBrand">${opt("Alle Marken", Object.keys(BRANDS), s.brand)}</select>
-      <div class="label">Ausstattung</div>
-      <label class="inline"><input type="checkbox" id="fOpen" ${s.openNow ? "checked" : ""}> Jetzt geöffnet</label>
-      <label class="inline"><input type="checkbox" id="fPickup" ${s.pickup ? "checked" : ""}> Hol- &amp; Bringservice</label>
-      <label class="inline"><input type="checkbox" id="fReplace" ${s.replacement ? "checked" : ""}> Ersatzwagen</label>
-      <label class="inline"><input type="checkbox" id="fMobile" ${s.mobile ? "checked" : ""}> Mobile Werkstatt</label>
-      <div class="label">Mindestbewertung</div>
-      <select id="fRating"><option value="0">Alle</option><option value="4" ${s.minRating == 4 ? "selected" : ""}>★ 4,0+</option><option value="4.5" ${s.minRating == 4.5 ? "selected" : ""}>★ 4,5+</option></select>
       <div class="label">Sortierung</div>
       <select id="fSort">
         <option value="rating" ${s.sort === "rating" ? "selected" : ""}>Beste Bewertung</option>
         <option value="distance" ${s.sort === "distance" ? "selected" : ""}>Entfernung</option>
         <option value="price" ${s.sort === "price" ? "selected" : ""}>Preisniveau</option>
       </select>
-      <button class="btn ghost wide sm" style="margin-top:16px" id="fReset">Filter zurücksetzen</button>
+      <button class="btn ghost wide sm" style="margin-top:14px" id="fMoreBtn"></button>
+      <div id="fAdvanced" class="hidden">
+        <div class="label">Kategorie</div>
+        <select id="fCat"></select>
+        <div class="label">Leistung</div>
+        <select id="fService"></select>
+        <div class="label">Fahrzeugmarke</div>
+        <select id="fBrand">${opt("Alle Marken", Object.keys(BRANDS), s.brand)}</select>
+        <div class="label">Ausstattung</div>
+        <label class="inline"><input type="checkbox" id="fOpen" ${s.openNow ? "checked" : ""}> Jetzt geöffnet</label>
+        <label class="inline"><input type="checkbox" id="fPickup" ${s.pickup ? "checked" : ""}> Hol- &amp; Bringservice</label>
+        <label class="inline"><input type="checkbox" id="fReplace" ${s.replacement ? "checked" : ""}> Ersatzwagen</label>
+        <label class="inline"><input type="checkbox" id="fMobile" ${s.mobile ? "checked" : ""}> Mobile Werkstatt</label>
+        <div class="label">Mindestbewertung</div>
+        <select id="fRating"><option value="0">Alle</option><option value="4" ${s.minRating == 4 ? "selected" : ""}>★ 4,0+</option><option value="4.5" ${s.minRating == 4.5 ? "selected" : ""}>★ 4,5+</option></select>
+      </div>
+      <button class="btn ghost wide sm" style="margin-top:14px" id="fReset">Filter zurücksetzen</button>
     </div>
     <div>
-      <div class="mapWrap" style="margin-bottom:14px"><div id="map"></div></div>
+      <div id="mapToggleWrap" style="margin-bottom:10px"><button class="btn ghost sm" id="mapToggle">Karte anzeigen</button></div>
+      <div class="mapWrap hidden" id="mapWrap" style="margin-bottom:14px"><div id="map"></div></div>
+      <div id="activeFilters" class="chips" style="margin-bottom:10px"></div>
       <div id="resultMeta" class="mm" style="margin-bottom:10px"></div>
       <div id="results"><div class="sk" style="height:110px"></div></div>
       <div id="moreBox" style="text-align:center;margin-top:12px"></div>
@@ -397,12 +403,33 @@ async function vSearch(_p, query) {
     vSearch();
   };
 
-  // Karte
-  searchMap = L.map("map", { scrollWheelZoom: false }).setView(searchOrigin || CITY_CENTER, 12);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>', maxZoom: 19,
-  }).addTo(searchMap);
-  searchMap.on("click", (e) => setSearchOrigin([e.latlng.lat, e.latlng.lng], "Karten-Position"));
+  // Erweiterte Filter ein-/ausklappen (bei aktiven Erweitert-Filtern offen starten)
+  const advActive = s.cat || s.service || s.brand || s.openNow || s.pickup || s.replacement || s.mobile || s.minRating;
+  let advOpen = !!advActive;
+  const syncAdv = () => {
+    $("fAdvanced").classList.toggle("hidden", !advOpen);
+    $("fMoreBtn").textContent = advOpen ? "Weniger Filter" : "Mehr Filter";
+  };
+  $("fMoreBtn").onclick = () => { advOpen = !advOpen; syncAdv(); };
+  syncAdv();
+
+  // Karte lazy laden (erst beim Einblenden – Leaflet braucht sichtbaren Container)
+  $("mapToggle").onclick = () => {
+    const wrap = $("mapWrap");
+    const show = wrap.classList.contains("hidden");
+    wrap.classList.toggle("hidden", !show);
+    $("mapToggle").textContent = show ? "Karte ausblenden" : "Karte anzeigen";
+    if (show) {
+      if (!searchMap) {
+        searchMap = L.map("map", { scrollWheelZoom: false }).setView(searchOrigin || CITY_CENTER, 12);
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>', maxZoom: 19,
+        }).addTo(searchMap);
+        searchMap.on("click", (e) => setSearchOrigin([e.latlng.lat, e.latlng.lng], "Karten-Position"));
+      }
+      setTimeout(() => { searchMap.invalidateSize(); applyFilters(); }, 60);
+    }
+  };
 
   if (!allWorkshops) {
     const { data, error } = await sb.from("workshops").select("*").eq("is_verified", true).order("rating_avg", { ascending: false }).limit(200);
@@ -489,23 +516,51 @@ function applyFilters() {
   $("moreBox").innerHTML = list.length > s.shown
     ? `<button class="btn ghost sm" onclick="searchState.shown+=12;applyFilters()">Mehr anzeigen (${list.length - s.shown} weitere)</button>` : "";
 
-  // Karte aktualisieren
-  mapMarkers.forEach(m => searchMap.removeLayer(m));
-  mapMarkers = [];
-  if (searchOrigin) {
-    const om = L.circleMarker(searchOrigin, { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: .9 }).addTo(searchMap);
-    om.bindPopup("Dein Standort");
-    mapMarkers.push(om);
+  renderActiveFilters();
+  // Karte aktualisieren (nur wenn eingeblendet/initialisiert)
+  if (searchMap) {
+    mapMarkers.forEach(m => searchMap.removeLayer(m));
+    mapMarkers = [];
+    if (searchOrigin) {
+      const om = L.circleMarker(searchOrigin, { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: .9 }).addTo(searchMap);
+      om.bindPopup("Dein Standort");
+      mapMarkers.push(om);
+    }
+    visible.forEach(ws => {
+      if (ws.lat == null || ws.lng == null) return;
+      const icon = L.divIcon({ className: "", html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(135deg,#2E77FF,#0A47C2);box-shadow:0 6px 16px rgba(30,107,255,.5);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);color:#fff">${ico(ws.categories[0] || "reparatur", 13)}</span></div>`, iconSize: [30, 30], iconAnchor: [15, 30] });
+      const m = L.marker([ws.lat, ws.lng], { icon }).addTo(searchMap);
+      m.bindPopup(`<b>${esc(ws.name)}</b><br><span style="color:#FFB020">${stars(ws.rating_avg)}</span> ${ws.rating_avg ?? "–"} · ${esc(ws.district || ws.city || "")}<br><a href="#/workshop/${ws.id}" style="color:#4D8DFF;font-weight:700">Profil ansehen →</a>`);
+      mapMarkers.push(m);
+    });
+    if (mapMarkers.length) searchMap.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.25));
   }
-  visible.forEach(ws => {
-    if (ws.lat == null || ws.lng == null) return;
-    const icon = L.divIcon({ className: "", html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(135deg,#2E77FF,#0A47C2);box-shadow:0 6px 16px rgba(30,107,255,.5);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);color:#fff">${ico(ws.categories[0] || "reparatur", 13)}</span></div>`, iconSize: [30, 30], iconAnchor: [15, 30] });
-    const m = L.marker([ws.lat, ws.lng], { icon }).addTo(searchMap);
-    m.bindPopup(`<b>${esc(ws.name)}</b><br><span style="color:#FFB020">${stars(ws.rating_avg)}</span> ${ws.rating_avg ?? "–"} · ${esc(ws.district || ws.city || "")}<br><a href="#/workshop/${ws.id}" style="color:#4D8DFF;font-weight:700">Profil ansehen →</a>`);
-    mapMarkers.push(m);
-  });
-  if (mapMarkers.length) searchMap.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.25));
   renderCompareBar();
+}
+// Aktive Filter als entfernbare Chips über den Ergebnissen
+function renderActiveFilters() {
+  const box = $("activeFilters"); if (!box) return;
+  const s = searchState, chips = [];
+  const add = (label, clear) => chips.push(`<span class="chip on" style="cursor:pointer" data-clear="${clear}">${esc(label)} ✕</span>`);
+  if (s.q) add(`„${s.q}"`, "q");
+  if (s.world) add(WORLDS.find(w => w.key === s.world)?.name || s.world, "world");
+  if (s.cat) add(CATS[s.cat]?.name || s.cat, "cat");
+  if (s.service) add(s.service, "service");
+  if (s.brand) add(s.brand, "brand");
+  if (s.openNow) add("Jetzt geöffnet", "openNow");
+  if (s.pickup) add("Hol- & Bringservice", "pickup");
+  if (s.replacement) add("Ersatzwagen", "replacement");
+  if (s.mobile) add("Mobil", "mobile");
+  if (s.minRating) add(`★ ${s.minRating}+`, "minRating");
+  box.innerHTML = chips.join("");
+  box.querySelectorAll("[data-clear]").forEach(c => c.onclick = () => {
+    const k = c.dataset.clear;
+    if (k === "minRating") searchState.minRating = 0;
+    else if (["openNow", "pickup", "replacement", "mobile"].includes(k)) searchState[k] = false;
+    else searchState[k] = "";
+    if (k === "world" || k === "cat") { searchState.cat = k === "world" ? "" : searchState.cat; searchState.service = ""; }
+    searchState.shown = 12; vSearch();
+  });
 }
 function wsCardHtml(ws) {
   const d = ws._dist;
@@ -568,7 +623,7 @@ async function vWorkshopProfile(id) {
     </div>
     <div class="right">
       <button class="btn ghost sm" id="wsFav">Merken</button>
-      <button class="btn ghost sm" onclick="openReportModal('workshop','${ws.id}','${ws.id}','${esc(ws.name)}')" title="Betrieb melden"></button>
+      <button class="btn ghost sm" onclick="openReportModal('workshop','${ws.id}','${ws.id}','${esc(ws.name)}')" title="Betrieb melden" aria-label="Betrieb melden">${ico("flag")}</button>
       <button class="btn" id="wsAsk">Anfrage stellen</button>
     </div>
   </div>
@@ -670,12 +725,6 @@ async function vNewRequest(_p, query) {
     if (ws && ws.categories?.length && !query.cat) nrCat = ws.categories[0];
   }
   const { data: cars } = await sb.from("vehicles").select("*").eq("owner_id", me.id).order("created_at");
-  if (!cars || cars.length === 0) {
-    main.innerHTML = `<div class="pageHead"><div><h1>${nrTargetWs ? "Direktanfrage" : "Ausschreibung erstellen"}</h1></div></div>
-      <div class="note">Zuerst brauchst du ein gespeichertes Fahrzeug – jede Anfrage ist mit genau einem Fahrzeug verbunden.</div>
-      <button class="btn" onclick="go('vehicles')">＋ Fahrzeug anlegen</button>`;
-    return;
-  }
   main.innerHTML = `
   <div class="pageHead"><div>
     <h1>${nrTargetWs ? "Direktanfrage" : "Ausschreibung erstellen"}</h1>
@@ -684,8 +733,12 @@ async function vNewRequest(_p, query) {
   ${nrTargetWs ? `<div class="note">Direktanfrage an <b>${esc(nrTargetWs.name)}</b> – nur dieser Betrieb sieht deine Anfrage und kann dir ein Angebot machen.</div>` : ""}
   <div class="grid2" style="align-items:start">
     <div class="card">
-      <div class="label" style="margin-top:0">Fahrzeug *</div>
-      <select id="nCar">${cars.map((c, i) => `<option value="${c.id}" ${i === 0 ? "selected" : ""}>${esc(carLabel(c))}</option>`).join("")}</select>
+      <div class="label" style="margin-top:0">Fahrzeug (optional)</div>
+      <div class="split" style="align-items:stretch">
+        <select id="nCar"><option value="">Kein Fahrzeug / später ergänzen</option>${(cars || []).map((c, i) => `<option value="${c.id}" ${i === 0 ? "selected" : ""}>${esc(carLabel(c))}</option>`).join("")}</select>
+        <button type="button" class="btn ghost sm" id="nCarAdd" style="flex:0 0 auto">＋ Fahrzeug</button>
+      </div>
+      ${(cars || []).length === 0 ? `<p class="mm" style="margin-top:5px">Tipp: Mit hinterlegtem Fahrzeug werden die Angebote genauer – du kannst es aber auch weglassen.</p>` : ""}
       <div class="label">Kategorie *</div>
       <div class="catGrid" id="nCats">${Object.entries(CATS).map(([k, v]) => `
         <div class="catCard ${k === nrCat ? "on" : ""}" data-k="${k}"><span class="ce">${ico(k)}</span><span class="cn">${v.name}</span></div>`).join("")}</div>
@@ -766,7 +819,8 @@ async function vNewRequest(_p, query) {
   syncDateExclusive();
   $("nFile").onchange = handleNrFiles;
   $("nAnalyze").onclick = runAiAnalyze;
-  $("nGo").onclick = () => submitRequest(cars);
+  $("nCarAdd").onclick = () => openVehicleForm();
+  $("nGo").onclick = () => submitRequest(cars || []);
 }
 let nrSvcExpanded = false;
 const NR_SVC_LIMIT = 8;
@@ -843,8 +897,7 @@ async function submitRequest(cars) {
   const err = $("nErr"); err.style.display = "none";
   let title = $("nTitle").value.trim();
   const desc = $("nDesc").value.trim();
-  if (!$("nCar").value) return showErr(err, "Bitte ein Fahrzeug wählen.");
-  // Titel & Beschreibung sind optional – Titel notfalls aus Kategorie/Leistungen bilden
+  // Fahrzeug ist optional – Titel & Beschreibung ebenso (Titel notfalls aus Kategorie/Leistungen)
   if (!title) {
     title = nrServices.length ? `${CATS[nrCat].name}: ${nrServices.slice(0, 3).join(", ")}` : CATS[nrCat].name;
   }
@@ -852,8 +905,8 @@ async function submitRequest(cars) {
   if (budget && !(parseFloat(budget.replace(",", ".")) > 0)) return showErr(err, "Das Budget muss eine Zahl sein.");
   const zip = $("nZip").value.trim();
   if (zip && !/^\d{5}$/.test(zip)) return showErr(err, "Die PLZ muss 5 Ziffern haben.");
-  const carId = $("nCar").value;
-  const car = cars.find(c => c.id === carId);
+  const carId = $("nCar").value || null;
+  const car = carId ? cars.find(c => c.id === carId) : null;
   const urgency = document.querySelector("#nUrgency div.on")?.dataset.u || "normal";
   $("nGo").disabled = true;
   $("nGo").textContent = "Wird veröffentlicht…";
@@ -869,6 +922,7 @@ async function submitRequest(cars) {
   }
   const { data: req, error } = await sb.from("requests").insert({
     customer_id: me.id, vehicle_id: carId, vehicle_label: car ? carLabel(car) : null,
+    // vehicle_id darf leer sein (Fahrzeug optional)
     category: nrCat, title, description: desc || null,
     budget_max: parseFloat(budget.replace(",", ".")) || null,
     extras: { leistungen: nrServices }, attachments,
@@ -960,7 +1014,7 @@ async function vRequestDetail(id) {
     <div style="flex:1"><h1>${esc(r.title)}</h1>
     <div class="sub">${esc(r.vehicle_label || "")} · ${c.name}${r.type === "direct" ? " · Direktanfrage" : ""}</div></div>
     <div class="right">
-      <button class="btn ghost sm" onclick="openReportModal('request','${r.id}',null,'Auftrag melden')" title="Problem melden"></button>
+      <button class="btn ghost sm" onclick="openReportModal('request','${r.id}',null,'Auftrag melden')" title="Problem melden" aria-label="Problem melden">${ico("flag")}</button>
       ${r.status === "open" ? `<button class="btn red sm" id="rCancel">Zurückziehen</button>` : ""}
     </div>
   </div>
@@ -988,7 +1042,7 @@ async function vRequestDetail(id) {
     <div class="card">
       <div class="tt">Chat</div>
       <div class="msgs" id="msgs"></div>
-      <div class="msgRow"><input id="msgIn" placeholder="Nachricht schreiben…"><button id="msgGo"></button></div>
+      <div class="msgRow"><input id="msgIn" placeholder="Nachricht schreiben…"><button id="msgGo" aria-label="Nachricht senden">${ico("send")}</button></div>
     </div>
   </div>`;
   if ($("rCancel")) $("rCancel").onclick = async () => {
@@ -1876,7 +1930,7 @@ function openPartForm(editId) {
     <input type="file" id="pfImgs" accept="image/*" multiple style="padding:9px">
     ${(p.images || []).length ? `<div class="thumbs" style="margin-top:8px">${p.images.map((u, i) => `
       <span style="position:relative"><img src="${esc(u)}" loading="lazy" alt="">
-      <button onclick="removePartImg('${p.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:11px;cursor:pointer">✕</button></span>`).join("")}</div>` : ""}
+      <button onclick="removePartImg('${p.id}',${i})" aria-label="Bild entfernen" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:11px;cursor:pointer">✕</button></span>`).join("")}</div>` : ""}
     <div class="btnRow">
       <button class="btn" id="pfSave">${editId ? "Speichern" : "Teil einstellen"}</button>
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
@@ -2358,7 +2412,7 @@ async function vWsLead(id) {
     <div class="card">
       <div class="tt">Rückfragen an den Kunden</div>
       <div class="msgs" id="msgs"></div>
-      <div class="msgRow"><input id="msgIn" placeholder="Nachricht schreiben…"><button id="msgGo"></button></div>
+      <div class="msgRow"><input id="msgIn" placeholder="Nachricht schreiben…"><button id="msgGo" aria-label="Nachricht senden">${ico("send")}</button></div>
     </div>
   </div>`;
   if ($("oGo")) bindOfferForm(r.id);
@@ -2379,7 +2433,7 @@ function offerFormHtml() {
     <div class="tt">Angebot kalkulieren</div>
     ${tpl.length ? `<div class="label">Vorlage laden</div>
     <div class="split"><select id="oTpl">${opt("Vorlage wählen…", tpl.map(t => t.name), "")}</select>
-    <button class="btn ghost sm" id="oTplDel" style="flex:0 0 auto" title="Gewählte Vorlage löschen"></button></div>` : ""}
+    <button class="btn ghost sm" id="oTplDel" style="flex:0 0 auto" title="Gewählte Vorlage löschen" aria-label="Vorlage löschen">${ico("trash")}</button></div>` : ""}
     <div class="label">Arbeitszeit</div>
     <div class="split">
       <input id="oHours" inputmode="decimal" placeholder="Stunden, z.B. 1,5">
@@ -2414,7 +2468,7 @@ function partRowHtml(p = {}) {
       <input class="opQty" inputmode="numeric" placeholder="Menge" value="${esc(p.qty || 1)}" style="max-width:70px">
       <input class="opPrice" inputmode="decimal" placeholder="€/Stück" value="${esc(p.price || "")}" style="max-width:100px">
       <select class="opWarr" style="max-width:130px">${["Keine Garantie","6 Monate","12 Monate","24 Monate"].map(k => `<option ${p.warr === k ? "selected" : ""}>${k}</option>`).join("")}</select>
-      <button class="btn red sm" style="flex:0 0 auto" onclick="this.closest('.oPartRow').remove();calcOfferSum()">✕</button>
+      <button class="btn red sm" style="flex:0 0 auto" aria-label="Position entfernen" onclick="this.closest('.oPartRow').remove();calcOfferSum()">✕</button>
     </div>
   </div>`;
 }
@@ -2879,7 +2933,7 @@ async function vWsProfile() {
         <input type="file" id="pGallery" accept="image/*" multiple style="padding:9px">
         <div class="thumbs" id="pGalThumbs">${(w.gallery || []).map((u, i) => `
           <span style="position:relative"><img src="${esc(u)}" loading="lazy" alt="">
-          <button onclick="removeGalleryImg(${i})" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:11px;cursor:pointer">✕</button></span>`).join("")}</div>
+          <button onclick="removeGalleryImg(${i})" aria-label="Bild entfernen" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:11px;cursor:pointer">✕</button></span>`).join("")}</div>
       </div>
       <div class="card" style="margin-top:14px">
         <div class="tt">Verfügbarkeit & Kapazität</div>
