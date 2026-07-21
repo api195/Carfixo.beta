@@ -1532,7 +1532,9 @@ async function vPartsMarket() {
       <select id="ptSort"><option value="new">Neueste zuerst</option><option value="cheap">Preis: günstigste zuerst</option><option value="exp">Preis: teuerste zuerst</option></select>
     </div>
   </div>
-  <div id="ptList" class="grid2"><div class="sk" style="height:130px"></div><div class="sk" style="height:130px"></div></div>`;
+  <div id="ptList" class="grid2"><div class="sk" style="height:130px"></div><div class="sk" style="height:130px"></div></div>
+  <div id="myPartOrders" style="margin-top:22px"></div>`;
+  if (me && !myWorkshop) loadMyPartOrders();
   if (!allParts) {
     const { data, error } = await sb.from("parts")
       .select("*, workshops(id,name,district,city,phone)")
@@ -1599,10 +1601,12 @@ function openPartDetail(id) {
       <div class="offerLine"><span>Anbieter</span><span>🏪 ${esc(p.workshops?.name || "")}</span></div>
     </div>
     <div class="btnRow">
-      <button class="btn" id="ptAsk">📩 Anfrage senden</button>
-      <a class="btn ghost" href="#/workshop/${p.workshop_id}" onclick="closeModal()">🏪 Zum Betrieb</a>
+      <button class="btn green" id="ptBuy">🛒 Direkt kaufen</button>
+      <button class="btn ghost" id="ptAsk">Frage stellen</button>
+      <a class="btn ghost" href="#/workshop/${p.workshop_id}" onclick="closeModal()">Zum Betrieb</a>
     </div>
-    <p class="mm" style="margin-top:10px;font-size:11px">Kauf und Abwicklung erfolgen direkt mit dem Betrieb – Carfixo vermittelt.</p>`);
+    <p class="mm" style="margin-top:10px;font-size:11px">Kauf und Abwicklung erfolgen direkt mit dem Betrieb – Verfügbarkeit, Versand/Abholung und Bezahlung werden vor dem Kauf mit dem Betrieb abgestimmt. Carfixo vermittelt.</p>`);
+  $("ptBuy").onclick = () => openPartBuy(p);
   $("ptAsk").onclick = () => {
     const title = "Teile-Anfrage: " + p.title;
     const desc = "Hallo, ich interessiere mich für: " + p.title + (p.price != null ? " (" + p.price + " €)" : "") +
@@ -1610,6 +1614,76 @@ function openPartDetail(id) {
     closeModal();
     go(`new-request?ws=${p.workshop_id}&cat=teile&title=${encodeURIComponent(title)}&desc=${encodeURIComponent(desc)}`);
   };
+}
+function openPartBuy(p) {
+  if (!me) { sessionStorage.setItem("cfx_after_auth", "teile"); toast("Bitte kostenlos registrieren, um zu kaufen."); return go("register"); }
+  if (myWorkshop) return toast("Als Betrieb kannst du keine Teile kaufen.");
+  const canShip = !!p.shipping;
+  openModal(`
+    <h2 style="font-size:19px;font-weight:800">🛒 Teil kaufen</h2>
+    <p class="mm" style="margin-top:4px">${esc(p.title)} · <b>${p.price != null ? fmtEur(p.price) : "Preis auf Anfrage"}</b></p>
+    <div class="label">Wie möchtest du es erhalten?</div>
+    <div class="seg" id="poFulfill">
+      <div data-f="pickup" class="on">🏪 Abholung beim Betrieb</div>
+      <div data-f="shipping" class="${canShip ? "" : "disabled"}" ${canShip ? "" : 'style="opacity:.4;pointer-events:none"'}>📦 Versand${canShip ? "" : " (nicht angeboten)"}</div>
+    </div>
+    ${p.install_service ? '<label class="inline"><input type="checkbox" id="poInstall"> 🔧 Einbau durch den Betrieb gewünscht</label>' : ""}
+    <div class="label">Kontakt für Rückfragen (Telefon oder E-Mail)</div>
+    <input id="poContact" placeholder="damit der Betrieb dich erreichen kann" value="${esc(myProfile?.phone || me.email || "")}">
+    <div class="label">Nachricht an den Betrieb (optional)</div>
+    <textarea id="poNote" placeholder="z.B. Wunschtermin zur Abholung, Fragen zum Zustand…"></textarea>
+    <div class="okBox" style="margin-top:12px">Das ist eine <b>verbindliche Kaufanfrage</b>: Der Betrieb bestätigt Verfügbarkeit, Endpreis und Versand/Abholung. Erst danach bezahlst du direkt beim Betrieb. In der aktuellen Version läuft keine Online-Zahlung.</div>
+    <div class="btnRow">
+      <button class="btn green" id="poGo">Kaufanfrage senden</button>
+      <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
+    </div>
+    <div class="err" id="poErr"></div>`);
+  let fulfill = "pickup";
+  document.querySelectorAll("#poFulfill div:not(.disabled)").forEach(d => d.onclick = () => {
+    fulfill = d.dataset.f;
+    document.querySelectorAll("#poFulfill div").forEach(x => x.classList.toggle("on", x === d));
+  });
+  $("poGo").onclick = async () => {
+    const err = $("poErr"); err.style.display = "none";
+    const contact = $("poContact").value.trim();
+    if (!contact) return showErr(err, "Bitte eine Kontaktmöglichkeit angeben.");
+    let note = $("poNote").value.trim();
+    if (p.install_service && $("poInstall")?.checked) note = "[Einbau gewünscht] " + note;
+    $("poGo").disabled = true; $("poGo").textContent = "Wird gesendet…";
+    const { error } = await sb.from("part_orders").insert({
+      part_id: p.id, buyer_id: me.id, workshop_id: p.workshop_id,
+      part_title: p.title, price: p.price ?? null,
+      fulfillment: fulfill, buyer_note: note || null, buyer_contact: contact,
+    });
+    $("poGo").disabled = false; $("poGo").textContent = "Kaufanfrage senden";
+    if (error) return showErr(err, error.message);
+    closeModal();
+    toast("Kaufanfrage gesendet ✓ – der Betrieb meldet sich zur Bestätigung.");
+    if (location.hash.includes("teile")) vPartsMarket();
+  };
+}
+const PO_STATUS = { requested: ["Angefragt", "b-gold"], confirmed: ["Bestätigt", "b-blue"], ready: ["Bereit/Versandt", "b-green"], completed: ["Abgeschlossen", "b-green"], cancelled: ["Storniert", "b-grey"] };
+async function loadMyPartOrders() {
+  const box = $("myPartOrders"); if (!box) return;
+  const { data } = await sb.from("part_orders").select("*, workshops(name,phone)").eq("buyer_id", me.id).order("created_at", { ascending: false });
+  if (!data || !data.length) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="rowHead" style="margin:8px 0 12px"><h2 style="font-size:18px;font-weight:800">🛒 Meine Käufe</h2></div>` +
+    data.map(o => {
+      const st = PO_STATUS[o.status] || ["?", "b-grey"];
+      return `<div class="card" style="margin-bottom:10px">
+        <div class="cardHead"><div class="ico icoGreen">🛒</div>
+          <div style="flex:1;min-width:0"><div class="tt">${esc(o.part_title)}</div>
+          <div class="mm">${o.price != null ? fmtEur(o.price) + " · " : ""}${o.fulfillment === "shipping" ? "📦 Versand" : "🏪 Abholung"} · 🏪 ${esc(o.workshops?.name || "")}</div></div>
+          <span class="badge ${st[1]}">${st[0]}</span></div>
+        ${o.status === "requested" ? `<div class="foot"><button class="btn ghost sm" onclick="cancelPartOrder('${o.id}')">Stornieren</button></div>` : ""}
+      </div>`;
+    }).join("");
+}
+async function cancelPartOrder(id) {
+  if (!confirm("Kaufanfrage wirklich stornieren?")) return;
+  const { error } = await sb.from("part_orders").update({ status: "cancelled" }).eq("id", id);
+  if (error) return toast(error.message);
+  toast("Storniert."); vPartsMarket();
 }
 
 // --- Werkstatt: eigene Teile verwalten ---
@@ -1621,8 +1695,38 @@ async function vWsParts() {
     <div class="right"><button class="btn sm" onclick="openPartForm()">＋ Teil einstellen</button></div>
   </div>
   ${myWorkshop.is_verified ? "" : `<div class="warn">Dein Betrieb ist noch nicht verifiziert – deine Teile werden erst nach der Freischaltung öffentlich angezeigt. Du kannst sie aber jetzt schon anlegen.</div>`}
+  <div id="wsPartOrders"></div>
+  <div class="rowHead" style="margin:6px 0 12px"><h2 style="font-size:18px;font-weight:800">Meine Teile-Angebote</h2></div>
   <div id="wspList" class="grid2"><div class="sk" style="height:120px"></div></div>`;
+  loadWsPartOrders();
   await loadWsParts();
+}
+async function loadWsPartOrders() {
+  const box = $("wsPartOrders"); if (!box) return;
+  const { data } = await sb.from("part_orders").select("*").eq("workshop_id", myWorkshop.id).order("created_at", { ascending: false });
+  const open = (data || []).filter(o => !["cancelled", "completed"].includes(o.status));
+  if (!data || !data.length) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="rowHead" style="margin:6px 0 12px"><h2 style="font-size:18px;font-weight:800">🛒 Bestellungen${open.length ? ` <span class="badge b-gold">${open.length} offen</span>` : ""}</h2></div>` +
+    data.map(o => {
+      const st = PO_STATUS[o.status] || ["?", "b-grey"];
+      const next = { requested: ["confirmed", "Bestätigen"], confirmed: ["ready", o.fulfillment === "shipping" ? "Als versandt markieren" : "Als abholbereit markieren"], ready: ["completed", "Abschließen"] }[o.status];
+      return `<div class="card" style="margin-bottom:10px">
+        <div class="cardHead"><div class="ico icoGreen">🛒</div>
+          <div style="flex:1;min-width:0"><div class="tt">${esc(o.part_title)}</div>
+          <div class="mm">${o.price != null ? fmtEur(o.price) + " · " : ""}${o.fulfillment === "shipping" ? "📦 Versand" : "🏪 Abholung"} · 📞 ${esc(o.buyer_contact || "–")}</div>
+          ${o.buyer_note ? `<div class="mm" style="margin-top:3px">💬 ${esc(o.buyer_note)}</div>` : ""}</div>
+          <span class="badge ${st[1]}">${st[0]}</span></div>
+        <div class="foot">
+          ${next ? `<button class="btn sm" onclick="setPartOrderStatus('${o.id}','${next[0]}')">${next[1]}</button>` : ""}
+          ${["cancelled", "completed"].includes(o.status) ? "" : `<button class="btn ghost sm" onclick="setPartOrderStatus('${o.id}','cancelled')">Ablehnen/Stornieren</button>`}
+        </div>
+      </div>`;
+    }).join("");
+}
+async function setPartOrderStatus(id, status) {
+  const { error } = await sb.from("part_orders").update({ status }).eq("id", id);
+  if (error) return toast(error.message);
+  toast("Aktualisiert ✓"); loadWsPartOrders();
 }
 async function loadWsParts() {
   const box = $("wspList"); if (!box) return;
