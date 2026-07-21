@@ -690,13 +690,14 @@ async function vNewRequest(_p, query) {
       <div class="catGrid" id="nCats">${Object.entries(CATS).map(([k, v]) => `
         <div class="catCard ${k === nrCat ? "on" : ""}" data-k="${k}"><span class="ce">${v.icon}</span><span class="cn">${v.name}</span></div>`).join("")}</div>
       <div class="label">Gewünschte Leistungen (optional)</div>
-      <input id="nSvcFilter" placeholder="🔍 Leistung suchen…" style="margin-bottom:6px">
+      <input id="nSvcFilter" placeholder="Leistung suchen…" style="margin-bottom:6px">
       <div class="chips" id="nServices"></div>
+      <button type="button" class="btn ghost sm" id="nSvcMore" style="margin-top:8px;display:none"></button>
       <div id="nPriceHint"></div>
-      <div class="label">Titel *</div>
+      <div class="label">Titel (optional)</div>
       <input id="nTitle" placeholder="z.B. Bremsen vorne erneuern" maxlength="80" value="${esc(query.title || "")}">
-      <div class="label">Beschreibung *</div>
-      <textarea id="nDesc" placeholder="Was ist das Problem? Was soll gemacht werden?">${esc(query.desc || "")}</textarea>
+      <div class="label">Beschreibung (optional)</div>
+      <textarea id="nDesc" placeholder="Was ist das Problem? Was soll gemacht werden? (optional, hilft aber bei genauen Angeboten)">${esc(query.desc || "")}</textarea>
       <div class="uploadTile" style="margin-top:12px" onclick="$('nFile').click()">
         <div class="ico icoPurple">📷</div>
         <div><div class="tt" style="font-size:12.5px">Fotos vom Problem (optional)</div>
@@ -742,7 +743,8 @@ async function vNewRequest(_p, query) {
   </div>`;
   renderNrServices();
   document.querySelectorAll("#nCats .catCard").forEach(c => c.onclick = () => {
-    nrCat = c.dataset.k; nrServices = [];
+    nrCat = c.dataset.k; nrServices = []; nrSvcExpanded = false;
+    if ($("nSvcFilter")) $("nSvcFilter").value = "";
     document.querySelectorAll("#nCats .catCard").forEach(x => x.classList.toggle("on", x === c));
     renderNrServices();
   });
@@ -766,8 +768,18 @@ async function vNewRequest(_p, query) {
   $("nAnalyze").onclick = runAiAnalyze;
   $("nGo").onclick = () => submitRequest(cars);
 }
+let nrSvcExpanded = false;
+const NR_SVC_LIMIT = 8;
 function renderNrServices() {
-  $("nServices").innerHTML = CATS[nrCat].services.map(s =>
+  const all = CATS[nrCat].services;
+  const flt = $("nSvcFilter");
+  const q = (flt?.value || "").trim().toLowerCase();
+  // Bei aktiver Suche alle Treffer zeigen, sonst nur die ersten NR_SVC_LIMIT + Gewählte
+  let visible;
+  if (q) visible = all.filter(s => s.toLowerCase().includes(q));
+  else if (nrSvcExpanded) visible = all;
+  else visible = all.filter((s, i) => i < NR_SVC_LIMIT || nrServices.includes(s));
+  $("nServices").innerHTML = visible.map(s =>
     `<span class="chip ${nrServices.includes(s) ? "on" : ""}" data-s="${esc(s)}">${esc(s)}</span>`).join("");
   document.querySelectorAll("#nServices .chip").forEach(c => c.onclick = () => {
     const s = c.dataset.s;
@@ -776,11 +788,19 @@ function renderNrServices() {
     c.classList.toggle("on");
     renderNrPriceHint();
   });
-  const flt = $("nSvcFilter");
+  const hidden = all.length - visible.length;
+  const more = $("nSvcMore");
+  if (more) {
+    if (q || all.length <= NR_SVC_LIMIT) { more.style.display = "none"; }
+    else {
+      more.style.display = "";
+      more.textContent = nrSvcExpanded ? "Weniger anzeigen" : `Mehr anzeigen (+${hidden})`;
+      more.onclick = () => { nrSvcExpanded = !nrSvcExpanded; renderNrServices(); };
+    }
+  }
   if (flt) {
-    flt.style.display = CATS[nrCat].services.length > 12 ? "" : "none";
-    flt.oninput = () => filterServiceChips("#nServices", flt.value);
-    if (flt.value) filterServiceChips("#nServices", flt.value);
+    flt.style.display = all.length > NR_SVC_LIMIT ? "" : "none";
+    flt.oninput = () => renderNrServices();
   }
   renderNrPriceHint();
 }
@@ -821,10 +841,13 @@ function runAiAnalyze() {
 async function submitRequest(cars) {
   window._nrCars = cars;
   const err = $("nErr"); err.style.display = "none";
-  const title = $("nTitle").value.trim(), desc = $("nDesc").value.trim();
+  let title = $("nTitle").value.trim();
+  const desc = $("nDesc").value.trim();
   if (!$("nCar").value) return showErr(err, "Bitte ein Fahrzeug wählen.");
-  if (!title) return showErr(err, "Bitte einen Titel angeben.");
-  if (!desc || desc.length < 10) return showErr(err, "Bitte das Problem kurz beschreiben (mind. 10 Zeichen).");
+  // Titel & Beschreibung sind optional – Titel notfalls aus Kategorie/Leistungen bilden
+  if (!title) {
+    title = nrServices.length ? `${CATS[nrCat].name}: ${nrServices.slice(0, 3).join(", ")}` : CATS[nrCat].name;
+  }
   const budget = ($("nBudget").value || "").trim();
   if (budget && !(parseFloat(budget.replace(",", ".")) > 0)) return showErr(err, "Das Budget muss eine Zahl sein.");
   const zip = $("nZip").value.trim();
@@ -846,7 +869,7 @@ async function submitRequest(cars) {
   }
   const { data: req, error } = await sb.from("requests").insert({
     customer_id: me.id, vehicle_id: carId, vehicle_label: car ? carLabel(car) : null,
-    category: nrCat, title, description: desc,
+    category: nrCat, title, description: desc || null,
     budget_max: parseFloat(budget.replace(",", ".")) || null,
     extras: { leistungen: nrServices }, attachments,
     urgency, parts_preference: $("nParts").value,
