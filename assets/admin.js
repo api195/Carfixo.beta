@@ -20,7 +20,7 @@ function toast(msg) {
 
 const VIEWS = { dashboard: vDashboard, workshops: vWorkshops, users: vUsers, requests: vRequests, payments: vPayments, reports: vReports };
 function nav(active) {
-  $("topNav").innerHTML = [["dashboard", "Übersicht"], ["workshops", "Werkstätten"], ["users", "Nutzer"], ["requests", "Anfragen"], ["payments", "Zahlungen"], ["reports", "🚩 Meldungen"]]
+  $("topNav").innerHTML = [["dashboard", "Übersicht"], ["workshops", "Werkstätten"], ["users", "Nutzer"], ["requests", "Anfragen"], ["payments", "Zahlungen"], ["reports", "Meldungen"]]
     .map(([k, l]) => `<a href="#/${k}" class="${active === k ? "on" : ""}">${l}</a>`).join("") +
     `<a href="app.html" style="color:var(--blue2)">Zur App</a><a href="#" id="outLink">Abmelden</a>`;
   $("outLink").onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
@@ -40,7 +40,7 @@ function vLogin(msg) {
   $("topNav").innerHTML = "";
   main.innerHTML = `
   <div class="authWrap"><div class="authCard">
-    <h1>🛡️ Admin-Login</h1>
+    <h1>Admin-Login</h1>
     ${msg ? `<div class="warn" style="margin-top:12px">${esc(msg)}</div>` : ""}
     <div class="label">E-Mail</div>
     <input id="aEmail" type="email" autocapitalize="off">
@@ -62,7 +62,7 @@ async function vDashboard() {
   main.innerHTML = `<div class="pageHead"><div><h1>Übersicht</h1><div class="sub">Plattform-Statistiken auf einen Blick.</div></div></div>
   <div class="kpiRow" id="kpis">${'<div class="kpi"><div class="sk" style="height:40px"></div></div>'.repeat(4)}</div>
   <div class="kpiRow" id="kpis2"></div>
-  <div class="card"><div class="tt">⏳ Wartende Verifizierungen</div><div id="pending" style="margin-top:12px"></div></div>`;
+  <div class="card"><div class="tt">Wartende Verifizierungen</div><div id="pending" style="margin-top:12px"></div></div>`;
   const [ws, users, reqs, offers, bookings, reviews] = await Promise.all([
     sb.from("workshops").select("id,is_verified,name,created_at,district,categories,owner_id", { count: "exact" }),
     sb.from("profiles").select("id", { count: "exact", head: true }),
@@ -98,22 +98,22 @@ async function vDashboard() {
   funnel.className = "grid2";
   funnel.style.marginBottom = "20px";
   funnel.innerHTML = `
-    <div class="card"><div class="tt">📈 Conversion</div>
+    <div class="card"><div class="tt">Conversion</div>
       <div class="offerLine" style="margin-top:8px"><span>Anfragen → Angebote erhalten</span><span><b>${reqTotal ? Math.round(((offers.count || 0) > 0 ? Math.min(reqTotal, offers.count) : 0) / reqTotal * 100) : 0} %</b></span></div>
       <div class="offerLine"><span>Anfragen → Buchung</span><span><b>${reqTotal ? Math.round(bookedCnt / reqTotal * 100) : 0} %</b></span></div>
       <div class="offerLine"><span>Buchung → Abschluss</span><span><b>${(bookings.data || []).length ? Math.round(completed.length / bookings.data.length * 100) : 0} %</b></span></div>
       <div class="offerLine"><span>Stornierungen / No-Shows</span><span><b>${(bookings.data || []).filter(b => b.status === "cancelled").length}</b></span></div>
     </div>
-    <div class="card"><div class="tt">🔥 Beliebte Kategorien</div>
+    <div class="card"><div class="tt">Beliebte Kategorien</div>
       ${Object.entries(catCount).sort((x, y) => y[1] - x[1]).slice(0, 6).map(([c, n]) =>
         `<div class="offerLine"><span>${CATS[c]?.icon || ""} ${CATS[c]?.name || c}</span><span><b>${n}</b></span></div>`).join("") || '<p class="mm" style="margin-top:8px">Noch keine Daten.</p>'}
     </div>`;
   $("pending").parentElement.before(funnel);
   $("pending").innerHTML = pending.length === 0
-    ? '<p class="mm">Keine offenen Verifizierungen 🎉</p>'
+    ? '<p class="mm">Keine offenen Verifizierungen </p>'
     : pending.map(w => `
       <div class="cardHead" style="padding:10px 0;border-bottom:1px solid var(--line)">
-        <div class="ico icoGold">🏪</div>
+        <div class="ico icoGold"></div>
         <div style="flex:1"><div class="tt" style="font-size:13px">${esc(w.name)}</div>
         <div class="mm">${esc(w.district || "kein Standort")} · seit ${fmtDate(w.created_at)}</div></div>
         <button class="btn green sm" onclick="verifyWs('${w.id}',true)">✓ Verifizieren</button>
@@ -131,11 +131,11 @@ async function vWorkshops() {
   $("wsRows").innerHTML = (data || []).map(w => `
     <tr>
       <td><b>${esc(w.name)}</b><div class="mm">${esc(w.email || w.phone || "")}</div></td>
-      <td>${esc(w.district || "–")}${w.lat != null ? " 📍" : ""}</td>
+      <td>${esc(w.district || "–")}${w.lat != null ? " " : ""}</td>
       <td>${(w.categories || []).map(c => CATS[c]?.icon || "").join(" ")}</td>
       <td>${w.rating_avg > 0 ? "★ " + Number(w.rating_avg).toLocaleString("de-DE") + ` (${w.rating_count})` : "–"}</td>
       <td>${w.is_verified ? '<span class="badge b-green">verifiziert</span>' : '<span class="badge b-gold">wartet</span>'}</td>
-      <td>${w.is_premium ? "👑" : "–"}</td>
+      <td>${w.is_premium ? "" : "–"}</td>
       <td style="white-space:nowrap">
         <button class="btn ${w.is_verified ? "red" : "green"} sm" onclick="verifyWs('${w.id}',${!w.is_verified})">${w.is_verified ? "Sperren" : "✓ Verifizieren"}</button>
         <button class="btn ghost sm" onclick="togglePremium('${w.id}',${!w.is_premium})" style="margin-left:6px">${w.is_premium ? "Premium aus" : "Premium an"}</button>
@@ -146,7 +146,7 @@ async function vWorkshops() {
 async function togglePremium(id, val) {
   const { error } = await sb.from("workshops").update({ is_premium: val }).eq("id", id);
   if (error) return toast(error.message);
-  toast(val ? "Premium aktiviert 👑" : "Premium deaktiviert.");
+  toast(val ? "Premium aktiviert " : "Premium deaktiviert.");
   route();
 }
 async function verifyWs(id, verified) {
@@ -171,7 +171,7 @@ async function vUsers() {
       <td><b>${esc(p.full_name || "–")}</b></td>
       <td>${esc(p.email || "–")}</td>
       <td><span class="badge ${roleBadge[p.role] || "b-grey"}">${roleName[p.role] || p.role}</span></td>
-      <td>${p.is_premium ? "👑" : "–"}</td>
+      <td>${p.is_premium ? "" : "–"}</td>
       <td class="mm">${fmtDate(p.created_at)}</td>
       <td>${p.role !== "admin" ? `<button class="btn ${p.is_blocked ? "green" : "red"} sm" onclick="toggleBlock('${p.id}',${!p.is_blocked})">${p.is_blocked ? "Entsperren" : "Sperren"}</button>` : ""}</td>
     </tr>`).join("");
@@ -187,24 +187,24 @@ async function toggleBlock(id, val) {
 // ---------- Meldungen & Konflikte ----------
 const RP_STATUS = { offen: "b-red", in_pruefung: "b-gold", rueckfrage_gesendet: "b-blue", geloest: "b-green", abgelehnt: "b-grey", geschlossen: "b-grey" };
 async function vReports() {
-  main.innerHTML = `<div class="pageHead"><div><h1>🚩 Meldungen & Konflikte</h1><div class="sub">Meldungen von Kunden und Betrieben prüfen und Entscheidungen dokumentieren.</div></div></div>
+  main.innerHTML = `<div class="pageHead"><div><h1>Meldungen & Konflikte</h1><div class="sub">Meldungen von Kunden und Betrieben prüfen und Entscheidungen dokumentieren.</div></div></div>
   <div id="rpList"><div class="sk" style="height:110px"></div></div>`;
   const { data, error } = await sb.from("reports").select("*, workshops(name)").order("created_at", { ascending: false }).limit(100);
   if (error) { main.innerHTML += `<div class="warn">${esc(error.message)}</div>`; return; }
   $("rpList").innerHTML = (data || []).length === 0
-    ? '<div class="empty"><div class="e">🎉</div>Keine Meldungen.</div>'
+    ? '<div class="empty"><div class="e"></div>Keine Meldungen.</div>'
     : data.map(r => `
       <div class="card" style="margin-bottom:12px">
-        <div class="cardHead"><div class="ico icoRed">🚩</div>
+        <div class="cardHead"><div class="ico icoRed"></div>
           <div style="flex:1"><div class="tt">${esc(r.reason)} <span class="mm">· Ziel: ${esc(r.target_type)}${r.workshops ? " · " + esc(r.workshops.name) : ""}</span></div>
           <div class="mm">${fmtDate(r.created_at)}${r.description ? " · " + esc(r.description) : ""}</div>
-          ${r.admin_note ? `<div class="mm">📝 ${esc(r.admin_note)}</div>` : ""}</div>
+          ${r.admin_note ? `<div class="mm">${esc(r.admin_note)}</div>` : ""}</div>
           <span class="badge ${RP_STATUS[r.status] || "b-grey"}">${esc(r.status)}</span></div>
         <div class="foot">
           <select style="width:auto;flex:1;min-width:160px;padding:9px" onchange="setReportStatus('${r.id}',this.value)">
             ${Object.keys(RP_STATUS).map(k => `<option value="${k}" ${k === r.status ? "selected" : ""}>${k}</option>`).join("")}
           </select>
-          <button class="btn ghost sm" onclick="noteReport('${r.id}')">📝 Notiz</button>
+          <button class="btn ghost sm" onclick="noteReport('${r.id}')">Notiz</button>
           ${r.workshop_id ? `<a class="btn ghost sm" href="app.html#/workshop/${r.workshop_id}">Betrieb ansehen</a>` : ""}
         </div>
       </div>`).join("");
@@ -250,7 +250,7 @@ const PAY_LABELS = {
   none: ["Keine Zahlung", "b-grey"], payment_pending: ["Ausstehend", "b-gold"],
   payment_authorized: ["Autorisiert", "b-blue"], payment_paid: ["Bezahlt", "b-green"],
   payment_failed: ["Fehlgeschlagen", "b-red"], payment_refunded: ["Erstattet", "b-purple"],
-  payment_cancelled: ["Storniert", "b-grey"], test_payment_confirmed: ["🧪 Testzahlung", "b-green"],
+  payment_cancelled: ["Storniert", "b-grey"], test_payment_confirmed: ["Testzahlung", "b-green"],
   pending: ["Ausstehend", "b-gold"], paid: ["Bezahlt", "b-green"], refunded: ["Erstattet", "b-purple"],
 };
 async function vPayments() {
@@ -265,7 +265,7 @@ async function vPayments() {
   const gmv = (data || []).filter(b => b.status === "completed").reduce((s, b) => s + Number(b.total_price || 0), 0);
   $("payKpis").innerHTML = `
     <div class="kpi"><b>${(data || []).length}</b><span>Buchungen gesamt</span></div>
-    <div class="kpi"><b>${test.length}</b><span>🧪 Testzahlungen</span></div>
+    <div class="kpi"><b>${test.length}</b><span>Testzahlungen</span></div>
     <div class="kpi"><b>${gmv.toLocaleString("de-DE")} €</b><span>Volumen (abgeschlossen)</span></div>
     <div class="kpi"><b>${Math.round(gmv * 0.1).toLocaleString("de-DE")} €</b><span>Provision (Platzhalter)</span></div>`;
   $("payRows").innerHTML = (data || []).map(b => {
