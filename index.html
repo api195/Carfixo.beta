@@ -6,9 +6,28 @@
 <title>Carfixo – Werkstätten, Tuning, Aufbereitung & Teile vergleichen</title>
 <meta name="description" content="Carfixo verbindet Autofahrer mit Werkstätten, Tuning-Betrieben, Aufbereitern und Prüfstellen. Angebote vergleichen, Teile kaufen, direkt buchen.">
 <meta name="theme-color" content="#05070D">
+<link rel="canonical" href="https://carfixo-beta.vercel.app/">
 <!-- Perf: Verbindung zu Supabase früh aufbauen, damit Live-Inhalte schneller laden -->
 <link rel="preconnect" href="https://boozzfiroukraekyijfq.supabase.co" crossorigin>
 <link rel="dns-prefetch" href="https://boozzfiroukraekyijfq.supabase.co">
+<!-- SEO / Social Preview -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Carfixo">
+<meta property="og:title" content="Carfixo – Werkstätten, Tuning, Aufbereitung & Teile vergleichen">
+<meta property="og:description" content="Vergleiche echte Angebote von geprüften Betrieben. 1 Anfrage – mehrere Angebote. Kostenlos für Kunden.">
+<meta property="og:url" content="https://carfixo-beta.vercel.app/">
+<meta property="og:locale" content="de_DE">
+<meta property="og:locale:alternate" content="tr_TR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Carfixo – Werkstätten, Tuning, Aufbereitung & Teile vergleichen">
+<meta name="twitter:description" content="Vergleiche echte Angebote von geprüften Betrieben. Kostenlos für Kunden.">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","@id":"https://carfixo-beta.vercel.app/#org","name":"Carfixo","url":"https://carfixo-beta.vercel.app/","areaServed":{"@type":"City","name":"Köln"},"description":"Marktplatz, der Autofahrer mit geprüften Werkstätten, Tuning-Betrieben, Aufbereitern und Prüfstellen verbindet."},
+{"@type":"WebSite","@id":"https://carfixo-beta.vercel.app/#website","url":"https://carfixo-beta.vercel.app/","name":"Carfixo","inLanguage":"de","publisher":{"@id":"https://carfixo-beta.vercel.app/#org"},"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://carfixo-beta.vercel.app/app.html#/search?q={search_term_string}"},"query-input":"required name=search_term_string"}}
+]}
+</script>
 <style>
 /* ================= Design Tokens ================= */
 :root{
@@ -50,6 +69,12 @@ img,svg{display:block;max-width:100%}
 .wrap{max-width:1140px;margin:0 auto;padding:0 22px}
 ::selection{background:rgba(30,107,255,.4)}
 
+/* ================= A11y ================= */
+.srOnly{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skipLink{position:fixed;left:-999px;top:0;z-index:300;background:var(--blue);color:#fff;padding:11px 18px;border-radius:0 0 12px 0;font-weight:700;font-size:13.5px}
+.skipLink:focus{left:0}
+a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--blue2);outline-offset:2px;border-radius:8px}
+
 /* ================= Reveal ================= */
 .rv{opacity:0;transform:translateY(24px);transition:opacity .7s cubic-bezier(.22,.61,.36,1),transform .7s cubic-bezier(.22,.61,.36,1);transition-delay:var(--d,0s)}
 .rv.in{opacity:1;transform:none}
@@ -58,7 +83,7 @@ img,svg{display:block;max-width:100%}
 /* ================= Nav ================= */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:background .35s,border-color .35s;border-bottom:1px solid transparent}
 nav.scrolled{background:rgba(5,7,13,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-color:var(--line)}
-.navIn{display:flex;align-items:center;gap:26px;height:72px;max-width:1140px;margin:0 auto;padding:0 22px}
+.navIn{position:relative;display:flex;align-items:center;gap:26px;height:72px;max-width:1140px;margin:0 auto;padding:0 22px}
 .logo{font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1}
 .logo b{color:var(--blue2)}
 .navLinks{display:flex;gap:26px;margin-left:auto;font-size:15.5px;font-weight:600;color:var(--muted);align-items:center}
@@ -66,7 +91,34 @@ nav.scrolled{background:rgba(5,7,13,.82);backdrop-filter:blur(16px);-webkit-back
 .navLinks a:hover{color:#fff}
 .navCta{margin-left:8px;background:var(--blue);color:#fff;font-size:14.5px;font-weight:700;padding:11px 20px;border-radius:99px;box-shadow:0 0 22px rgba(30,107,255,.35);transition:transform .15s,box-shadow .2s}
 .navCta:hover{transform:translateY(-1px);box-shadow:0 0 30px rgba(30,107,255,.55)}
-@media(max-width:720px){.navLinks a:not(.navCta){display:none}}
+
+/* Sprachauswahl */
+.langWrap{display:flex;align-items:center}
+.langSel{appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--ink);font-family:inherit;font-size:13.5px;font-weight:700;padding:8px 30px 8px 13px;border-radius:99px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238B98AC' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:13px;transition:border-color .2s}
+.langSel:hover{border-color:var(--blue2)}
+.langSel option{background:#0C111D;color:var(--ink)}
+
+/* Burger */
+.navToggle{display:none;flex-direction:column;justify-content:center;gap:5px;width:44px;height:44px;margin-left:auto;background:rgba(255,255,255,.05);border:1px solid var(--line2);border-radius:12px;cursor:pointer;padding:0 11px}
+.navToggle span{display:block;height:2px;width:100%;background:var(--ink);border-radius:2px;transition:transform .25s,opacity .2s}
+.navToggle[aria-expanded="true"] span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.navToggle[aria-expanded="true"] span:nth-child(2){opacity:0}
+.navToggle[aria-expanded="true"] span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+
+@media(max-width:760px){
+  .navToggle{display:flex}
+  .navLinks{position:absolute;top:calc(100% + 1px);left:0;right:0;margin:0;flex-direction:column;align-items:stretch;gap:2px;
+    background:rgba(8,11,20,.98);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--line);padding:12px 22px 20px;font-size:16.5px;
+    opacity:0;transform:translateY(-10px);pointer-events:none;transition:opacity .25s,transform .25s}
+  .navLinks.open{opacity:1;transform:none;pointer-events:auto}
+  .navLinks a:not(.navCta){padding:13px 4px;border-bottom:1px solid var(--line)}
+  .langWrap{padding:12px 0 4px}
+  .langSel{width:100%;border-radius:12px}
+  .navCta{margin:12px 0 0;justify-content:center;display:flex;padding:14px}
+}
 
 /* ================= Buttons ================= */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:50px;padding:0 24px;border-radius:14px;font-size:14.5px;font-weight:700;cursor:pointer;border:none;font-family:inherit;transition:transform .15s,box-shadow .25s,background .2s}
@@ -77,16 +129,13 @@ nav.scrolled{background:rgba(5,7,13,.82);backdrop-filter:blur(16px);-webkit-back
 .btn-g:hover{background:rgba(255,255,255,.1);transform:translateY(-2px)}
 
 /* ================= Hero (kompakt, Portal) ================= */
-.hero{position:relative;overflow:hidden;padding:118px 0 34px}
+.hero{position:relative;overflow:hidden;padding:126px 0 34px}
 .heroBgGrid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 90% 80% at 50% 0%,#000 30%,transparent 78%);-webkit-mask-image:radial-gradient(ellipse 90% 80% at 50% 0%,#000 30%,transparent 78%)}
 .orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
 .orb1{width:520px;height:520px;background:radial-gradient(circle,rgba(30,107,255,.30),transparent 65%);top:-180px;left:-120px}
 .orb2{width:440px;height:440px;background:radial-gradient(circle,rgba(56,189,248,.14),transparent 65%);top:-120px;right:-120px}
 @media(max-width:720px){.orb{filter:blur(60px)}}
 .heroHome{position:relative;width:100%;max-width:920px;margin:0 auto;text-align:center}
-.kicker{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--blue2);background:rgba(30,107,255,.1);border:1px solid rgba(30,107,255,.3);padding:6px 13px;border-radius:99px;margin-bottom:18px}
-.kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 h1{font-size:clamp(30px,4.6vw,48px);line-height:1.08;font-weight:800;letter-spacing:-1.6px}
 h1 .grad{background:linear-gradient(100deg,#4D8DFF 10%,#38BDF8 55%,#7C5CFF 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .heroSub{font-size:clamp(14px,1.6vw,16.5px);color:var(--muted);margin:14px auto 0;max-width:540px;line-height:1.6}
@@ -160,6 +209,8 @@ section{position:relative;padding:34px 0}
 .b-gold{background:rgba(255,176,32,.14);color:var(--gold)}
 .skRow{height:150px;border-radius:18px;background:linear-gradient(90deg,rgba(255,255,255,.03),rgba(255,255,255,.07),rgba(255,255,255,.03));background-size:200% 100%;animation:sk 1.4s infinite}
 @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.liveEmpty{grid-column:1/-1;background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:18px;padding:26px 22px;text-align:center;color:var(--muted);font-size:13.5px}
+.liveEmpty a{display:inline-block;margin-top:12px;color:var(--blue2);font-weight:700}
 
 /* Kategorie-Bänder */
 .worldBand[hidden]{display:none}
@@ -171,12 +222,32 @@ section{position:relative;padding:34px 0}
 .popular a{font-size:12.5px;font-weight:700;color:#C7D4E8;border:1px solid var(--line);background:rgba(255,255,255,.03);padding:9px 15px;border-radius:99px;transition:border-color .15s,color .15s,background .15s}
 .popular a:hover{border-color:var(--blue2);color:#fff;background:rgba(30,107,255,.12)}
 
+/* ================= Kostenrechner ================= */
+.secKick{font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--blue2);margin-bottom:12px}
+.calcHead{text-align:center;max-width:640px;margin:0 auto 22px}
+.calcHead h2{font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-.8px}
+.calcHead p{font-size:13.5px;color:var(--muted);margin-top:10px;line-height:1.6}
+.calcWrap{max-width:720px;margin:0 auto;background:linear-gradient(150deg,#0A1428,#0A0F1C 60%);border:1px solid rgba(30,107,255,.25);border-radius:22px;padding:26px}
+.calcField label{display:block;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.calcSelect{width:100%;appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.05);border:1px solid var(--line2);color:var(--ink);font-family:inherit;font-size:15px;padding:14px 42px 14px 15px;border-radius:13px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238B98AC' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 15px center;background-size:16px;transition:border-color .2s}
+.calcSelect:hover{border-color:var(--blue2)}
+.calcSelect option{background:#0C111D;color:var(--ink)}
+.calcOut{margin-top:20px;padding-top:18px;border-top:1px solid var(--line);display:none}
+.calcOut.show{display:block;animation:fadeUp .35s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.calcRange .cpre{display:block;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.calcRange .cval{font-size:clamp(26px,4vw,34px);font-weight:800;letter-spacing:-.6px;
+  background:linear-gradient(100deg,#4D8DFF,#38BDF8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.calcNote{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.55}
+.calcCta{margin-top:16px}
+
 /* ================= Für Betriebe ================= */
 #pro{padding:46px 0}
 #pro .proBox{background:linear-gradient(150deg,#0A1428,#0A0F1C 60%);border:1px solid rgba(30,107,255,.25);border-radius:28px;padding:48px 50px;display:grid;grid-template-columns:1.1fr .9fr;gap:50px;align-items:center;position:relative;overflow:hidden}
 #pro .proBox::before{content:"";position:absolute;top:-120px;right:-120px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(30,107,255,.22),transparent 65%);filter:blur(50px)}
 @media(max-width:940px){#pro .proBox{grid-template-columns:1fr;padding:36px 24px}}
-.secKick{font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--blue2);margin-bottom:12px}
 #pro h2{font-size:clamp(24px,3.4vw,36px);font-weight:800;letter-spacing:-1px;line-height:1.15}
 .checkList{margin-top:22px;display:flex;flex-direction:column;gap:11px}
 .checkList div{display:flex;gap:11px;font-size:13.5px;color:#C7D4E8;align-items:flex-start}
@@ -191,27 +262,53 @@ section{position:relative;padding:34px 0}
 .leadRow .t{font-size:12.5px;font-weight:700}
 .leadRow .m{font-size:10.5px;color:var(--muted)}
 .leadRow .newTag{margin-left:auto;font-size:9px;font-weight:800;background:rgba(30,107,255,.18);color:var(--blue2);padding:3px 9px;border-radius:99px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ================= FAQ ================= */
+#faq{padding:46px 0}
+.faqHead{text-align:center;margin-bottom:24px}
+.faqHead h2{font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-.8px}
+.faqList{display:flex;flex-direction:column;gap:10px;max-width:820px;margin:0 auto}
+.faqItem{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.faqItem summary{list-style:none;cursor:pointer;padding:17px 18px;font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:12px}
+.faqItem summary::-webkit-details-marker{display:none}
+.faqItem summary .fqIco{margin-left:auto;color:var(--muted);flex:none;transition:transform .25s}
+.faqItem[open] summary .fqIco{transform:rotate(45deg)}
+.faqItem .fqA{padding:0 18px 17px;font-size:13.5px;color:var(--muted);line-height:1.65}
 
 /* ================= Footer ================= */
 footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:var(--muted);margin-top:26px}
 .footIn{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
-.footIn .logo{font-size:16px}
+.footIn .logo{font-size:18px}
 .footLinks{margin-left:auto;display:flex;gap:20px;flex-wrap:wrap}
 .footLinks a:hover{color:#fff}
 </style>
 </head>
 <body>
 
+<a class="skipLink" href="#top" data-i18n="skip_link">Zum Inhalt springen</a>
+
 <!-- ================= NAV ================= -->
-<nav id="nav">
+<nav id="nav" aria-label="Carfixo">
   <div class="navIn">
-    <a class="logo" href="#top">car<b>fixo</b></a>
-    <div class="navLinks">
-      <a href="app.html#/search">Werkstätten</a>
-      <a href="app.html#/teile">Teile</a>
-      <a href="app.html#/diagnose">KI-Diagnose</a>
-      <a href="#pro">Für Betriebe</a>
-      <a class="navCta" href="app.html">App öffnen</a>
+    <a class="logo" href="#top" aria-label="Carfixo Startseite">car<b>fixo</b></a>
+    <button class="navToggle" id="navToggle" aria-label="Menü" aria-expanded="false" aria-controls="navMenu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="navLinks" id="navMenu">
+      <a data-i18n="nav_werkstaetten" href="app.html#/search">Werkstätten</a>
+      <a data-i18n="nav_teile" href="app.html#/teile">Teile</a>
+      <a data-i18n="nav_diagnose" href="app.html#/diagnose">KI-Diagnose</a>
+      <a data-i18n="nav_pro" href="#pro">Für Betriebe</a>
+      <div class="langWrap">
+        <label class="srOnly" for="langSel" data-i18n="lang_label">Sprache</label>
+        <select id="langSel" class="langSel" aria-label="Sprache / Dil / Language">
+          <option value="de">DE</option>
+          <option value="tr">TR</option>
+          <option value="en">EN</option>
+        </select>
+      </div>
+      <a class="navCta" data-i18n="nav_cta" href="app.html">App öffnen</a>
     </div>
   </div>
 </nav>
@@ -223,42 +320,41 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
   <div class="orb orb2"></div>
 
   <div class="wrap heroHome">
-    <div class="kicker rv"><span class="dot"></span> Live in Köln</div>
-    <h1 class="rv" style="--d:.05s">Was braucht <span class="grad">dein Auto?</span></h1>
-    <p class="heroSub rv" style="--d:.1s">Werkstatt, Tuning, Aufbereitung, TÜV oder Teile – vergleiche echte Angebote von geprüften Betrieben. Kostenlos für Kunden.</p>
+    <h1 class="rv" data-i18n-html="hero_h1">Was braucht <span class="grad">dein Auto?</span></h1>
+    <p class="heroSub rv" style="--d:.05s" data-i18n="hero_sub">Werkstatt, Tuning, Aufbereitung, TÜV oder Teile – vergleiche echte Angebote von geprüften Betrieben. Kostenlos für Kunden.</p>
 
-    <form class="searchBox rv" style="--d:.15s" id="homeSearch">
+    <form class="searchBox rv" style="--d:.1s" id="homeSearch">
       <div class="sbField grow">
-        <label for="hq">Was?</label>
-        <input id="hq" placeholder="z.B. Ölwechsel, TÜV, Chiptuning, Felgen aufbereiten…" autocomplete="off">
+        <label for="hq" data-i18n="search_was_label">Was?</label>
+        <input id="hq" data-i18n-ph="search_was_ph" placeholder="z.B. Ölwechsel, TÜV, Chiptuning, Felgen aufbereiten…" autocomplete="off">
       </div>
       <div class="sbDivider"></div>
       <div class="sbField">
-        <label for="hloc">Wo?</label>
-        <input id="hloc" placeholder="PLZ oder Ort – z.B. Köln" autocomplete="off">
+        <label for="hloc" data-i18n="search_wo_label">Wo?</label>
+        <input id="hloc" data-i18n-ph="search_wo_ph" placeholder="PLZ oder Ort – z.B. Köln" autocomplete="off">
       </div>
-      <button class="sbGo" type="submit">Suchen</button>
+      <button class="sbGo" type="submit" data-i18n="search_go">Suchen</button>
     </form>
 
-    <div class="catStrip rv" style="--d:.2s">
-      <a href="app.html#/search?cat=reparatur"><span data-ico="reparatur"></span> Reparatur</a>
-      <a href="app.html#/search?cat=inspektion"><span data-ico="inspektion"></span> Inspektion</a>
-      <a href="app.html#/search?cat=reifen"><span data-ico="reifen"></span> Reifen &amp; Felgen</a>
-      <a href="app.html#/search?cat=tuev"><span data-ico="tuev"></span> TÜV</a>
-      <a href="app.html#/search?cat=tuning"><span data-ico="tuning"></span> Tuning</a>
-      <a href="app.html#/search?cat=pflege"><span data-ico="pflege"></span> Aufbereitung</a>
-      <a href="app.html#/search?cat=lack"><span data-ico="lack"></span> Lack &amp; Folierung</a>
-      <a href="app.html#/search?cat=klima"><span data-ico="klima"></span> Klima</a>
-      <a href="app.html#/search?cat=karosserie"><span data-ico="karosserie"></span> Karosserie</a>
-      <a href="app.html#/teile"><span data-ico="teile"></span> Teile</a>
-      <a class="more" href="app.html#/search">Alle Kategorien →</a>
+    <div class="catStrip rv" style="--d:.15s">
+      <a href="app.html#/search?cat=reparatur"><span data-ico="reparatur"></span> <span data-i18n="cat_reparatur">Reparatur</span></a>
+      <a href="app.html#/search?cat=inspektion"><span data-ico="inspektion"></span> <span data-i18n="cat_inspektion">Inspektion</span></a>
+      <a href="app.html#/search?cat=reifen"><span data-ico="reifen"></span> <span data-i18n="cat_reifen">Reifen &amp; Felgen</span></a>
+      <a href="app.html#/search?cat=tuev"><span data-ico="tuev"></span> <span data-i18n="cat_tuev">TÜV</span></a>
+      <a href="app.html#/search?cat=tuning"><span data-ico="tuning"></span> <span data-i18n="cat_tuning">Tuning</span></a>
+      <a href="app.html#/search?cat=pflege"><span data-ico="pflege"></span> <span data-i18n="cat_pflege">Aufbereitung</span></a>
+      <a href="app.html#/search?cat=lack"><span data-ico="lack"></span> <span data-i18n="cat_lack">Lack &amp; Folierung</span></a>
+      <a href="app.html#/search?cat=klima"><span data-ico="klima"></span> <span data-i18n="cat_klima">Klima</span></a>
+      <a href="app.html#/search?cat=karosserie"><span data-ico="karosserie"></span> <span data-i18n="cat_karosserie">Karosserie</span></a>
+      <a href="app.html#/teile"><span data-ico="teile"></span> <span data-i18n="cat_teile">Teile</span></a>
+      <a class="more" href="app.html#/search" data-i18n="cat_alle">Alle Kategorien →</a>
     </div>
 
-    <div class="trustStrip rv" style="--d:.25s">
-      <span><b>✓</b> Geprüfte &amp; verifizierte Betriebe</span>
-      <span><b>✓</b> 100 % kostenlos für Kunden</span>
-      <span><b>✓</b> 1 Anfrage – mehrere Angebote</span>
-      <span><b>✓</b> Teile direkt vom Betrieb</span>
+    <div class="trustStrip rv" style="--d:.2s">
+      <span><b>✓</b> <span data-i18n="trust_1">Geprüfte &amp; verifizierte Betriebe</span></span>
+      <span><b>✓</b> <span data-i18n="trust_2">100 % kostenlos für Kunden</span></span>
+      <span><b>✓</b> <span data-i18n="trust_3">1 Anfrage – mehrere Angebote</span></span>
+      <span><b>✓</b> <span data-i18n="trust_4">Teile direkt vom Betrieb</span></span>
     </div>
   </div>
 </header>
@@ -268,28 +364,28 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
   <div class="wrap">
     <div class="quickTiles rv">
       <a class="qt" href="app.html#/search">
-        <span class="qe" data-ico="search" data-ico-size="24"></span><span class="qn">Betrieb finden</span>
-        <span class="qm">Vergleichen &amp; anfragen</span>
+        <span class="qe" data-ico="search" data-ico-size="24"></span><span class="qn" data-i18n="qt_find_n">Betrieb finden</span>
+        <span class="qm" data-i18n="qt_find_m">Vergleichen &amp; anfragen</span>
       </a>
       <a class="qt" href="app.html#/diagnose">
-        <span class="qe" data-ico="robot" data-ico-size="24"></span><span class="qn">KI-Diagnose</span>
-        <span class="qm">Ersteinschätzung + Preisrahmen</span>
+        <span class="qe" data-ico="robot" data-ico-size="24"></span><span class="qn" data-i18n="qt_ki_n">KI-Diagnose</span>
+        <span class="qm" data-i18n="qt_ki_m">Ersteinschätzung + Preisrahmen</span>
       </a>
       <a class="qt" href="app.html#/teile">
-        <span class="qe" data-ico="puzzle" data-ico-size="24"></span><span class="qn">Teile kaufen</span>
-        <span class="qm">Neu &amp; gebraucht, mit Einbau</span>
+        <span class="qe" data-ico="puzzle" data-ico-size="24"></span><span class="qn" data-i18n="qt_teile_n">Teile kaufen</span>
+        <span class="qm" data-i18n="qt_teile_m">Neu &amp; gebraucht, mit Einbau</span>
       </a>
       <a class="qt" href="app.html#/new-request">
-        <span class="qe" data-ico="megaphone" data-ico-size="24"></span><span class="qn">Anfrage erstellen</span>
-        <span class="qm">Betriebe melden sich bei dir</span>
+        <span class="qe" data-ico="megaphone" data-ico-size="24"></span><span class="qn" data-i18n="qt_anfrage_n">Anfrage erstellen</span>
+        <span class="qm" data-i18n="qt_anfrage_m">Betriebe melden sich bei dir</span>
       </a>
       <a class="qt" href="app.html#/notfall">
-        <span class="qe" data-ico="alert" data-ico-size="24"></span><span class="qn">Notfall-Hilfe</span>
-        <span class="qm">Notdienst &amp; mobile Hilfe</span>
+        <span class="qe" data-ico="alert" data-ico-size="24"></span><span class="qn" data-i18n="qt_notfall_n">Notfall-Hilfe</span>
+        <span class="qm" data-i18n="qt_notfall_m">Notdienst &amp; mobile Hilfe</span>
       </a>
       <a class="qt" href="#pro">
-        <span class="qe" data-ico="shop" data-ico-size="24"></span><span class="qn">Für Betriebe</span>
-        <span class="qm">Kunden gewinnen, Teile verkaufen</span>
+        <span class="qe" data-ico="shop" data-ico-size="24"></span><span class="qn" data-i18n="qt_pro_n">Für Betriebe</span>
+        <span class="qm" data-i18n="qt_pro_m">Kunden gewinnen, Teile verkaufen</span>
       </a>
     </div>
   </div>
@@ -299,9 +395,9 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
 <section id="topWs">
   <div class="wrap">
     <div class="rowHead rv">
-      <h2><span data-ico="star"></span> Top-Betriebe in Köln</h2>
-      <span class="sub">nach Bewertung</span>
-      <a class="all" href="app.html#/search">Alle Betriebe →</a>
+      <h2><span data-ico="star"></span> <span data-i18n="sec_topws_h">Top-Betriebe in Köln</span></h2>
+      <span class="sub" data-i18n="sec_topws_sub">nach Bewertung</span>
+      <a class="all" href="app.html#/search" data-i18n="sec_topws_all">Alle Betriebe →</a>
     </div>
     <div class="cardsGrid" id="wsRow">
       <div class="skRow"></div><div class="skRow"></div><div class="skRow"></div>
@@ -313,9 +409,9 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
 <section id="topParts">
   <div class="wrap">
     <div class="rowHead rv">
-      <h2><span data-ico="teile"></span> Neu im Teile-Marktplatz</h2>
-      <span class="sub">direkt vom Betrieb</span>
-      <a class="all" href="app.html#/teile">Alle Teile →</a>
+      <h2><span data-ico="teile"></span> <span data-i18n="sec_parts_h">Neu im Teile-Marktplatz</span></h2>
+      <span class="sub" data-i18n="sec_parts_sub">direkt vom Betrieb</span>
+      <a class="all" href="app.html#/teile" data-i18n="sec_parts_all">Alle Teile →</a>
     </div>
     <div class="cardsGrid" id="partsRow">
       <div class="skRow"></div><div class="skRow"></div><div class="skRow"></div>
@@ -323,13 +419,13 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
   </div>
 </section>
 
-<!-- ================= BEREICHE (Kategorie-Reihen wie bei Vergleichsportalen) ================= -->
+<!-- ================= BEREICHE ================= -->
 <section class="worldBand" id="band-werkstatt" hidden>
   <div class="wrap">
     <div class="rowHead rv">
-      <h2><span data-ico="reparatur"></span> Werkstätten</h2>
-      <span class="sub">Reparatur · Inspektion · Reifen · Klima</span>
-      <a class="all" href="app.html#/search?world=werkstatt">Alle Werkstätten →</a>
+      <h2><span data-ico="reparatur"></span> <span data-i18n="band_werkstatt_h">Werkstätten</span></h2>
+      <span class="sub" data-i18n="band_werkstatt_sub">Reparatur · Inspektion · Reifen · Klima</span>
+      <a class="all" href="app.html#/search?world=werkstatt" data-i18n="band_werkstatt_all">Alle Werkstätten →</a>
     </div>
     <div class="cardsGrid" data-cards></div>
     <div class="popular bandChips rv">
@@ -346,9 +442,9 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
 <section class="worldBand" id="band-tuning" hidden>
   <div class="wrap">
     <div class="rowHead rv">
-      <h2><span data-ico="tuning"></span> Tuning &amp; Codierung</h2>
-      <span class="sub">Leistung · Optik · Felgen · Software</span>
-      <a class="all" href="app.html#/search?world=tuning">Alle Tuner →</a>
+      <h2><span data-ico="tuning"></span> <span data-i18n="band_tuning_h">Tuning &amp; Codierung</span></h2>
+      <span class="sub" data-i18n="band_tuning_sub">Leistung · Optik · Felgen · Software</span>
+      <a class="all" href="app.html#/search?world=tuning" data-i18n="band_tuning_all">Alle Tuner →</a>
     </div>
     <div class="cardsGrid" data-cards></div>
     <div class="popular bandChips rv">
@@ -366,9 +462,9 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
 <section class="worldBand" id="band-pflege" hidden>
   <div class="wrap">
     <div class="rowHead rv">
-      <h2><span data-ico="pflege"></span> Aufbereitung &amp; Folierung</h2>
-      <span class="sub">Detailing · Keramik · Lack · Folie</span>
-      <a class="all" href="app.html#/search?world=pflege">Alle Aufbereiter →</a>
+      <h2><span data-ico="pflege"></span> <span data-i18n="band_pflege_h">Aufbereitung &amp; Folierung</span></h2>
+      <span class="sub" data-i18n="band_pflege_sub">Detailing · Keramik · Lack · Folie</span>
+      <a class="all" href="app.html#/search?world=pflege" data-i18n="band_pflege_all">Alle Aufbereiter →</a>
     </div>
     <div class="cardsGrid" data-cards></div>
     <div class="popular bandChips rv">
@@ -385,9 +481,9 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
 <section class="worldBand" id="band-tuev" hidden>
   <div class="wrap">
     <div class="rowHead rv">
-      <h2><span data-ico="tuev"></span> TÜV &amp; Prüfung</h2>
-      <span class="sub">HU/AU · Checks · Gutachten · Eintragungen</span>
-      <a class="all" href="app.html#/search?world=tuev">Alle Prüfstellen →</a>
+      <h2><span data-ico="tuev"></span> <span data-i18n="band_tuev_h">TÜV &amp; Prüfung</span></h2>
+      <span class="sub" data-i18n="band_tuev_sub">HU/AU · Checks · Gutachten · Eintragungen</span>
+      <a class="all" href="app.html#/search?world=tuev" data-i18n="band_tuev_all">Alle Prüfstellen →</a>
     </div>
     <div class="cardsGrid" data-cards></div>
     <div class="popular bandChips rv">
@@ -400,10 +496,37 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
   </div>
 </section>
 
+<!-- ================= KOSTENRECHNER ================= -->
+<section id="calc">
+  <div class="wrap">
+    <div class="calcHead rv">
+      <div class="secKick" data-i18n="calc_kick">Preis-Orientierung</div>
+      <h2 data-i18n="calc_h">Was kostet das ungefähr?</h2>
+      <p data-i18n="calc_sub">Wähle eine Leistung – du bekommst einen typischen Preisrahmen für Köln. Der echte Preis kommt per Angebot.</p>
+    </div>
+    <div class="calcWrap rv" style="--d:.05s">
+      <div class="calcField">
+        <label for="calcSel" data-i18n="calc_select_label">Leistung wählen</label>
+        <select id="calcSel" class="calcSelect">
+          <option value="" data-i18n="calc_placeholder">— bitte wählen —</option>
+        </select>
+      </div>
+      <div class="calcOut" id="calcOut" aria-live="polite">
+        <div class="calcRange">
+          <span class="cpre" data-i18n="calc_result_pre">Typischer Rahmen</span>
+          <span class="cval" id="calcVal">—</span>
+        </div>
+        <p class="calcNote"><span data-i18n="calc_note">Unverbindliche Orientierung – abhängig von Fahrzeug, Teilen &amp; Aufwand. Kostenlos echte Angebote einholen:</span></p>
+        <a class="btn btn-p calcCta" id="calcCta" href="app.html#/search"><span data-i18n="calc_cta">Kostenlos anfragen →</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ================= BELIEBTE LEISTUNGEN ================= -->
 <section>
   <div class="wrap">
-    <div class="rowHead rv"><h2><span data-ico="bolt"></span> Beliebte Leistungen</h2></div>
+    <div class="rowHead rv"><h2><span data-ico="bolt"></span> <span data-i18n="popular_h">Beliebte Leistungen</span></h2></div>
     <div class="popular rv">
       <a href="app.html#/search?q=%C3%96lwechsel">Ölwechsel</a>
       <a href="app.html#/search?q=HU">TÜV / HU + AU</a>
@@ -429,40 +552,58 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
   <div class="wrap">
     <div class="proBox rv">
       <div>
-        <div class="secKick">Für Werkstätten &amp; Betriebe</div>
-        <h2>Kunden kommen zu dir.<br>Nicht umgekehrt.</h2>
+        <div class="secKick" data-i18n="pro_kick">Für Werkstätten &amp; Betriebe</div>
+        <h2 data-i18n-html="pro_h">Kunden kommen zu dir.<br>Nicht umgekehrt.</h2>
         <div class="checkList">
-          <div><span class="ck">✓</span> Sieh offene Ausschreibungen live – gefiltert nach deinen Kategorien, Marken und deinem Umkreis</div>
-          <div><span class="ck">✓</span> Sende Angebote mit Einzelpositionen und gewinne neue Stammkunden</div>
-          <div><span class="ck">✓</span> Profil mit Leistungen, Fahrzeugmarken, Standort &amp; Bewertungen</div>
-          <div><span class="ck">✓</span> Verkaufe Teile über den Carfixo-Teile-Marktplatz – neu, gebraucht oder mit Einbau</div>
+          <div><span class="ck">✓</span> <span data-i18n="pro_check1">Sieh offene Ausschreibungen live – gefiltert nach deinen Kategorien, Marken und deinem Umkreis</span></div>
+          <div><span class="ck">✓</span> <span data-i18n="pro_check2">Sende Angebote mit Einzelpositionen und gewinne neue Stammkunden</span></div>
+          <div><span class="ck">✓</span> <span data-i18n="pro_check3">Profil mit Leistungen, Fahrzeugmarken, Standort &amp; Bewertungen</span></div>
+          <div><span class="ck">✓</span> <span data-i18n="pro_check4">Verkaufe Teile über den Carfixo-Teile-Marktplatz – neu, gebraucht oder mit Einbau</span></div>
         </div>
         <div class="heroBtns">
-          <a class="btn btn-p" href="app.html#/register">Als Betrieb registrieren</a>
-          <a class="btn btn-g" href="app.html#/search">Betriebe ansehen</a>
+          <a class="btn btn-p" href="app.html#/register" data-i18n="pro_btn1">Als Betrieb registrieren</a>
+          <a class="btn btn-g" href="app.html#/search" data-i18n="pro_btn2">Betriebe ansehen</a>
         </div>
       </div>
       <div class="leadCard">
-        <div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Offene Ausschreibungen <span style="color:var(--green)">● live</span></div>
+        <div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px"><span data-i18n="pro_lead_title">Offene Ausschreibungen</span> <span style="color:var(--green)">● <span data-i18n="lead_live">live</span></span></div>
         <div class="leadRow">
           <div class="fico icoBlue" data-ico="wrench"></div>
-          <div><div class="t">Bremsen vorne · BMW 3er F30</div><div class="m">Köln-Ehrenfeld · Budget bis 250&nbsp;€</div></div>
-          <span class="newTag">NEU</span>
+          <div><div class="t" data-i18n="lead1_t">Bremsen vorne · BMW 3er F30</div><div class="m" data-i18n="lead1_m">Köln-Ehrenfeld · Budget bis 250&nbsp;€</div></div>
+          <span class="newTag" data-i18n="lead_new">NEU</span>
         </div>
         <div class="leadRow">
           <div class="fico icoGold" data-ico="clipboard"></div>
-          <div><div class="t">HU + AU · VW Golf VII</div><div class="m">Köln-Nippes · so schnell wie möglich</div></div>
-          <span class="newTag">NEU</span>
+          <div><div class="t" data-i18n="lead2_t">HU + AU · VW Golf VII</div><div class="m" data-i18n="lead2_m">Köln-Nippes · so schnell wie möglich</div></div>
+          <span class="newTag" data-i18n="lead_new">NEU</span>
         </div>
         <div class="leadRow">
           <div class="fico icoPurple" data-ico="gauge"></div>
-          <div><div class="t">Softwareoptimierung · Audi A4 B9</div><div class="m">Köln-Deutz · Termin flexibel</div></div>
+          <div><div class="t" data-i18n="lead3_t">Softwareoptimierung · Audi A4 B9</div><div class="m" data-i18n="lead3_m">Köln-Deutz · Termin flexibel</div></div>
         </div>
         <div class="leadRow">
           <div class="fico icoGreen" data-ico="sparkle"></div>
-          <div><div class="t">Keramikversiegelung · Tesla Model 3</div><div class="m">Köln-Lindenthal · Budget bis 900&nbsp;€</div></div>
+          <div><div class="t" data-i18n="lead4_t">Keramikversiegelung · Tesla Model 3</div><div class="m" data-i18n="lead4_m">Köln-Lindenthal · Budget bis 900&nbsp;€</div></div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FAQ (ganz unten) ================= -->
+<section id="faq">
+  <div class="wrap">
+    <div class="faqHead rv">
+      <div class="secKick" data-i18n="faq_kick">FAQ</div>
+      <h2 data-i18n="faq_h">Häufige Fragen</h2>
+    </div>
+    <div class="faqList rv" style="--d:.05s" id="faqList">
+      <details class="faqItem"><summary><span data-i18n="faq_q1">Was kostet Carfixo für mich als Kunde?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a1">Für Autofahrer ist Carfixo komplett kostenlos. Du beschreibst dein Anliegen einmal und bekommst unverbindliche Angebote von passenden Betrieben.</div></details>
+      <details class="faqItem"><summary><span data-i18n="faq_q2">Wie funktioniert eine Anfrage?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a2">Du stellst eine Anfrage – direkt an einen Betrieb oder öffentlich an alle passenden. Betriebe antworten mit Angeboten, du vergleichst und buchst den, der am besten passt.</div></details>
+      <details class="faqItem"><summary><span data-i18n="faq_q3">Wer haftet für die Reparatur?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a3">Carfixo ist Vermittler. Reparaturleistung, Rechnung und Gewährleistung liegen bei der ausführenden Werkstatt – wie bei einem direkten Werkstattbesuch.</div></details>
+      <details class="faqItem"><summary><span data-i18n="faq_q4">Sind die Betriebe geprüft?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a4">Ja. Betriebe erscheinen in der Suche erst nach Verifizierung durch unser Team. Bewertungen kommen ausschließlich von Kunden mit abgeschlossenen Aufträgen.</div></details>
+      <details class="faqItem"><summary><span data-i18n="faq_q5">Was ist die KI-Diagnose?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a5">Eine unverbindliche Ersteinschätzung: Du beschreibst Symptome, Warnleuchten oder lädst ein Foto hoch und bekommst eine erste Orientierung samt Preisrahmen. Sie ersetzt keine Werkstattprüfung.</div></details>
+      <details class="faqItem"><summary><span data-i18n="faq_q6">In welchen Städten ist Carfixo verfügbar?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a6">Carfixo startet in Köln und Umgebung. Weitere Städte folgen – als Betrieb kannst du dich schon jetzt registrieren.</div></details>
     </div>
   </div>
 </section>
@@ -473,12 +614,12 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
     <span class="logo">car<b>fixo</b></span>
     <span>© 2026 Carfixo</span>
     <div class="footLinks">
-      <a href="app.html#/search">Werkstatt-Suche</a>
-      <a href="app.html#/teile">Teile-Marktplatz</a>
-      <a href="#pro">Für Betriebe</a>
-      <a href="legal.html">Datenschutz &amp; Impressum</a>
-      <a href="app.html#/notfall">Notfall</a>
-      <a href="app.html">App öffnen</a>
+      <a href="app.html#/search" data-i18n="foot_search">Werkstatt-Suche</a>
+      <a href="app.html#/teile" data-i18n="foot_parts">Teile-Marktplatz</a>
+      <a href="#pro" data-i18n="foot_pro">Für Betriebe</a>
+      <a href="legal.html" data-i18n="foot_legal">Datenschutz &amp; Impressum</a>
+      <a href="app.html#/notfall" data-i18n="foot_notfall">Notfall</a>
+      <a href="app.html" data-i18n="foot_app">App öffnen</a>
     </div>
   </div>
 </footer>
@@ -486,24 +627,160 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
 <script src="assets/config.js"></script>
 <script src="assets/icons.js"></script>
 <script>
-/* Eigene SVG-Icons in statische [data-ico]-Platzhalter setzen */
+/* ================= Mehrsprachigkeit (DE / TR / EN) ================= */
+const I18N = {
+  de:{
+    skip_link:"Zum Inhalt springen",lang_label:"Sprache",
+    nav_werkstaetten:"Werkstätten",nav_teile:"Teile",nav_diagnose:"KI-Diagnose",nav_pro:"Für Betriebe",nav_cta:"App öffnen",
+    hero_h1:'Was braucht <span class="grad">dein Auto?</span>',
+    hero_sub:"Werkstatt, Tuning, Aufbereitung, TÜV oder Teile – vergleiche echte Angebote von geprüften Betrieben. Kostenlos für Kunden.",
+    search_was_label:"Was?",search_was_ph:"z.B. Ölwechsel, TÜV, Chiptuning, Felgen aufbereiten…",search_wo_label:"Wo?",search_wo_ph:"PLZ oder Ort – z.B. Köln",search_go:"Suchen",
+    cat_reparatur:"Reparatur",cat_inspektion:"Inspektion",cat_reifen:"Reifen & Felgen",cat_tuev:"TÜV",cat_tuning:"Tuning",cat_pflege:"Aufbereitung",cat_lack:"Lack & Folierung",cat_klima:"Klima",cat_karosserie:"Karosserie",cat_teile:"Teile",cat_alle:"Alle Kategorien →",
+    cat_autoglas:"Autoglas",cat_schluessel:"Schlüssel",cat_oldtimer:"Oldtimer",cat_eauto:"E-Auto",
+    trust_1:"Geprüfte & verifizierte Betriebe",trust_2:"100 % kostenlos für Kunden",trust_3:"1 Anfrage – mehrere Angebote",trust_4:"Teile direkt vom Betrieb",
+    qt_find_n:"Betrieb finden",qt_find_m:"Vergleichen & anfragen",qt_ki_n:"KI-Diagnose",qt_ki_m:"Ersteinschätzung + Preisrahmen",qt_teile_n:"Teile kaufen",qt_teile_m:"Neu & gebraucht, mit Einbau",qt_anfrage_n:"Anfrage erstellen",qt_anfrage_m:"Betriebe melden sich bei dir",qt_notfall_n:"Notfall-Hilfe",qt_notfall_m:"Notdienst & mobile Hilfe",qt_pro_n:"Für Betriebe",qt_pro_m:"Kunden gewinnen, Teile verkaufen",
+    sec_topws_h:"Top-Betriebe in Köln",sec_topws_sub:"nach Bewertung",sec_topws_all:"Alle Betriebe →",
+    sec_parts_h:"Neu im Teile-Marktplatz",sec_parts_sub:"direkt vom Betrieb",sec_parts_all:"Alle Teile →",
+    live_empty_ws:"Betriebe werden geladen – oder starte direkt deine Suche.",live_empty_parts:"Noch keine Teile geladen – schau im Marktplatz vorbei.",live_cta_ws:"Zur Werkstatt-Suche →",live_cta_parts:"Zum Teile-Marktplatz →",
+    band_werkstatt_h:"Werkstätten",band_werkstatt_sub:"Reparatur · Inspektion · Reifen · Klima",band_werkstatt_all:"Alle Werkstätten →",
+    band_tuning_h:"Tuning & Codierung",band_tuning_sub:"Leistung · Optik · Felgen · Software",band_tuning_all:"Alle Tuner →",
+    band_pflege_h:"Aufbereitung & Folierung",band_pflege_sub:"Detailing · Keramik · Lack · Folie",band_pflege_all:"Alle Aufbereiter →",
+    band_tuev_h:"TÜV & Prüfung",band_tuev_sub:"HU/AU · Checks · Gutachten · Eintragungen",band_tuev_all:"Alle Prüfstellen →",
+    popular_h:"Beliebte Leistungen",
+    calc_kick:"Preis-Orientierung",calc_h:"Was kostet das ungefähr?",calc_sub:"Wähle eine Leistung – du bekommst einen typischen Preisrahmen für Köln. Der echte Preis kommt per Angebot.",calc_select_label:"Leistung wählen",calc_placeholder:"— bitte wählen —",calc_result_pre:"Typischer Rahmen",calc_note:"Unverbindliche Orientierung – abhängig von Fahrzeug, Teilen & Aufwand. Kostenlos echte Angebote einholen:",calc_cta:"Kostenlos anfragen →",
+    svc_oelwechsel:"Ölwechsel",svc_inspektion_klein:"Inspektion (klein)",svc_inspektion_gross:"Inspektion (groß)",svc_bremsen_vorne:"Bremsen vorne (Beläge + Scheiben)",svc_bremsbelaege:"Bremsbeläge (Achse)",svc_tuev:"TÜV / HU + AU",svc_reifenwechsel:"Reifen umstecken (Räder)",svc_reifenmontage:"Reifenmontage (4 Stk.)",svc_klima:"Klimaservice",svc_zahnriemen:"Zahnriemenwechsel",svc_kupplung:"Kupplungswechsel",svc_auspuff:"Auspuff / ESD",svc_batterie:"Batteriewechsel",svc_chiptuning:"Chiptuning (Stage 1)",svc_keramik:"Keramikversiegelung",svc_aufbereitung:"Komplettaufbereitung",svc_folierung:"Vollfolierung",svc_toenung:"Scheibentönung",
+    pro_kick:"Für Werkstätten & Betriebe",pro_h:"Kunden kommen zu dir.<br>Nicht umgekehrt.",pro_check1:"Sieh offene Ausschreibungen live – gefiltert nach deinen Kategorien, Marken und deinem Umkreis",pro_check2:"Sende Angebote mit Einzelpositionen und gewinne neue Stammkunden",pro_check3:"Profil mit Leistungen, Fahrzeugmarken, Standort & Bewertungen",pro_check4:"Verkaufe Teile über den Carfixo-Teile-Marktplatz – neu, gebraucht oder mit Einbau",pro_btn1:"Als Betrieb registrieren",pro_btn2:"Betriebe ansehen",pro_lead_title:"Offene Ausschreibungen",lead_live:"live",lead_new:"NEU",
+    lead1_t:"Bremsen vorne · BMW 3er F30",lead1_m:"Köln-Ehrenfeld · Budget bis 250 €",lead2_t:"HU + AU · VW Golf VII",lead2_m:"Köln-Nippes · so schnell wie möglich",lead3_t:"Softwareoptimierung · Audi A4 B9",lead3_m:"Köln-Deutz · Termin flexibel",lead4_t:"Keramikversiegelung · Tesla Model 3",lead4_m:"Köln-Lindenthal · Budget bis 900 €",
+    faq_kick:"FAQ",faq_h:"Häufige Fragen",
+    faq_q1:"Was kostet Carfixo für mich als Kunde?",faq_a1:"Für Autofahrer ist Carfixo komplett kostenlos. Du beschreibst dein Anliegen einmal und bekommst unverbindliche Angebote von passenden Betrieben.",
+    faq_q2:"Wie funktioniert eine Anfrage?",faq_a2:"Du stellst eine Anfrage – direkt an einen Betrieb oder öffentlich an alle passenden. Betriebe antworten mit Angeboten, du vergleichst und buchst den, der am besten passt.",
+    faq_q3:"Wer haftet für die Reparatur?",faq_a3:"Carfixo ist Vermittler. Reparaturleistung, Rechnung und Gewährleistung liegen bei der ausführenden Werkstatt – wie bei einem direkten Werkstattbesuch.",
+    faq_q4:"Sind die Betriebe geprüft?",faq_a4:"Ja. Betriebe erscheinen in der Suche erst nach Verifizierung durch unser Team. Bewertungen kommen ausschließlich von Kunden mit abgeschlossenen Aufträgen.",
+    faq_q5:"Was ist die KI-Diagnose?",faq_a5:"Eine unverbindliche Ersteinschätzung: Du beschreibst Symptome, Warnleuchten oder lädst ein Foto hoch und bekommst eine erste Orientierung samt Preisrahmen. Sie ersetzt keine Werkstattprüfung.",
+    faq_q6:"In welchen Städten ist Carfixo verfügbar?",faq_a6:"Carfixo startet in Köln und Umgebung. Weitere Städte folgen – als Betrieb kannst du dich schon jetzt registrieren.",
+    foot_search:"Werkstatt-Suche",foot_parts:"Teile-Marktplatz",foot_pro:"Für Betriebe",foot_legal:"Datenschutz & Impressum",foot_notfall:"Notfall",foot_app:"App öffnen",
+    card_cond_neu:"Neu",card_cond_gebraucht:"Gebraucht",card_cond_general:"Generalüberholt",card_install:"Einbau möglich",card_shipping:"Versand",card_price_req:"Preis auf Anfrage",card_pickup:"Hol/Bring",card_emergency:"Notdienst",card_rating_new:"Neu",
+    doc_title:"Carfixo – Werkstätten, Tuning, Aufbereitung & Teile vergleichen",doc_desc:"Carfixo verbindet Autofahrer mit Werkstätten, Tuning-Betrieben, Aufbereitern und Prüfstellen. Angebote vergleichen, Teile kaufen, direkt buchen."
+  },
+  tr:{
+    skip_link:"İçeriğe geç",lang_label:"Dil",
+    nav_werkstaetten:"Servisler",nav_teile:"Parçalar",nav_diagnose:"Yapay Zekâ Teşhis",nav_pro:"İşletmeler için",nav_cta:"Uygulamayı aç",
+    hero_h1:'Aracının <span class="grad">neye ihtiyacı var?</span>',
+    hero_sub:"Servis, tuning, detaylı temizlik, TÜV veya parça – onaylı işletmelerden gerçek teklifleri karşılaştır. Müşteriler için ücretsiz.",
+    search_was_label:"Ne?",search_was_ph:"örn. yağ değişimi, TÜV, chip tuning, jant yenileme…",search_wo_label:"Nerede?",search_wo_ph:"Posta kodu veya şehir – örn. Köln",search_go:"Ara",
+    cat_reparatur:"Onarım",cat_inspektion:"Bakım",cat_reifen:"Lastik & Jant",cat_tuev:"TÜV",cat_tuning:"Tuning",cat_pflege:"Detaylı Temizlik",cat_lack:"Boya & Kaplama",cat_klima:"Klima",cat_karosserie:"Kaporta",cat_teile:"Parçalar",cat_alle:"Tüm kategoriler →",
+    cat_autoglas:"Oto Cam",cat_schluessel:"Anahtar",cat_oldtimer:"Klasik",cat_eauto:"Elektrikli",
+    trust_1:"Onaylı & doğrulanmış işletmeler",trust_2:"Müşteriler için %100 ücretsiz",trust_3:"1 talep – birden çok teklif",trust_4:"Parçalar doğrudan işletmeden",
+    qt_find_n:"İşletme bul",qt_find_m:"Karşılaştır & talep et",qt_ki_n:"Yapay zekâ teşhis",qt_ki_m:"İlk değerlendirme + fiyat aralığı",qt_teile_n:"Parça satın al",qt_teile_m:"Sıfır & ikinci el, montajlı",qt_anfrage_n:"Talep oluştur",qt_anfrage_m:"İşletmeler sana ulaşır",qt_notfall_n:"Acil yardım",qt_notfall_m:"Acil servis & mobil yardım",qt_pro_n:"İşletmeler için",qt_pro_m:"Müşteri kazan, parça sat",
+    sec_topws_h:"Köln'deki en iyi işletmeler",sec_topws_sub:"puana göre",sec_topws_all:"Tüm işletmeler →",
+    sec_parts_h:"Parça pazarında yeni",sec_parts_sub:"doğrudan işletmeden",sec_parts_all:"Tüm parçalar →",
+    live_empty_ws:"İşletmeler yükleniyor – ya da hemen aramaya başla.",live_empty_parts:"Henüz parça yüklenmedi – pazara göz at.",live_cta_ws:"Servis aramasına git →",live_cta_parts:"Parça pazarına git →",
+    band_werkstatt_h:"Servisler",band_werkstatt_sub:"Onarım · Bakım · Lastik · Klima",band_werkstatt_all:"Tüm servisler →",
+    band_tuning_h:"Tuning & Kodlama",band_tuning_sub:"Performans · Görünüm · Jant · Yazılım",band_tuning_all:"Tüm tunerlar →",
+    band_pflege_h:"Detaylı Temizlik & Kaplama",band_pflege_sub:"Detailing · Seramik · Boya · Kaplama",band_pflege_all:"Tüm detayçılar →",
+    band_tuev_h:"TÜV & Muayene",band_tuev_sub:"Muayene · Kontroller · Ekspertiz · Tescil",band_tuev_all:"Tüm muayene yerleri →",
+    popular_h:"Popüler hizmetler",
+    calc_kick:"Fiyat rehberi",calc_h:"Yaklaşık ne kadar tutar?",calc_sub:"Bir hizmet seç – Köln için tipik bir fiyat aralığı gör. Gerçek fiyat teklifle gelir.",calc_select_label:"Hizmet seç",calc_placeholder:"— lütfen seç —",calc_result_pre:"Tipik aralık",calc_note:"Bağlayıcı olmayan tahmin – araca, parçaya ve işçiliğe göre değişir. Ücretsiz gerçek teklif al:",calc_cta:"Ücretsiz talep et →",
+    svc_oelwechsel:"Yağ değişimi",svc_inspektion_klein:"Küçük bakım",svc_inspektion_gross:"Büyük bakım",svc_bremsen_vorne:"Ön fren (balata + disk)",svc_bremsbelaege:"Fren balatası (aks)",svc_tuev:"TÜV / Muayene",svc_reifenwechsel:"Lastik değişimi (jantlı)",svc_reifenmontage:"Lastik montajı (4 adet)",svc_klima:"Klima servisi",svc_zahnriemen:"Triger kayışı değişimi",svc_kupplung:"Debriyaj değişimi",svc_auspuff:"Egzoz",svc_batterie:"Akü değişimi",svc_chiptuning:"Chip tuning (Stage 1)",svc_keramik:"Seramik kaplama",svc_aufbereitung:"Komple detaylı temizlik",svc_folierung:"Komple kaplama",svc_toenung:"Cam filmi",
+    pro_kick:"Servisler & işletmeler için",pro_h:"Müşteriler sana gelir.<br>Tersi değil.",pro_check1:"Açık talepleri canlı gör – kategorilerine, markalarına ve bölgene göre filtrelenmiş",pro_check2:"Kalem kalem teklif gönder ve yeni müşteriler kazan",pro_check3:"Hizmetler, araç markaları, konum & puanlarla profil",pro_check4:"Carfixo parça pazarında parça sat – sıfır, ikinci el veya montajlı",pro_btn1:"İşletme olarak kaydol",pro_btn2:"İşletmeleri gör",pro_lead_title:"Açık talepler",lead_live:"canlı",lead_new:"YENİ",
+    lead1_t:"Ön fren · BMW 3 F30",lead1_m:"Köln-Ehrenfeld · bütçe 250 €",lead2_t:"Muayene · VW Golf VII",lead2_m:"Köln-Nippes · mümkün olan en kısa sürede",lead3_t:"Yazılım optimizasyonu · Audi A4 B9",lead3_m:"Köln-Deutz · esnek tarih",lead4_t:"Seramik kaplama · Tesla Model 3",lead4_m:"Köln-Lindenthal · bütçe 900 €",
+    faq_kick:"SSS",faq_h:"Sık sorulan sorular",
+    faq_q1:"Carfixo müşteri olarak bana ne kadara mal olur?",faq_a1:"Sürücüler için Carfixo tamamen ücretsizdir. İhtiyacını bir kez anlatırsın ve uygun işletmelerden bağlayıcı olmayan teklifler alırsın.",
+    faq_q2:"Bir talep nasıl çalışır?",faq_a2:"Bir talep oluşturursun – doğrudan bir işletmeye ya da uygun tüm işletmelere açık olarak. İşletmeler teklifle yanıt verir, karşılaştırır ve en uygun olanı seçersin.",
+    faq_q3:"Onarımdan kim sorumlu?",faq_a3:"Carfixo aracıdır. Onarım, fatura ve garanti işi yapan servise aittir – doğrudan servise gitmiş gibi.",
+    faq_q4:"İşletmeler denetleniyor mu?",faq_a4:"Evet. İşletmeler ancak ekibimiz tarafından doğrulandıktan sonra aramada görünür. Puanlar yalnızca işi tamamlanmış müşterilerden gelir.",
+    faq_q5:"Yapay zekâ teşhis nedir?",faq_a5:"Bağlayıcı olmayan bir ön değerlendirme: belirtileri, uyarı ışıklarını anlatır veya fotoğraf yüklersin ve fiyat aralığıyla bir ilk fikir alırsın. Servis kontrolünün yerini tutmaz.",
+    faq_q6:"Carfixo hangi şehirlerde mevcut?",faq_a6:"Carfixo, Köln ve çevresinde başlıyor. Diğer şehirler geliyor – işletme olarak şimdiden kaydolabilirsin.",
+    foot_search:"Servis arama",foot_parts:"Parça pazarı",foot_pro:"İşletmeler için",foot_legal:"Gizlilik & Künye",foot_notfall:"Acil",foot_app:"Uygulamayı aç",
+    card_cond_neu:"Sıfır",card_cond_gebraucht:"İkinci el",card_cond_general:"Yenilenmiş",card_install:"Montaj mümkün",card_shipping:"Kargo",card_price_req:"Fiyat sorunuz",card_pickup:"Al-götür",card_emergency:"Acil servis",card_rating_new:"Yeni",
+    doc_title:"Carfixo – Servis, tuning, temizlik & parça karşılaştır",doc_desc:"Carfixo sürücüleri onaylı servisler, tuning işletmeleri, detayçılar ve muayene yerleriyle buluşturur. Teklifleri karşılaştır, parça al, hemen randevu al."
+  },
+  en:{
+    skip_link:"Skip to content",lang_label:"Language",
+    nav_werkstaetten:"Workshops",nav_teile:"Parts",nav_diagnose:"AI Diagnosis",nav_pro:"For Businesses",nav_cta:"Open app",
+    hero_h1:'What does your <span class="grad">car need?</span>',
+    hero_sub:"Repairs, tuning, detailing, inspection or parts – compare real quotes from verified businesses. Free for customers.",
+    search_was_label:"What?",search_was_ph:"e.g. oil change, inspection, chip tuning, wheel refurb…",search_wo_label:"Where?",search_wo_ph:"ZIP or city – e.g. Cologne",search_go:"Search",
+    cat_reparatur:"Repair",cat_inspektion:"Service",cat_reifen:"Tyres & Wheels",cat_tuev:"Inspection",cat_tuning:"Tuning",cat_pflege:"Detailing",cat_lack:"Paint & Wrap",cat_klima:"A/C",cat_karosserie:"Bodywork",cat_teile:"Parts",cat_alle:"All categories →",
+    cat_autoglas:"Auto glass",cat_schluessel:"Keys",cat_oldtimer:"Classic",cat_eauto:"EV",
+    trust_1:"Vetted & verified businesses",trust_2:"100% free for customers",trust_3:"1 request – multiple quotes",trust_4:"Parts direct from the business",
+    qt_find_n:"Find a business",qt_find_m:"Compare & request",qt_ki_n:"AI diagnosis",qt_ki_m:"First estimate + price range",qt_teile_n:"Buy parts",qt_teile_m:"New & used, with fitting",qt_anfrage_n:"Create a request",qt_anfrage_m:"Businesses come to you",qt_notfall_n:"Emergency help",qt_notfall_m:"Breakdown & mobile help",qt_pro_n:"For businesses",qt_pro_m:"Win customers, sell parts",
+    sec_topws_h:"Top businesses in Cologne",sec_topws_sub:"by rating",sec_topws_all:"All businesses →",
+    sec_parts_h:"New in the parts marketplace",sec_parts_sub:"direct from the business",sec_parts_all:"All parts →",
+    live_empty_ws:"Loading businesses – or start your search right away.",live_empty_parts:"No parts loaded yet – browse the marketplace.",live_cta_ws:"Go to workshop search →",live_cta_parts:"Go to parts marketplace →",
+    band_werkstatt_h:"Workshops",band_werkstatt_sub:"Repair · Service · Tyres · A/C",band_werkstatt_all:"All workshops →",
+    band_tuning_h:"Tuning & Coding",band_tuning_sub:"Power · Looks · Wheels · Software",band_tuning_all:"All tuners →",
+    band_pflege_h:"Detailing & Wrapping",band_pflege_sub:"Detailing · Ceramic · Paint · Wrap",band_pflege_all:"All detailers →",
+    band_tuev_h:"Inspection & Testing",band_tuev_sub:"Inspection · Checks · Reports · Registration",band_tuev_all:"All test centres →",
+    popular_h:"Popular services",
+    calc_kick:"Price guide",calc_h:"What does it roughly cost?",calc_sub:"Pick a service – get a typical price range for Cologne. The real price comes with a quote.",calc_select_label:"Choose a service",calc_placeholder:"— please select —",calc_result_pre:"Typical range",calc_note:"Non-binding estimate – depends on vehicle, parts & labour. Get real quotes for free:",calc_cta:"Request for free →",
+    svc_oelwechsel:"Oil change",svc_inspektion_klein:"Service (minor)",svc_inspektion_gross:"Service (major)",svc_bremsen_vorne:"Front brakes (pads + discs)",svc_bremsbelaege:"Brake pads (axle)",svc_tuev:"Inspection (MOT)",svc_reifenwechsel:"Seasonal wheel swap",svc_reifenmontage:"Tyre fitting (4)",svc_klima:"A/C service",svc_zahnriemen:"Timing belt change",svc_kupplung:"Clutch replacement",svc_auspuff:"Exhaust",svc_batterie:"Battery replacement",svc_chiptuning:"Chip tuning (Stage 1)",svc_keramik:"Ceramic coating",svc_aufbereitung:"Full detailing",svc_folierung:"Full wrap",svc_toenung:"Window tinting",
+    pro_kick:"For workshops & businesses",pro_h:"Customers come to you.<br>Not the other way around.",pro_check1:"See open requests live – filtered by your categories, brands and area",pro_check2:"Send itemised quotes and win loyal customers",pro_check3:"Profile with services, vehicle brands, location & reviews",pro_check4:"Sell parts via the Carfixo marketplace – new, used or with fitting",pro_btn1:"Register as a business",pro_btn2:"View businesses",pro_lead_title:"Open requests",lead_live:"live",lead_new:"NEW",
+    lead1_t:"Front brakes · BMW 3 F30",lead1_m:"Cologne-Ehrenfeld · budget up to €250",lead2_t:"Inspection · VW Golf VII",lead2_m:"Cologne-Nippes · as soon as possible",lead3_t:"Software tuning · Audi A4 B9",lead3_m:"Cologne-Deutz · flexible date",lead4_t:"Ceramic coating · Tesla Model 3",lead4_m:"Cologne-Lindenthal · budget up to €900",
+    faq_kick:"FAQ",faq_h:"Frequently asked questions",
+    faq_q1:"What does Carfixo cost me as a customer?",faq_a1:"For drivers, Carfixo is completely free. Describe your need once and receive non-binding quotes from matching businesses.",
+    faq_q2:"How does a request work?",faq_a2:"You post a request – directly to one business or publicly to all suitable ones. Businesses reply with quotes; you compare and book the best fit.",
+    faq_q3:"Who is liable for the repair?",faq_a3:"Carfixo is an intermediary. The repair, invoice and warranty are the responsibility of the performing workshop – just like a direct visit.",
+    faq_q4:"Are the businesses vetted?",faq_a4:"Yes. Businesses only appear in search after verification by our team. Reviews come solely from customers with completed jobs.",
+    faq_q5:"What is the AI diagnosis?",faq_a5:"A non-binding first estimate: describe symptoms or warning lights, or upload a photo, and get initial guidance plus a price range. It does not replace a workshop inspection.",
+    faq_q6:"Which cities is Carfixo available in?",faq_a6:"Carfixo is launching in Cologne and its surroundings. More cities are coming – businesses can already register now.",
+    foot_search:"Workshop search",foot_parts:"Parts marketplace",foot_pro:"For businesses",foot_legal:"Privacy & imprint",foot_notfall:"Emergency",foot_app:"Open app",
+    card_cond_neu:"New",card_cond_gebraucht:"Used",card_cond_general:"Reconditioned",card_install:"Fitting available",card_shipping:"Shipping",card_price_req:"Price on request",card_pickup:"Pickup",card_emergency:"Breakdown",card_rating_new:"New",
+    doc_title:"Carfixo – Compare workshops, tuning, detailing & parts",doc_desc:"Carfixo connects drivers with verified workshops, tuning businesses, detailers and test centres. Compare quotes, buy parts, book directly."
+  }
+};
+const HTML_LOCALE = { de:"de_DE", tr:"tr_TR", en:"en_US" };
+let LANG = "de";
+function detectLang(){
+  const saved = localStorage.getItem("cf_lang");
+  if (saved && I18N[saved]) return saved;
+  const b = (navigator.language || "de").slice(0,2).toLowerCase();
+  return I18N[b] ? b : "de";
+}
+function t(key){ return (I18N[LANG] && I18N[LANG][key]) || I18N.de[key] || key; }
+function applyLang(lang){
+  LANG = I18N[lang] ? lang : "de";
+  const D = I18N[LANG];
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ const v=D[el.getAttribute("data-i18n")]; if(v!=null) el.textContent=v; });
+  document.querySelectorAll("[data-i18n-html]").forEach(el=>{ const v=D[el.getAttribute("data-i18n-html")]; if(v!=null) el.innerHTML=v; });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ const v=D[el.getAttribute("data-i18n-ph")]; if(v!=null) el.setAttribute("placeholder",v); });
+  // Titel + Meta
+  if(D.doc_title) document.title=D.doc_title;
+  const md=document.querySelector('meta[name="description"]'); if(md&&D.doc_desc) md.setAttribute("content",D.doc_desc);
+  const ol=document.querySelector('meta[property="og:locale"]'); if(ol) ol.setAttribute("content",HTML_LOCALE[LANG]||"de_DE");
+  const sel=document.getElementById("langSel"); if(sel) sel.value=LANG;
+  localStorage.setItem("cf_lang",LANG);
+  buildCalc();
+  renderWs(); renderParts();
+}
+
+/* ================= Eigene SVG-Icons setzen ================= */
 document.querySelectorAll("[data-ico]").forEach(function(el){
   el.innerHTML = ico(el.dataset.ico, el.dataset.icoSize ? +el.dataset.icoSize : null);
 });
 
-/* ---------- Nav-Zustand ---------- */
+/* ================= Nav-Zustand ================= */
 const nav = document.getElementById("nav");
 const onNav = () => nav.classList.toggle("scrolled", scrollY > 8);
 addEventListener("scroll", onNav, { passive: true });
 onNav();
 
-/* ---------- Reveal ---------- */
+/* ================= Burger-Menü ================= */
+const navToggle = document.getElementById("navToggle");
+const navMenu = document.getElementById("navMenu");
+function setMenu(open){ navToggle.setAttribute("aria-expanded", open ? "true" : "false"); navMenu.classList.toggle("open", open); }
+navToggle.addEventListener("click", () => setMenu(navToggle.getAttribute("aria-expanded") !== "true"));
+navMenu.querySelectorAll("a").forEach(a => a.addEventListener("click", () => setMenu(false)));
+addEventListener("keydown", e => { if(e.key === "Escape") setMenu(false); });
+
+/* ================= Reveal ================= */
 const io = new IntersectionObserver((es) => {
   es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
 }, { threshold: .12 });
 document.querySelectorAll(".rv").forEach(el => io.observe(el));
 
-/* ---------- Startseiten-Suche → App-Suche ---------- */
+/* ================= Startseiten-Suche → App-Suche ================= */
 document.getElementById("homeSearch").addEventListener("submit", function (e) {
   e.preventDefault();
   var q = document.getElementById("hq").value.trim();
@@ -514,10 +791,40 @@ document.getElementById("homeSearch").addEventListener("submit", function (e) {
   location.href = "app.html#/search" + (params.length ? "?" + params.join("&") : "");
 });
 
-/* ---------- Live-Inhalte: Top-Betriebe & Teile (Supabase REST, anonym lesbar) ---------- */
+/* ================= Kostenrechner ================= */
+const CALC_SERVICES = [
+  ["oelwechsel",80,160],["inspektion_klein",150,350],["inspektion_gross",300,700],
+  ["bremsen_vorne",250,500],["bremsbelaege",120,280],["tuev",120,160],
+  ["reifenwechsel",25,60],["reifenmontage",40,100],["klima",60,130],
+  ["zahnriemen",400,900],["kupplung",600,1500],["auspuff",200,800],
+  ["batterie",120,350],["chiptuning",400,1200],["keramik",500,1200],
+  ["aufbereitung",150,450],["folierung",1800,3500],["toenung",150,400]
+];
+const calcSel = document.getElementById("calcSel");
+const calcOut = document.getElementById("calcOut");
+const calcVal = document.getElementById("calcVal");
+const calcCta = document.getElementById("calcCta");
+function buildCalc(){
+  const cur = calcSel.value;
+  calcSel.innerHTML = '<option value="">' + t("calc_placeholder") + '</option>' +
+    CALC_SERVICES.map(([id,mn,mx]) => `<option value="${id}">${t("svc_"+id)}</option>`).join("");
+  calcSel.value = cur;
+  if(cur) updateCalc();
+}
+function updateCalc(){
+  const id = calcSel.value;
+  const svc = CALC_SERVICES.find(s => s[0] === id);
+  if(!svc){ calcOut.classList.remove("show"); return; }
+  calcVal.textContent = svc[1].toLocaleString("de-DE") + " – " + svc[2].toLocaleString("de-DE") + " €";
+  calcCta.setAttribute("href", "app.html#/search?q=" + encodeURIComponent(t("svc_"+id)));
+  calcOut.classList.add("show");
+}
+calcSel.addEventListener("change", updateCalc);
 
-const CAT_NAMES = { reparatur:"Reparatur", inspektion:"Inspektion", reifen:"Reifen & Felgen", karosserie:"Karosserie", lack:"Lack & Folierung", pflege:"Aufbereitung", klima:"Klima", tuev:"TÜV & Prüfung", tuning:"Tuning", autoglas:"Autoglas", schluessel:"Schlüssel", oldtimer:"Oldtimer", eauto:"E-Auto", teile:"Teile" };
-const COND = { neu:"Neu", gebraucht:"Gebraucht", generalueberholt:"Generalüberholt" };
+/* ================= Live-Inhalte: Top-Betriebe & Teile ================= */
+const CAT_KEYS = ["reparatur","inspektion","reifen","karosserie","lack","pflege","klima","tuev","tuning","autoglas","schluessel","oldtimer","eauto","teile"];
+const catName = c => CAT_KEYS.includes(c) ? t("cat_"+c) : c;
+const condName = c => ({neu:"card_cond_neu",gebraucht:"card_cond_gebraucht",generalueberholt:"card_cond_general"}[c] ? t({neu:"card_cond_neu",gebraucht:"card_cond_gebraucht",generalueberholt:"card_cond_general"}[c]) : c);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
 const stars = n => { const r = Math.round(Number(n) || 0); return "★".repeat(r) + "☆".repeat(5 - r); };
 const eur = n => (Math.round(Number(n) * 100) / 100).toLocaleString("de-DE", { maximumFractionDigits: 2 }) + " €";
@@ -537,68 +844,90 @@ function wsCard(w) {
         <div class="cAv" ${w.logo_url ? `style="background-image:url('${esc(w.logo_url)}');color:transparent"` : ""}>${esc((w.name || "?").split(/\s+/).slice(0, 2).map(x => x[0]).join("").toUpperCase())}</div>
         <div style="flex:1;min-width:0">
           <div class="cT">${esc(w.name)}</div>
-          <div class="cM"><span class="stars">${stars(w.rating_avg)}</span> ${w.rating_avg > 0 ? Number(w.rating_avg).toLocaleString("de-DE") : "Neu"} (${w.rating_count || 0}) · ${esc(w.district || w.city || "Köln")}</div>
+          <div class="cM"><span class="stars">${stars(w.rating_avg)}</span> ${w.rating_avg > 0 ? Number(w.rating_avg).toLocaleString("de-DE") : t("card_rating_new")} (${w.rating_count || 0}) · ${esc(w.district || w.city || "Köln")}</div>
         </div>
         <span class="badge b-green">✓</span>
       </div>
       <div class="cPills">
-        ${(w.categories || []).slice(0, 3).map(c => `<span class="pill">${ico(c)} ${CAT_NAMES[c] || c}</span>`).join("")}
-        ${w.pickup_service ? '<span class="pill">Hol/Bring</span>' : ""}
-        ${w.emergency_service ? '<span class="pill">Notdienst</span>' : ""}
+        ${(w.categories || []).slice(0, 3).map(c => `<span class="pill">${ico(c)} ${esc(catName(c))}</span>`).join("")}
+        ${w.pickup_service ? `<span class="pill">${esc(t("card_pickup"))}</span>` : ""}
+        ${w.emergency_service ? `<span class="pill">${esc(t("card_emergency"))}</span>` : ""}
       </div>
     </a>`;
+}
+
+/* Live-Daten im Speicher halten, damit bei Sprachwechsel neu gerendert werden kann */
+let wsData = null, wsWorlds = null, partsData = null;
+const WORLD_CATS = {
+  werkstatt: ["reparatur","inspektion","reifen","klima","karosserie","autoglas","schluessel","eauto","oldtimer","teile"],
+  tuning: ["tuning"], pflege: ["pflege","lack"], tuev: ["tuev"],
+};
+
+function renderWs(){
+  const row = document.getElementById("wsRow");
+  if(!row) return;
+  if (wsData === null) return;                 // noch am Laden → Skeleton bleibt
+  if (wsData.length === 0) {                    // Fehler / leer → Fallback statt Ausblenden
+    row.innerHTML = `<div class="liveEmpty">${esc(t("live_empty_ws"))}<br><a href="app.html#/search">${esc(t("live_cta_ws"))}</a></div>`;
+    return;
+  }
+  row.innerHTML = wsData.slice(0, 6).map(wsCard).join("");
+  for (const [world, cats] of Object.entries(WORLD_CATS)) {
+    const band = document.getElementById("band-" + world);
+    if (!band) continue;
+    const list = wsData.filter(w => (w.categories || []).some(c => cats.includes(c))).slice(0, 3);
+    if (!list.length) { band.hidden = true; continue; }
+    band.querySelector("[data-cards]").innerHTML = list.map(wsCard).join("");
+    band.hidden = false;
+    band.querySelectorAll(".rv").forEach(el => io.observe(el));
+  }
+}
+
+function partCard(p){
+  const img = (p.images || [])[0];
+  return `
+    <a class="cCard" href="app.html#/teile">
+      ${img ? `<img class="pImg" src="${esc(img)}" loading="lazy" alt="">` : `<div class="pImgPh">${ico("puzzle",34)}</div>`}
+      <div class="cT">${esc(p.title)}</div>
+      <div class="cM">
+        <span class="badge ${p.condition === "neu" ? "b-green" : "b-grey"}">${esc(condName(p.condition))}</span>
+        ${p.install_service ? ' · ' + esc(t("card_install")) : ""}${p.shipping ? ' · ' + esc(t("card_shipping")) : ""}
+      </div>
+      <div class="cPrice">${p.price != null ? eur(p.price) : esc(t("card_price_req"))}${p.price_note ? ` <span class="pn">${esc(p.price_note)}</span>` : ""}</div>
+      <div class="cM" style="margin-top:4px">${ico("shop")} ${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}</div>
+    </a>`;
+}
+
+function renderParts(){
+  const row = document.getElementById("partsRow");
+  if(!row) return;
+  if (partsData === null) return;
+  if (partsData.length === 0) {
+    row.innerHTML = `<div class="liveEmpty">${esc(t("live_empty_parts"))}<br><a href="app.html#/teile">${esc(t("live_cta_parts"))}</a></div>`;
+    return;
+  }
+  row.innerHTML = partsData.map(partCard).join("");
 }
 
 (async () => {
   try {
     const ws = await sbGet("workshops?is_verified=eq.true&select=id,name,district,city,rating_avg,rating_count,categories,logo_url,price_level,pickup_service,emergency_service&order=rating_avg.desc,rating_count.desc&limit=60");
-    if (!ws.length) throw new Error("leer");
-    // Top-Reihe: die 6 bestbewerteten insgesamt
-    document.getElementById("wsRow").innerHTML = ws.slice(0, 6).map(wsCard).join("");
-    // Kategorie-Bänder: beste 3 je Bereich (wie Produkt-Reihen bei Vergleichsportalen)
-    const WORLD_CATS = {
-      werkstatt: ["reparatur","inspektion","reifen","klima","karosserie","autoglas","schluessel","eauto","oldtimer","teile"],
-      tuning: ["tuning"],
-      pflege: ["pflege","lack"],
-      tuev: ["tuev"],
-    };
-    for (const [world, cats] of Object.entries(WORLD_CATS)) {
-      const band = document.getElementById("band-" + world);
-      if (!band) continue;
-      const list = ws.filter(w => (w.categories || []).some(c => cats.includes(c))).slice(0, 3);
-      if (!list.length) continue;
-      band.querySelector("[data-cards]").innerHTML = list.map(wsCard).join("");
-      band.hidden = false;
-      band.querySelectorAll(".rv").forEach(el => io.observe(el));
-    }
-  } catch (e) {
-    document.getElementById("topWs").style.display = "none";
-  }
+    wsData = Array.isArray(ws) ? ws : [];
+  } catch (e) { wsData = []; }
+  renderWs();
 })();
 
 (async () => {
-  const row = document.getElementById("partsRow");
   try {
     const parts = await sbGet("parts?active=eq.true&select=id,title,price,price_note,condition,category,images,install_service,shipping,workshops(name,district)&order=created_at.desc&limit=6");
-    if (!parts.length) throw new Error("leer");
-    row.innerHTML = parts.map(p => {
-      const img = (p.images || [])[0];
-      return `
-      <a class="cCard" href="app.html#/teile">
-        ${img ? `<img class="pImg" src="${esc(img)}" loading="lazy" alt="">` : `<div class="pImgPh">${ico("puzzle",34)}</div>`}
-        <div class="cT">${esc(p.title)}</div>
-        <div class="cM">
-          <span class="badge ${p.condition === "neu" ? "b-green" : "b-grey"}">${COND[p.condition] || esc(p.condition)}</span>
-          ${p.install_service ? ' · Einbau möglich' : ""}${p.shipping ? ' · Versand' : ""}
-        </div>
-        <div class="cPrice">${p.price != null ? eur(p.price) : "Preis auf Anfrage"}${p.price_note ? ` <span class="pn">${esc(p.price_note)}</span>` : ""}</div>
-        <div class="cM" style="margin-top:4px">${ico("shop")} ${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}</div>
-      </a>`;
-    }).join("");
-  } catch (e) {
-    document.getElementById("topParts").style.display = "none";
-  }
+    partsData = Array.isArray(parts) ? parts : [];
+  } catch (e) { partsData = []; }
+  renderParts();
 })();
+
+/* ================= Sprache initialisieren ================= */
+document.getElementById("langSel").addEventListener("change", e => applyLang(e.target.value));
+applyLang(detectLang());
 </script>
 </body>
 </html>
