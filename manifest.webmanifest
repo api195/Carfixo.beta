@@ -1,0 +1,17 @@
+{
+  "name": "Carfixo – Werkstatt-Marktplatz",
+  "short_name": "Carfixo",
+  "description": "Werkstätten, Tuning, Aufbereitung, TÜV & Teile vergleichen. Echte Angebote von geprüften Betrieben.",
+  "start_url": "/app.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#05070D",
+  "theme_color": "#05070D",
+  "lang": "de",
+  "icons": [
+    { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}
