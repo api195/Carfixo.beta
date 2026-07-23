@@ -13,7 +13,7 @@ Zahlungen laufen bis zum Launch ausschließlich im **Testmodus** (keine echten S
 | 4 | Kundenbindung | Digitale Fahrzeugakte (16), Favoriten + mehrere Fahrzeuge (17), Erinnerungszentrale (12), Werkstattvergleich bis 3 (15) | ✅ |
 | 5 | Buchung & Zahlung | Buchungsübersicht + Testzahlung + payment_status (22), Stornierung/Verschiebung/No-Show (23) | ✅ |
 | 6 | Werkstatt-Ausbau | Profil-Bilder + Trust-Signale (5), Kapazitäten/Verfügbarkeit (10, 29), Premium für Werkstätten (11), Archiv + Export (30) | ✅ |
-| 7 | Plattform | Meldesystem/Konflikte (25), Benachrichtigungszentrale (24), Onboarding-Touren (21), Rechtsseiten + Nutzerrechte (26), Team-Zugänge (28), Admin-Analytics (32), Qualität/Betrugsschutz (31, 18), Vermittler-Hinweise (33) | ✅ (Kern) – Feinschliff: rollenbasierte Team-Rechte, Push/E-Mail-Versand, Betrugs-Scoring |
+| 7 | Plattform | Meldesystem/Konflikte (25), Benachrichtigungszentrale (24) inkl. Realtime-Glocke + **Web-Push (VAPID)** + **E-Mail (Resend)**, Onboarding-Touren (21), Rechtsseiten + Nutzerrechte (26), Team-Zugänge (28), Admin-Analytics (32), Qualität/Betrugsschutz (31, 18), Vermittler-Hinweise (33) | ✅ (Kern + Benachrichtigungen live) – Feinschliff: rollenbasierte Team-Rechte, Betrugs-Scoring |
 | 8 | Marktplatz-Ausbau | Teile-Marktplatz (Betriebe verkaufen Teile, Kunden fragen direkt an), Kategorie „Teile & Zubehör", massiv erweiterte Unterkategorien (357 Leistungen, u.a. Felgenaufbereitung, Hochglanzverdichten, Stage-Tuning), Fahrzeugdatenbank auf ~80 Marken / ~900 Modelle + Freitext-Fallback, vereinfachtes Fahrzeugformular (nur Marke + Modell Pflicht) | ✅ |
 
 ## Architektur

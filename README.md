@@ -49,7 +49,13 @@ Die Bibliotheken (supabase-js, Leaflet) liegen lokal unter `assets/vendor/`.
 Projekt: `boozzfiroukraekyijfq` (EU) – Verbindung in `assets/config.js` (öffentlicher Publishable Key).
 
 Tabellen: `profiles`, `workshops`, `vehicles`, `requests` (open/direct), `offers`, `bookings`,
-`messages`, `reviews`, `reminders`, `parts` (Teile-Marktplatz) + Storage-Buckets `attachments` (öffentlich) und `documents` (privat).
+`messages`, `reviews`, `reminders`, `parts` (Teile-Marktplatz), `notifications` (Benachrichtigungszentrale),
+`push_subscriptions` (Web-Push) + Storage-Buckets `attachments` (öffentlich) und `documents` (privat).
+
+**Benachrichtigungen** (Glocke oben rechts): DB-Trigger auf Angebote, Nachrichten, Anfragen, Buchungen,
+Freigaben, Bewertungen und Teile-Bestellungen erzeugen Einträge in `notifications` – live per Realtime,
+optional als Browser-Push (VAPID, Service Worker + Edge Function `notify-dispatch`) und E-Mail (Resend).
+Einrichtung/Details: [`docs/NOTIFICATIONS.md`](docs/NOTIFICATIONS.md).
 
 Sicherheit:
 - Row Level Security auf allen Tabellen (Kunden sehen nur Eigenes, Betriebe nur passende offene

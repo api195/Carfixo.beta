@@ -2241,7 +2241,7 @@ async function vAccount() {
       <div class="card" style="margin-bottom:14px">
         <div class="tt">Benachrichtigungen</div>
         <label class="inline"><input type="checkbox" id="npEmail" ${myProfile?.notify_prefs?.email !== false ? "checked" : ""}> E-Mail-Benachrichtigungen</label>
-        <label class="inline"><input type="checkbox" id="npPush" ${myProfile?.notify_prefs?.push !== false ? "checked" : ""}> Push-Benachrichtigungen (App folgt)</label>
+        <label class="inline"><input type="checkbox" id="npPush" ${myProfile?.notify_prefs?.push !== false ? "checked" : ""}> Push-Benachrichtigungen (Browser)</label>
         <label class="inline"><input type="checkbox" id="npRem" ${myProfile?.notify_prefs?.reminders !== false ? "checked" : ""}> Erinnerungen (TÜV, Service, Reifen)</label>
         <label class="inline"><input type="checkbox" id="npMkt" ${myProfile?.notify_prefs?.marketing ? "checked" : ""}> Marketing-E-Mails</label>
         <p class="mm" style="margin-top:8px;font-size:11px">Notfall- und sicherheitsrelevante Benachrichtigungen bleiben immer aktiv.</p>
@@ -2282,6 +2282,12 @@ async function vAccount() {
           <a href="#/new-request?ws=${w.id}" style="color:var(--blue2);font-weight:700;font-size:12px">Erneut anfragen →</a></div>`;
       }).join("");
   }
+  // Push sofort beim Umschalten aktivieren/deaktivieren (Berechtigung braucht eine Nutzeraktion)
+  const npPush = $("npPush");
+  if (npPush) npPush.onchange = async () => {
+    if (npPush.checked) { const ok = await subscribePush(); if (!ok) npPush.checked = false; }
+    else await unsubscribePush();
+  };
   $("npSave").onclick = async () => {
     const prefs = { email: $("npEmail").checked, push: $("npPush").checked, reminders: $("npRem").checked, marketing: $("npMkt").checked };
     const { error } = await sb.from("profiles").update({ notify_prefs: prefs }).eq("id", me.id);
@@ -4007,6 +4013,7 @@ function relTime(d) {
 function ensureNotifications() {
   if (notifChannel || !me) return;
   loadNotifications();
+  syncPushOnLogin();
   notifChannel = sb.channel("notif:" + me.id)
     .on("postgres_changes",
       { event: "INSERT", schema: "public", table: "notifications", filter: "user_id=eq." + me.id },
@@ -4110,6 +4117,68 @@ document.addEventListener("click", (e) => {
   const p = $("notifPanel"); if (!p || p.classList.contains("hidden")) return;
   if (!p.contains(e.target) && !$("bellBtn").contains(e.target)) p.classList.add("hidden");
 });
+
+// ---------- Browser-Push (Web Push / VAPID) ----------
+const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+function urlB64ToUint8(base64) {
+  const pad = "=".repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + pad).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+async function registerSW() {
+  if (!("serviceWorker" in navigator)) return null;
+  try { return await navigator.serviceWorker.register("sw.js"); } catch (e) { return null; }
+}
+// Push aktivieren: Berechtigung anfragen + Abo anlegen + speichern
+async function subscribePush() {
+  if (!pushSupported()) { toast("Push wird von diesem Browser nicht unterstützt."); return false; }
+  if (!CARFIXO.VAPID_PUBLIC) { toast("Push ist noch nicht konfiguriert."); return false; }
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") { toast("Push-Berechtigung nicht erteilt."); return false; }
+  const reg = await registerSW();
+  if (!reg) { toast("Service Worker nicht verfügbar."); return false; }
+  await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    try {
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(CARFIXO.VAPID_PUBLIC) });
+    } catch (e) { toast("Push-Abo fehlgeschlagen: " + e.message); return false; }
+  }
+  const j = sub.toJSON();
+  const { error } = await sb.from("push_subscriptions").upsert({
+    user_id: me.id, endpoint: sub.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, ua: navigator.userAgent,
+  }, { onConflict: "endpoint" });
+  if (error) { toast("Push konnte nicht gespeichert werden."); return false; }
+  toast("Push-Benachrichtigungen aktiviert ✓");
+  return true;
+}
+async function unsubscribePush() {
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg && await reg.pushManager.getSubscription();
+    if (sub) { await sb.from("push_subscriptions").delete().eq("endpoint", sub.endpoint); await sub.unsubscribe(); }
+  } catch (e) {}
+}
+// Beim Login still nachziehen: wenn Push erwünscht + erlaubt, aber (auf diesem Gerät) kein Abo
+async function syncPushOnLogin() {
+  if (!me || !pushSupported()) return;
+  await registerSW();
+  if (myProfile?.notify_prefs?.push === false) return;
+  if (Notification.permission !== "granted") return;
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = reg && await reg.pushManager.getSubscription();
+  if (!sub) subscribePush();
+}
+// Navigation aus dem Service Worker (Klick auf System-Benachrichtigung)
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("message", (e) => {
+    if (e.data && e.data.type === "notif-nav" && e.data.path) { window.focus(); go(e.data.path); }
+  });
+}
 
 // ============================================================
 // Start
