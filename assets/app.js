@@ -3392,12 +3392,8 @@ async function loadDiagnoseParts(top) {
 // ============================================================
 // NOTFALLMODUS (öffentlich)
 // ============================================================
-async function vNotfall() {
-  if (!allWorkshops) {
-    const { data } = await sb.from("workshops").select("*").eq("is_verified", true).limit(200);
-    allWorkshops = data || [];
-  }
-  const helpers = allWorkshops.filter(ws => ws.emergency_service || ws.service_mode !== "stationary");
+function vNotfall() {
+  // Gerüst (Notruf-/ADAC-Nummern, Formular) SOFORT rendern – unabhängig vom Backend.
   main.innerHTML = `
   <div class="pageHead"><div>
     <h1>Notfallmodus</h1>
@@ -3412,9 +3408,40 @@ async function vNotfall() {
       <span class="mm" id="emLocInfo" style="align-self:center">${searchOrigin ? "" + esc(searchOriginLabel) : "Kein Standort gesetzt"}</span>
     </div>
   </div>
-  <div class="tt" style="margin-bottom:12px">Schnelle Hilfe in der Nähe (${helpers.length})</div>
-  <div id="emList">${helpers.length === 0
-    ? '<div class="empty"><div class="e">${ico("alert",40)}</div>Aktuell keine Notdienst-Betriebe verfügbar.</div>'
+  <div class="tt" style="margin-bottom:12px" id="emCount">Schnelle Hilfe in der Nähe</div>
+  <div id="emList"><div class="empty"><div class="e">${ico("clock", 40)}</div>Betriebe in der Nähe werden geladen…</div></div>`;
+  document.querySelectorAll("#emType .chip").forEach(c => c.onclick = () => {
+    document.querySelectorAll("#emType .chip").forEach(x => x.classList.toggle("on", x === c));
+  });
+  $("emLoc").onclick = () => {
+    if (!navigator.geolocation) return toast("Standort nicht unterstützt.");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { searchOrigin = [pos.coords.latitude, pos.coords.longitude]; searchOriginLabel = "Dein Standort"; toast("Standort gesetzt."); vNotfall(); },
+      () => toast("Standort nicht verfügbar."));
+  };
+  fillEmergencyList();
+}
+
+async function fillEmergencyList() {
+  let list = allWorkshops;
+  if (!list) {
+    try {
+      const { data, error } = await sb.from("workshops").select("*").eq("is_verified", true).limit(200);
+      if (error) throw error;
+      list = data || [];
+      allWorkshops = list; // nur bei Erfolg cachen
+    } catch (e) {
+      const el = $("emList");
+      if (el) el.innerHTML = `<div class="warn">Betriebe konnten gerade nicht geladen werden. Bei akuter Panne: Notruf <b>112</b>, ADAC <b>089 20 20 4000</b>.</div>`;
+      return;
+    }
+  }
+  const helpers = list.filter(ws => ws.emergency_service || ws.service_mode !== "stationary");
+  const cnt = $("emCount"); if (cnt) cnt.textContent = `Schnelle Hilfe in der Nähe (${helpers.length})`;
+  const el = $("emList");
+  if (!el) return; // Nutzer hat die Seite inzwischen verlassen
+  el.innerHTML = helpers.length === 0
+    ? `<div class="empty"><div class="e">${ico("alert", 40)}</div>Aktuell keine Notdienst-Betriebe verfügbar.</div>`
     : helpers.map(ws => {
       const d = distKm(searchOrigin || CITY_CENTER, [ws.lat, ws.lng]);
       return `<div class="card" style="margin-bottom:11px">
@@ -3429,16 +3456,7 @@ async function vNotfall() {
           <a class="btn ghost sm" href="#/workshop/${ws.id}">Profil</a>
         </div>
       </div>`;
-    }).join("")}</div>`;
-  document.querySelectorAll("#emType .chip").forEach(c => c.onclick = () => {
-    document.querySelectorAll("#emType .chip").forEach(x => x.classList.toggle("on", x === c));
-  });
-  $("emLoc").onclick = () => {
-    if (!navigator.geolocation) return toast("Standort nicht unterstützt.");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { searchOrigin = [pos.coords.latitude, pos.coords.longitude]; searchOriginLabel = "Dein Standort"; toast("Standort gesetzt."); vNotfall(); },
-      () => toast("Standort nicht verfügbar."));
-  };
+    }).join("");
 }
 function emergencyRequest(wsId) {
   if (!me) {
