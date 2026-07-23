@@ -570,7 +570,7 @@ function wsCardHtml(ws) {
     <div class="wsCard">
       <div class="wsAv" style="${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent` : ""}">${esc(initials(ws.name))}</div>
       <div style="flex:1;min-width:0">
-        <div class="tt">${esc(ws.name)} ${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:2px">Gesponsert</span>' : ""}${ws.is_verified ? '<span class="badge b-green" style="vertical-align:2px">✓ verifiziert</span>' : ""}
+        <div class="tt">${esc(ws.name)} ${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:2px">Gesponsert</span>' : ""}${ws.is_verified ? '<span class="badge b-green" style="vertical-align:2px">✓ verifiziert</span>' : ""}${ws.master_certified ? '<span class="badge b-gold" style="vertical-align:2px">Meisterbetrieb</span>' : ""}
           ${open === true ? '<span class="badge b-green" style="vertical-align:2px">Geöffnet</span>' : open === false ? '<span class="badge b-grey" style="vertical-align:2px">Geschlossen</span>' : ""}</div>
         <div class="ratingLine">${stars(ws.rating_avg)}<span class="cnt">${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${ws.rating_count || 0} Bewertungen</span></div>
         <div class="mm">${esc(ws.district || ws.city || "")}${d != null ? ` · ${d.toFixed(1).replace(".", ",")} km` : ""}${ws.service_mode !== "stationary" ? " · mobil" : ""}${ws.pickup_service ? " · Hol/Bring" : ""}${ws.replacement_car ? " · Ersatzwagen" : ""}${ws.price_level ? " · " + priceLevelTxt(ws.price_level) : ""}</div>
@@ -635,6 +635,7 @@ async function vWorkshopProfile(id) {
         <p class="mm" style="margin-top:8px;font-size:13px">${esc(ws.description || "Keine Beschreibung hinterlegt.")}</p>
         ${ws.founded_year ? `<p class="mm" style="margin-top:6px">Gegründet ${ws.founded_year}</p>` : ""}
         <div class="foot" style="border:none;padding-top:8px">
+          ${ws.master_certified ? '<span class="badge b-gold">Meisterbetrieb</span>' : ""}
           ${ws.service_mode !== "stationary" ? '<span class="badge b-blue">Mobiler Service</span>' : ""}
           ${ws.pickup_service ? '<span class="badge b-blue">Hol- & Bringservice</span>' : ""}
           ${ws.replacement_car ? '<span class="badge b-blue">Ersatzwagen</span>' : ""}
@@ -660,11 +661,12 @@ async function vWorkshopProfile(id) {
       <div class="card">
         <div class="tt">Bewertungen (${reviews?.length || 0})</div>
         <div id="revList">${(reviews || []).length === 0
-          ? '<div class="empty" style="padding:22px"><div class="e">${ico("star",40)}</div>Noch keine Bewertungen.</div>'
+          ? `<div class="empty" style="padding:22px"><div class="e">${ico("star", 40)}</div>Noch keine Bewertungen.</div>`
           : reviews.map(r => `
             <div style="padding:13px 0;border-bottom:1px solid var(--line)">
               <div class="ratingLine">${stars(r.rating)}<span class="cnt">${fmtDate(r.created_at)}</span></div>
               ${r.comment ? `<p class="mm" style="margin-top:5px;font-size:13px">${esc(r.comment)}</p>` : ""}
+              ${(r.images || []).length ? `<div class="thumbs rvThumbs" style="margin-top:8px">${r.images.map(u => `<img src="${esc(u)}" loading="lazy" data-full="${esc(u)}" style="width:74px;height:74px;cursor:zoom-in" alt="Bewertungsfoto">`).join("")}</div>` : ""}
             </div>`).join("")}</div>
       </div>
     </div>
@@ -688,7 +690,7 @@ async function vWorkshopProfile(id) {
     go("new-request?ws=" + ws.id);
   };
   $("wsFav").onclick = () => toggleFavorite(ws.id, $("wsFav"));
-  document.querySelectorAll("#wsGallery img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));
+  document.querySelectorAll("#wsGallery img, #revList .rvThumbs img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));
   if (me) {
     sb.from("favorites").select("workshop_id").eq("user_id", me.id).eq("workshop_id", ws.id).maybeSingle()
       .then(({ data }) => { if (data && $("wsFav")) $("wsFav").textContent = "Gemerkt"; });
@@ -754,11 +756,11 @@ async function vNewRequest(_p, query) {
       <div class="label">Beschreibung (optional)</div>
       <textarea id="nDesc" placeholder="Was ist das Problem? Was soll gemacht werden? (optional, hilft aber bei genauen Angeboten)">${esc(query.desc || "")}</textarea>
       <div class="uploadTile" style="margin-top:12px" onclick="$('nFile').click()">
-        <div class="ico icoPurple"></div>
-        <div><div class="tt" style="font-size:12.5px">Fotos vom Problem (optional)</div>
-        <div class="mm">Bis zu 4 Bilder – hilft Betrieben bei der Einschätzung</div></div>
+        <div class="ico icoPurple">${ico("camera", 20)}</div>
+        <div><div class="tt" style="font-size:12.5px">Fotos oder Video vom Problem (optional)</div>
+        <div class="mm">Bis zu 4 Dateien – ein kurzes Video (z.B. vom Geräusch) hilft Betrieben besonders</div></div>
       </div>
-      <input type="file" id="nFile" accept="image/*" multiple class="hidden">
+      <input type="file" id="nFile" accept="image/*,video/*" multiple class="hidden">
       <div class="thumbs" id="nThumbs"></div>
       <button class="btn ghost sm" style="margin-top:10px" id="nAnalyze">Beschreibung analysieren</button>
       <div id="nAiOut"></div>
@@ -873,9 +875,18 @@ function renderNrPriceHint() {
     <br><span style="font-size:11px;opacity:.8">Der endgültige Preis hängt von Fahrzeug, Region und Befund ab und wird von der Werkstatt festgelegt.</span></div>`;
 }
 function handleNrFiles() {
+  // Bilder bis 8 MB, Videos bis 40 MB
   const files = [...$("nFile").files].slice(0, 4 - nrFiles.length);
-  files.forEach(f => { if (f.size < 8 * 1024 * 1024) nrFiles.push(f); });
-  $("nThumbs").innerHTML = nrFiles.map(f => `<img src="${URL.createObjectURL(f)}" loading="lazy" alt="">`).join("");
+  files.forEach(f => { const lim = f.type.startsWith("video") ? 40 : 8; if (f.size < lim * 1024 * 1024) nrFiles.push(f); });
+  $("nThumbs").innerHTML = nrFiles.map(f => f.type.startsWith("video")
+    ? `<span class="pill">${ico("camera")} ${esc(f.name.slice(0, 22))}</span>`
+    : `<img src="${URL.createObjectURL(f)}" loading="lazy" alt="">`).join("");
+}
+// Anhang als Bild oder Video darstellen (nach Dateiendung)
+function mediaTile(url) {
+  return /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url)
+    ? `<video src="${esc(url)}" controls preload="metadata" style="width:130px;height:100px;object-fit:cover;border-radius:10px;border:1px solid var(--line2)"></video>`
+    : `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" loading="lazy" alt="Anhang"></a>`;
 }
 function runAiAnalyze() {
   const hits = aiAnalyze($("nTitle").value + " " + $("nDesc").value);
@@ -1033,7 +1044,7 @@ async function vRequestDetail(id) {
           ${r.preferred_date ? `<span class="pill">${fmtDate(r.preferred_date)}</span>` : ""}
           ${r.date_flexible ? `<span class="pill">flexibel</span>` : ""}
         </div>
-        ${(r.attachments || []).length ? `<div class="thumbs">${r.attachments.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" alt="Foto"></a>`).join("")}</div>` : ""}
+        ${(r.attachments || []).length ? `<div class="thumbs">${r.attachments.map(u => mediaTile(u)).join("")}</div>` : ""}
       </div>
       <div id="bookingBox"></div>
       <div class="card">
@@ -1281,6 +1292,9 @@ function openReviewModal(bookingId, workshopId, wsName, reqId) {
     <div class="starPick" style="margin:18px 0" id="starPick">${[1,2,3,4,5].map(n => `<span data-n="${n}">★</span>`).join("")}</div>
     <div class="label">Kommentar (optional)</div>
     <textarea id="revComment" placeholder="Wie lief Kommunikation, Preis, Qualität?"></textarea>
+    <div class="label">Fotos (optional, bis 4)</div>
+    <input type="file" id="revImgs" accept="image/*" multiple style="padding:9px">
+    <div class="thumbs" id="revThumbs" style="margin-top:8px"></div>
     <div class="btnRow">
       <button class="btn" id="revGo">Bewertung abschicken</button>
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
@@ -1290,14 +1304,24 @@ function openReviewModal(bookingId, workshopId, wsName, reqId) {
     revRating = +s.dataset.n;
     document.querySelectorAll("#starPick span").forEach(x => x.classList.toggle("on", +x.dataset.n <= revRating));
   });
+  $("revImgs").onchange = () => {
+    $("revThumbs").innerHTML = [...$("revImgs").files].slice(0, 4).map(f => `<img src="${URL.createObjectURL(f)}" loading="lazy" alt="">`).join("");
+  };
   $("revGo").onclick = async () => {
     if (!revRating) return showErr($("revErr"), "Bitte Sterne vergeben.");
-    $("revGo").disabled = true;
+    $("revGo").disabled = true; $("revGo").textContent = "Wird gesendet…";
+    const images = [];
+    for (const f of [...$("revImgs").files].slice(0, 4)) {
+      if (f.size >= 8 * 1024 * 1024) continue;
+      const path = `${me.id}/review_${Date.now()}_${f.name.replace(/[^\w.\-]/g, "_")}`;
+      const { error: upErr } = await sb.storage.from("attachments").upload(path, f);
+      if (!upErr) images.push(sb.storage.from("attachments").getPublicUrl(path).data.publicUrl);
+    }
     const { error } = await sb.from("reviews").insert({
       booking_id: bookingId, customer_id: me.id, workshop_id: workshopId,
-      rating: revRating, comment: $("revComment").value.trim() || null,
+      rating: revRating, comment: $("revComment").value.trim() || null, images,
     });
-    $("revGo").disabled = false;
+    $("revGo").disabled = false; $("revGo").textContent = "Bewertung abschicken";
     if (error) return showErr($("revErr"), error.message);
     closeModal(); toast("Danke für deine Bewertung ");
     allWorkshops = null;
@@ -2430,7 +2454,7 @@ async function vWsLead(id) {
           ${r.preferred_date ? `<span class="pill">${fmtDate(r.preferred_date)}</span>` : ""}
           ${r.service_preference === "mobile" ? `<span class="pill">Mobiler Service gewünscht</span>` : ""}
         </div>
-        ${(r.attachments || []).length ? `<div class="thumbs">${r.attachments.map(u => `<a href="${esc(u)}" target="_blank" rel="noopener"><img src="${esc(u)}" loading="lazy" alt="Foto"></a>`).join("")}</div>` : ""}
+        ${(r.attachments || []).length ? `<div class="thumbs">${r.attachments.map(u => mediaTile(u)).join("")}</div>` : ""}
       </div>
       <div class="card" id="offerBox">
         ${myOffer ? `
@@ -2978,6 +3002,7 @@ async function vWsProfile() {
           <div><div class="label" style="margin-top:0">Max. Aufträge/Tag</div><input id="pMaxJobs" inputmode="numeric" value="${esc(w.capacity?.max_jobs_per_day ?? "")}" placeholder="z.B. 8"></div>
         </div>
         <div class="label">Ausstattung & Service</div>
+        <label class="inline"><input type="checkbox" id="pMaster" ${w.master_certified ? "checked" : ""}> Meisterbetrieb</label>
         <label class="inline"><input type="checkbox" id="pPickup" ${w.pickup_service ? "checked" : ""}> Hol- &amp; Bringservice</label>
         <label class="inline"><input type="checkbox" id="pReplace" ${w.replacement_car ? "checked" : ""}> Ersatzwagen verfügbar</label>
         <label class="inline"><input type="checkbox" id="pEmergency" ${w.emergency_service ? "checked" : ""}> Notdienst / kurzfristige Hilfe</label>
@@ -3146,6 +3171,7 @@ async function saveWsProfile(getPriceLevel) {
     categories: profCats, services: profServices, brands: profBrands, opening_hours: oh,
     next_free_date: $("pNextFree").value || null,
     capacity: { lifts: +$("pLifts").value || null, staff: +$("pStaff").value || null, max_jobs_per_day: +$("pMaxJobs").value || null },
+    master_certified: $("pMaster").checked,
     pickup_service: $("pPickup").checked, replacement_car: $("pReplace").checked, emergency_service: $("pEmergency").checked,
     payment_methods: [...document.querySelectorAll("#pPay .chip.on")].map(c => c.dataset.p),
   };
