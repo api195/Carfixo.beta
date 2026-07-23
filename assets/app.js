@@ -91,11 +91,26 @@ function renderNav(active) {
     `<a href="#/${r}" class="${active === r ? "on" : ""}"><span class="ti">${ico(ic, 22)}</span>${label}</a>`).join("") +
     `<a href="#/${me ? "account" : "login"}" class="${active === "account" || active === "login" ? "on" : ""}"><span class="ti">${ico("user", 22)}</span>${me ? "Konto" : "Login"}</a>`;
   const av = $("avatarBtn"); if (av) av.setAttribute("aria-label", "Konto");
+  const bell = $("bellBtn");
   if (me) {
     av.classList.remove("hidden");
     av.textContent = initials(myProfile?.full_name || me.email);
     av.onclick = () => go("account");
-  } else av.classList.add("hidden");
+    if (bell) {
+      bell.classList.remove("hidden");
+      if (!bell.dataset.ready) {
+        bell.innerHTML = ico("bell", 19) + `<span class="bellDot hidden" id="bellDot"></span>`;
+        bell.onclick = (e) => { e.stopPropagation(); toggleNotifPanel(); };
+        bell.dataset.ready = "1";
+      }
+    }
+    ensureNotifications();
+    renderNotifBadge();
+  } else {
+    av.classList.add("hidden");
+    if (bell) bell.classList.add("hidden");
+    teardownNotifications();
+  }
 }
 
 async function loadSession() {
@@ -243,6 +258,7 @@ async function createWorkshopForMe(name) {
 
 async function signOut() {
   cleanRT();
+  teardownNotifications();
   await sb.auth.signOut();
   me = null; myProfile = null; myWorkshop = null;
   toast("Abgemeldet.");
@@ -3966,8 +3982,139 @@ function confirmDeleteAccount() {
 }
 
 // ============================================================
+// BENACHRICHTIGUNGEN (Glocke + Panel + Realtime)
+// ============================================================
+let notifItems = [];
+let notifUnread = 0;
+let notifChannel = null;
+
+const NOTIF_ICON = {
+  offer: "euro", message: "chat", lead: "megaphone", booking: "calendar",
+  approval: "check", review: "star", part_order: "puzzle", reminder: "bell",
+};
+
+function relTime(d) {
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 60) return "gerade eben";
+  if (s < 3600) return Math.floor(s / 60) + " Min.";
+  if (s < 86400) return Math.floor(s / 3600) + " Std.";
+  if (s < 172800) return "gestern";
+  if (s < 604800) return Math.floor(s / 86400) + " Tagen";
+  return fmtDate(d);
+}
+
+// Nach Login initialisieren (einmalig), nach Logout abbauen.
+function ensureNotifications() {
+  if (notifChannel || !me) return;
+  loadNotifications();
+  notifChannel = sb.channel("notif:" + me.id)
+    .on("postgres_changes",
+      { event: "INSERT", schema: "public", table: "notifications", filter: "user_id=eq." + me.id },
+      (p) => {
+        notifItems.unshift(p.new);
+        if (notifItems.length > 40) notifItems.pop();
+        notifUnread++;
+        renderNotifBadge();
+        if (!$("notifPanel").classList.contains("hidden")) renderNotifPanel();
+        toast("🔔 " + (p.new.title || "Neue Benachrichtigung"));
+      })
+    .on("postgres_changes",
+      { event: "UPDATE", schema: "public", table: "notifications", filter: "user_id=eq." + me.id },
+      (p) => {
+        const it = notifItems.find(n => n.id === p.new.id);
+        if (it) it.read_at = p.new.read_at;
+        recountUnread();
+      })
+    .subscribe();
+}
+function teardownNotifications() {
+  if (notifChannel) { try { sb.removeChannel(notifChannel); } catch (e) {} notifChannel = null; }
+  notifItems = []; notifUnread = 0;
+  $("notifPanel").classList.add("hidden");
+  renderNotifBadge();
+}
+async function recountUnread() {
+  if (!me) return;
+  const { count } = await sb.from("notifications").select("id", { count: "exact", head: true })
+    .eq("user_id", me.id).is("read_at", null);
+  notifUnread = count || 0;
+  renderNotifBadge();
+  if (!$("notifPanel").classList.contains("hidden")) renderNotifPanel();
+}
+async function loadNotifications() {
+  if (!me) return;
+  const { data } = await sb.from("notifications").select("*")
+    .eq("user_id", me.id).order("created_at", { ascending: false }).limit(40);
+  notifItems = data || [];
+  await recountUnread();
+}
+function renderNotifBadge() {
+  const dot = $("bellDot"); if (!dot) return;
+  if (notifUnread > 0) { dot.textContent = notifUnread > 99 ? "99+" : notifUnread; dot.classList.remove("hidden"); }
+  else dot.classList.add("hidden");
+}
+function renderNotifPanel() {
+  const p = $("notifPanel");
+  const list = notifItems.length === 0
+    ? `<div class="notifEmpty">${ico("bell", 34)}<div>Noch keine Benachrichtigungen.</div></div>`
+    : notifItems.map(n => `
+      <div class="notifItem ${n.read_at ? "" : "unread"}" onclick="openNotif('${n.id}')">
+        <div class="notifIco">${ico(NOTIF_ICON[n.type] || "bell", 17)}</div>
+        <div class="notifBody">
+          <div class="notifTitle">${n.read_at ? "" : '<span class="udot"></span>'}${esc(n.title)}</div>
+          ${n.body ? `<div class="notifText">${esc(n.body)}</div>` : ""}
+          <div class="notifTime">${relTime(n.created_at)}</div>
+        </div>
+        <button class="notifDel" title="Entfernen" onclick="event.stopPropagation();deleteNotif('${n.id}')">${ico("trash", 15)}</button>
+      </div>`).join("");
+  p.innerHTML = `
+    <div class="notifHead">
+      <div class="tt">Benachrichtigungen</div>
+      ${notifUnread > 0 ? `<button onclick="markAllNotifRead()">Alle gelesen</button>` : ""}
+    </div>${list}`;
+}
+function toggleNotifPanel() {
+  const p = $("notifPanel");
+  if (p.classList.contains("hidden")) { renderNotifPanel(); p.classList.remove("hidden"); }
+  else p.classList.add("hidden");
+}
+function closeNotifPanel() { const p = $("notifPanel"); if (p) p.classList.add("hidden"); }
+async function openNotif(id) {
+  const n = notifItems.find(x => x.id === id);
+  closeNotifPanel();
+  if (n && !n.read_at) {
+    n.read_at = new Date().toISOString();
+    notifUnread = Math.max(0, notifUnread - 1);
+    renderNotifBadge();
+    sb.from("notifications").update({ read_at: n.read_at }).eq("id", id).then(() => {});
+  }
+  if (n && n.link) go(n.link);
+}
+async function markAllNotifRead() {
+  notifItems.forEach(n => { if (!n.read_at) n.read_at = new Date().toISOString(); });
+  notifUnread = 0;
+  renderNotifBadge();
+  renderNotifPanel();
+  await sb.rpc("mark_all_notifications_read");
+}
+async function deleteNotif(id) {
+  const n = notifItems.find(x => x.id === id);
+  notifItems = notifItems.filter(x => x.id !== id);
+  if (n && !n.read_at) notifUnread = Math.max(0, notifUnread - 1);
+  renderNotifBadge();
+  renderNotifPanel();
+  await sb.from("notifications").delete().eq("id", id);
+}
+// Panel schließen bei Klick außerhalb
+document.addEventListener("click", (e) => {
+  const p = $("notifPanel"); if (!p || p.classList.contains("hidden")) return;
+  if (!p.contains(e.target) && !$("bellBtn").contains(e.target)) p.classList.add("hidden");
+});
+
+// ============================================================
 // Start
 // ============================================================
+window.addEventListener("hashchange", closeNotifPanel);
 window.addEventListener("hashchange", route);
 sb.auth.onAuthStateChange((event) => {
   if (event === "SIGNED_OUT") { me = null; myProfile = null; myWorkshop = null; }
