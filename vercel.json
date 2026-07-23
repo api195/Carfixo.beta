@@ -1,5 +1,19 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "www.carfixo.de" }],
+      "destination": "https://carfixo.de/$1",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "carfixo-beta.vercel.app" }],
+      "destination": "https://carfixo.de/$1",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/assets/vendor/(.*)",
