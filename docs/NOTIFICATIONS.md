@@ -73,6 +73,31 @@ select public.notify_user(
 select status_code, content from net._http_response order by id desc limit 1;
 ```
 
+## Erinnerungs-Automatik (pg_cron)
+
+Ein täglicher Job (`carfixo-daily-reminders`, 06:00 UTC) ruft `public.run_due_reminders()` auf.
+Die Funktion scannt offene Einträge in `reminders` (TÜV, Service, Reifen, eigene) und erzeugt zu
+festen Meilensteinen **je genau eine** Benachrichtigung – gemerkt in `reminders.notified_offsets`,
+damit nichts doppelt kommt.
+
+| Tage bis Fälligkeit | Meilenstein |
+|---|---|
+| ≤ 30 | 30 |
+| ≤ 14 | 14 |
+| ≤ 7 | 7 |
+| morgen | 1 |
+| heute | 0 |
+| überfällig | -1 |
+
+Jede erzeugte Benachrichtigung durchläuft denselben Dispatch wie alle anderen → landet automatisch
+auch als Push/E-Mail (sofern aktiviert). Respektiert `notify_prefs.reminders`.
+
+```sql
+-- Manuell auslösen / testen:
+select public.run_due_reminders();          -- Anzahl versandter Erinnerungen
+select jobname, schedule, active from cron.job where jobname = 'carfixo-daily-reminders';
+```
+
 ## Browser-Hinweise
 
 - **Android/Chrome/Firefox/Edge (Desktop):** Push funktioniert direkt nach Zustimmung.
