@@ -156,7 +156,8 @@ nav.scrolled{background:rgba(5,7,13,.82);backdrop-filter:blur(16px);-webkit-back
 /* Cinematisches Hero-Bild (selbst gehostet) mit dunklem Overlay für Textkontrast */
 .heroImg{position:absolute;inset:0;z-index:0;pointer-events:none;
   background:
-    linear-gradient(180deg, rgba(5,7,13,.80) 0%, rgba(5,7,13,.34) 34%, rgba(5,7,13,.30) 58%, var(--bg) 100%),
+    radial-gradient(125% 100% at 50% 40%, rgba(5,7,13,.42), transparent 62%),
+    linear-gradient(180deg, rgba(5,7,13,.88) 0%, rgba(5,7,13,.52) 40%, rgba(5,7,13,.50) 62%, var(--bg) 100%),
     url(assets/hero.jpg) center/cover no-repeat}
 .hero .heroBgGrid,.hero .orb{display:none}
 .heroBgGrid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 90% 80% at 50% 0%,#000 30%,transparent 78%);-webkit-mask-image:radial-gradient(ellipse 90% 80% at 50% 0%,#000 30%,transparent 78%)}
