@@ -153,12 +153,18 @@ nav.scrolled{background:rgba(5,7,13,.82);backdrop-filter:blur(16px);-webkit-back
 
 /* ================= Hero (kompakt, Portal) ================= */
 .hero{position:relative;overflow:hidden;padding:126px 0 34px}
+/* Cinematisches Hero-Bild (selbst gehostet) mit dunklem Overlay für Textkontrast */
+.heroImg{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(5,7,13,.80) 0%, rgba(5,7,13,.34) 34%, rgba(5,7,13,.30) 58%, var(--bg) 100%),
+    url(assets/hero.jpg) center/cover no-repeat}
+.hero .heroBgGrid,.hero .orb{display:none}
 .heroBgGrid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 90% 80% at 50% 0%,#000 30%,transparent 78%);-webkit-mask-image:radial-gradient(ellipse 90% 80% at 50% 0%,#000 30%,transparent 78%)}
 .orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
 .orb1{width:520px;height:520px;background:radial-gradient(circle,rgba(30,107,255,.30),transparent 65%);top:-180px;left:-120px}
 .orb2{width:440px;height:440px;background:radial-gradient(circle,rgba(56,189,248,.14),transparent 65%);top:-120px;right:-120px}
 @media(max-width:720px){.orb{filter:blur(60px)}}
-.heroHome{position:relative;width:100%;max-width:920px;margin:0 auto;text-align:center}
+.heroHome{position:relative;z-index:1;width:100%;max-width:920px;margin:0 auto;text-align:center}
 h1{font-size:clamp(30px,4.6vw,48px);line-height:1.08;font-weight:800;letter-spacing:-1.6px}
 h1 .grad{background:linear-gradient(100deg,#4D8DFF 10%,#38BDF8 55%,#7C5CFF 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .heroSub{font-size:clamp(14px,1.6vw,16.5px);color:var(--muted);margin:14px auto 0;max-width:540px;line-height:1.6}
@@ -350,6 +356,7 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
 
 <!-- ================= HERO: Direkt loslegen ================= -->
 <header class="hero" id="top">
+  <div class="heroImg" aria-hidden="true"></div>
   <div class="heroBgGrid"></div>
   <div class="orb orb1"></div>
   <div class="orb orb2"></div>
