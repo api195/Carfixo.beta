@@ -209,9 +209,10 @@ section{position:relative;padding:34px 0}
 .quickTiles{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
 @media(max-width:940px){.quickTiles{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:560px){.quickTiles{grid-template-columns:repeat(2,1fr);gap:10px}}
-.qt{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;transition:transform .2s,border-color .2s}
-.qt:hover{transform:translateY(-3px);border-color:rgba(77,141,255,.45)}
-.qt .qe{font-size:24px}
+.qt{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;transition:transform .2s,border-color .2s,background .2s,box-shadow .2s}
+.qt:hover{transform:translateY(-3px);border-color:var(--blue2);background:linear-gradient(160deg,rgba(30,107,255,.22),rgba(30,107,255,.08));box-shadow:0 10px 28px rgba(30,107,255,.28)}
+.qt:hover .qe,.qt:hover .qn{color:#fff}
+.qt .qe{font-size:24px;transition:color .2s}
 .qt .qn{font-size:12.5px;font-weight:800}
 .qt .qm{font-size:10.5px;color:var(--muted);line-height:1.4}
 @media(max-width:940px){.qt .qm{display:none}}
