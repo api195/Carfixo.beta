@@ -52,6 +52,10 @@ revoke execute on function public.run_due_reminders()                           
 -- ------------------------------------------------------------
 revoke execute on function public._display_name(uuid) from public, anon;
 
+-- mark_all_notifications_read() arbeitet auf auth.uid(); anonym aufgerufen
+-- ist es wirkungslos, aber ein unnötig offener RPC-Endpunkt.
+revoke execute on function public.mark_all_notifications_read() from public, anon;
+
 -- ------------------------------------------------------------
 -- 4) search_path fixieren (Advisor 0011). Verhindert, dass die
 --    Funktionen über einen manipulierten search_path andere
@@ -79,10 +83,15 @@ alter function public.status_label_de(text)    set search_path = public, pg_temp
 --   im Klartext (inkl. Admin-Rolle). Konten löschen oder Passwörter
 --   rotieren, bevor die Plattform öffentlich geht.
 --
--- BEWUSST NICHT ANGEFASST (absichtlich authentifiziert aufrufbar –
--- das sind gewollte RPCs bzw. RLS-Helfer):
+-- BEWUSST NICHT ANGEFASST (absichtlich für authenticated aufrufbar –
+-- das sind gewollte RPCs bzw. RLS-Helfer; der Advisor meldet sie weiterhin
+-- unter 0029, das ist hier erwartet und in Ordnung):
 --   accept_offer, delete_own_account, mark_all_notifications_read,
 --   claim_membership, is_admin, is_verified_workshop, owns_workshop,
 --   can_access_request, is_blocked_user,
 --   workshop_has_active_offer_for_request
+--
+-- Ergebnis der Härtung: Security-Advisor von 43 auf 14 Meldungen;
+-- alle verbliebenen sind gewollt (0029) oder offen dokumentiert
+-- (pg_net, Leaked-Password-Schutz, Testkonten).
 -- ============================================================
