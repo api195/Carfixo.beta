@@ -37,6 +37,7 @@ function priceLevelTxt(n) { return n ? "€".repeat(n) : ""; }
 // ============================================================
 const routes = {
   "login": vLogin, "register": vRegister,
+  "forgot": vForgot, "reset-password": vResetPassword,
   "search": vSearch, "workshop": vWorkshopProfile, "new-request": vNewRequest,
   "diagnose": vDiagnose, "notfall": vNotfall, "vergleich": vCompare,
   "requests": vRequests, "request": vRequestDetail, "teile": vPartsMarket,
@@ -150,7 +151,8 @@ async function vLogin() {
     <input id="lEmail" type="email" placeholder="du@beispiel.de" autocapitalize="off">
     <div class="label">Passwort</div>
     <input id="lPass" type="password" placeholder="••••••••">
-    <button class="btn wide" style="margin-top:18px" id="lGo">Anmelden</button>
+    <p class="mm" style="margin-top:8px;text-align:right"><a href="#/forgot" style="color:var(--blue2);font-weight:700">Passwort vergessen?</a></p>
+    <button class="btn wide" style="margin-top:14px" id="lGo">Anmelden</button>
     <div class="err" id="lErr"></div>
     <p class="mm" style="margin-top:16px;text-align:center">Noch kein Konto? <a href="#/register" style="color:var(--blue2);font-weight:700">Jetzt registrieren</a></p>
   </div></div>`;
@@ -164,6 +166,77 @@ async function vLogin() {
     await loadSession();
     toast("Angemeldet ✓");
     go(afterAuth(""));
+  };
+}
+
+// ---------- Passwort vergessen ----------
+async function vForgot() {
+  main.innerHTML = `
+  <div class="authWrap"><div class="authCard">
+    <h1>Passwort zurücksetzen</h1>
+    <p class="mm" style="margin-top:6px">Trage deine E-Mail-Adresse ein – wir schicken dir einen Link, mit dem du ein neues Passwort vergeben kannst.</p>
+    <div class="label">E-Mail</div>
+    <input id="fpEmail" type="email" placeholder="du@beispiel.de" autocapitalize="off">
+    <button class="btn wide" style="margin-top:18px" id="fpGo">Link anfordern</button>
+    <div class="err" id="fpErr"></div>
+    <div id="fpDone"></div>
+    <p class="mm" style="margin-top:16px;text-align:center"><a href="#/login" style="color:var(--blue2);font-weight:700">Zurück zur Anmeldung</a></p>
+  </div></div>`;
+  $("fpEmail").onkeydown = (e) => { if (e.key === "Enter") $("fpGo").click(); };
+  $("fpGo").onclick = async () => {
+    const err = $("fpErr"); err.style.display = "none";
+    const email = $("fpEmail").value.trim();
+    if (!email) return showErr(err, "Bitte deine E-Mail-Adresse eingeben.");
+    $("fpGo").disabled = true; $("fpGo").textContent = "Wird gesendet…";
+    // Ziel ist app.html ohne Hash – der Recovery-Hash von Supabase wird beim
+    // Start erkannt und in die Route #/reset-password überführt.
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: location.origin + location.pathname,
+    });
+    $("fpGo").disabled = false; $("fpGo").textContent = "Link anfordern";
+    // Bewusst immer dieselbe Rückmeldung: sonst liesse sich herausfinden,
+    // welche E-Mail-Adressen bei Carfixo registriert sind.
+    if (error && !/rate|limit|seconds/i.test(error.message)) console.error(error);
+    if (error && /rate|limit|seconds/i.test(error.message)) return showErr(err, "Zu viele Versuche – bitte warte einen Moment.");
+    $("fpDone").innerHTML = `<div class="okBox" style="margin-top:14px">Wenn ein Konto zu <b>${esc(email)}</b> existiert, ist die E-Mail unterwegs. Schau auch im Spam-Ordner nach – der Link ist eine Stunde gültig.</div>`;
+  };
+}
+
+// ---------- Neues Passwort setzen (nach Klick auf den Recovery-Link) ----------
+async function vResetPassword() {
+  if (!me) {
+    main.innerHTML = `
+    <div class="authWrap"><div class="authCard">
+      <h1>Link abgelaufen</h1>
+      <p class="mm" style="margin-top:8px">Dieser Link ist ungültig oder abgelaufen. Fordere einen neuen an.</p>
+      <button class="btn wide" style="margin-top:16px" onclick="go('forgot')">Neuen Link anfordern</button>
+    </div></div>`;
+    return;
+  }
+  main.innerHTML = `
+  <div class="authWrap"><div class="authCard">
+    <h1>Neues Passwort vergeben</h1>
+    <p class="mm" style="margin-top:6px">Für <b>${esc(me.email)}</b>. Mindestens 8 Zeichen.</p>
+    <div class="label">Neues Passwort</div>
+    <input id="rpPass" type="password" placeholder="••••••••">
+    <div class="label">Wiederholen</div>
+    <input id="rpPass2" type="password" placeholder="••••••••">
+    <button class="btn wide" style="margin-top:18px" id="rpGo">Passwort speichern</button>
+    <div class="err" id="rpErr"></div>
+  </div></div>`;
+  $("rpPass2").onkeydown = (e) => { if (e.key === "Enter") $("rpGo").click(); };
+  $("rpGo").onclick = async () => {
+    const err = $("rpErr"); err.style.display = "none";
+    const pw = $("rpPass").value, pw2 = $("rpPass2").value;
+    if (pw.length < 8) return showErr(err, "Das Passwort braucht mindestens 8 Zeichen.");
+    if (pw !== pw2) return showErr(err, "Die beiden Passwörter stimmen nicht überein.");
+    $("rpGo").disabled = true; $("rpGo").textContent = "Wird gespeichert…";
+    const { error } = await sb.auth.updateUser({ password: pw });
+    $("rpGo").disabled = false; $("rpGo").textContent = "Passwort speichern";
+    if (error) return showErr(err, error.message);
+    await loadSession();
+    toast("Passwort geändert ✓");
+    go(myWorkshop ? "ws/dashboard" : "search");
   };
 }
 
@@ -3991,16 +4064,35 @@ function confirmDeleteAccount() {
 // Start
 // ============================================================
 window.addEventListener("hashchange", route);
+
+// Supabase nutzt den impliziten Flow: Recovery-Links kommen als
+// #access_token=…&type=recovery zurück. Das muss vor dem ersten Routing
+// ausgewertet werden, sonst deutet der Hash-Router das Fragment als
+// (ungültige) Route und verwirft es.
+const authHash = new URLSearchParams(location.hash.replace(/^#/, ""));
+const isRecoveryLink = authHash.get("type") === "recovery";
+const authLinkError = authHash.get("error_description") || authHash.get("error");
+
 sb.auth.onAuthStateChange((event) => {
   if (event === "SIGNED_OUT") { me = null; myProfile = null; myWorkshop = null; }
+  if (event === "PASSWORD_RECOVERY") go("reset-password");
 });
 (async () => {
   await loadSession();
-  maybeStartTour();
-  // Werkstatt-Registrierung nach E-Mail-Bestätigung abschließen
-  if (me && !myWorkshop && localStorage.getItem("cfx_pending_ws") && myProfile?.role === "customer") {
-    await createWorkshopForMe(localStorage.getItem("cfx_pending_ws"));
-    localStorage.removeItem("cfx_pending_ws");
+  if (authLinkError) {
+    // z.B. abgelaufener oder bereits benutzter Link
+    history.replaceState(null, "", location.pathname + "#/forgot");
+    toast("Der Link ist ungültig oder abgelaufen – fordere einen neuen an.");
+  } else if (isRecoveryLink) {
+    // Tokens aus der Adresszeile entfernen, damit sie nicht im Verlauf landen
+    history.replaceState(null, "", location.pathname + "#/reset-password");
+  } else {
+    maybeStartTour();
+    // Werkstatt-Registrierung nach E-Mail-Bestätigung abschließen
+    if (me && !myWorkshop && localStorage.getItem("cfx_pending_ws") && myProfile?.role === "customer") {
+      await createWorkshopForMe(localStorage.getItem("cfx_pending_ws"));
+      localStorage.removeItem("cfx_pending_ws");
+    }
   }
   route();
 })();
