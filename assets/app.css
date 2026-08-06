@@ -212,3 +212,20 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
 .uploadTile:hover{background:rgba(124,92,255,.12)}
 .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .thumbs img{width:64px;height:64px;object-fit:cover;border-radius:10px;border:1px solid var(--line2)}
+
+/* ---------- Benachrichtigungen (Glocke + Panel) ---------- */
+.bellWrap{position:relative;flex-shrink:0}
+.bellBtn{width:34px;height:34px;border-radius:50%;background:var(--panel2);border:1px solid var(--line2);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.bellBtn:hover{border-color:var(--blue2);color:var(--blue2)}
+.bellDot{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:var(--red);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);pointer-events:none}
+.notifPanel{position:absolute;top:44px;right:0;width:340px;max-width:calc(100vw - 24px);max-height:min(70vh,480px);overflow-y:auto;background:var(--panel2);border:1px solid var(--line2);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.55);z-index:120}
+.notifHead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel2)}
+.notifHead b{font-size:13.5px}
+.notifItem{display:flex;gap:11px;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer;text-align:left;width:100%;background:none;border-left:none;border-right:none;border-top:none;color:inherit;font:inherit}
+.notifItem:hover{background:rgba(255,255,255,.04)}
+.notifItem.unread{background:rgba(30,107,255,.09)}
+.notifItem .ni{width:32px;height:32px;border-radius:9px;background:rgba(30,107,255,.14);color:var(--blue2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.notifItem .nt{font-size:12.8px;font-weight:700;line-height:1.35}
+.notifItem .nb{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.45}
+.notifItem .nd{font-size:10.5px;color:var(--dim);margin-top:3px}
+@media(max-width:560px){.notifPanel{position:fixed;top:60px;right:10px;left:10px;width:auto}}

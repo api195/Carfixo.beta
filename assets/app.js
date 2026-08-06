@@ -122,6 +122,9 @@ async function loadSession() {
       }
     }
   }
+  // Glocke an den Sitzungszustand angleichen (bewusst ohne await – die
+  // Benachrichtigungen sollen den Seitenaufbau nicht verzögern).
+  if (me) initNotifications(); else stopNotifications();
 }
 function requireAuth() {
   if (!me) { toast("Bitte zuerst anmelden."); go("login"); return false; }
@@ -318,6 +321,7 @@ async function createWorkshopForMe(name) {
 
 async function signOut() {
   cleanRT();
+  stopNotifications();
   await sb.auth.signOut();
   me = null; myProfile = null; myWorkshop = null;
   toast("Abgemeldet.");
@@ -4059,6 +4063,122 @@ function confirmDeleteAccount() {
     go("search");
   };
 }
+
+// ============================================================
+// BENACHRICHTIGUNGEN (Glocke in der Topbar)
+// ============================================================
+const NOTIF_ICONS = {
+  offer: "euro", message: "chat", booking: "calendar", approval: "alert",
+  lead: "megaphone", part_order: "puzzle", review: "star", reminder: "bell",
+};
+let notifItems = [], notifChannel = null, notifOpen = false;
+
+function relTime(iso) {
+  const s = Math.max(0, (Date.now() - new Date(iso)) / 1000);
+  if (s < 60) return "gerade eben";
+  if (s < 3600) return `vor ${Math.floor(s / 60)} Min.`;
+  if (s < 86400) return `vor ${Math.floor(s / 3600)} Std.`;
+  if (s < 604800) return `vor ${Math.floor(s / 86400)} Tg.`;
+  return fmtDate(iso);
+}
+
+// Der Kanal muss den Routenwechsel überleben, darf also nicht in rtChannels
+// landen – cleanRT() räumt die bei jedem Seitenwechsel ab.
+async function initNotifications() {
+  const wrap = $("bellWrap");
+  if (!wrap) return;
+  if (!me) { wrap.classList.add("hidden"); return; }
+  wrap.classList.remove("hidden");
+  $("bellBtn").innerHTML = ico("bell", 17);
+  $("bellBtn").onclick = (e) => { e.stopPropagation(); toggleNotifPanel(); };
+  await loadNotifications();
+  if (!notifChannel) {
+    notifChannel = sb.channel("notif:" + me.id)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: "user_id=eq." + me.id },
+        () => loadNotifications())
+      .subscribe();
+  }
+}
+function stopNotifications() {
+  if (notifChannel) { try { sb.removeChannel(notifChannel); } catch (e) {} notifChannel = null; }
+  notifItems = []; notifOpen = false;
+  const w = $("bellWrap"); if (w) w.classList.add("hidden");
+  const p = $("notifPanel"); if (p) p.classList.add("hidden");
+}
+async function loadNotifications() {
+  if (!me) return;
+  const { data, error } = await sb.from("notifications")
+    .select("*").order("created_at", { ascending: false }).limit(30);
+  if (error) return;
+  notifItems = data || [];
+  const unread = notifItems.filter(n => !n.read_at).length;
+  const dot = $("bellDot");
+  if (dot) {
+    dot.textContent = unread > 9 ? "9+" : String(unread);
+    dot.classList.toggle("hidden", unread === 0);
+  }
+  if (notifOpen) renderNotifPanel();
+}
+function toggleNotifPanel() {
+  notifOpen = !notifOpen;
+  $("bellBtn").setAttribute("aria-expanded", String(notifOpen));
+  $("notifPanel").classList.toggle("hidden", !notifOpen);
+  if (notifOpen) renderNotifPanel();
+}
+function renderNotifPanel() {
+  const box = $("notifPanel"); if (!box) return;
+  const unread = notifItems.filter(n => !n.read_at).length;
+  box.innerHTML = `
+    <div class="notifHead">
+      <b>Benachrichtigungen${unread ? ` (${unread} neu)` : ""}</b>
+      ${unread ? `<button class="btn ghost sm" data-act="readall">Alle gelesen</button>` : ""}
+    </div>
+    ${notifItems.length === 0
+      ? `<div class="empty" style="padding:26px 14px"><div class="e">${ico("bell", 34)}</div>
+         Noch keine Benachrichtigungen.<br><span class="mm">Neue Angebote, Nachrichten und Termine erscheinen hier.</span></div>`
+      : notifItems.map(n => `
+        <button class="notifItem ${n.read_at ? "" : "unread"}" data-id="${esc(n.id)}" data-link="${esc(n.link || "")}">
+          <span class="ni">${ico(NOTIF_ICONS[n.type] || "bell", 16)}</span>
+          <span style="flex:1;min-width:0">
+            <span class="nt" style="display:block">${esc(n.title)}</span>
+            ${n.body ? `<span class="nb" style="display:block">${esc(n.body)}</span>` : ""}
+            <span class="nd" style="display:block">${relTime(n.created_at)}</span>
+          </span>
+        </button>`).join("")}`;
+}
+// Klicks über Delegation – so landen Titel/Links nie in einem inline-Handler.
+document.addEventListener("click", async (e) => {
+  const panel = $("notifPanel");
+  if (!panel) return;
+  const item = e.target.closest?.(".notifItem");
+  const readAll = e.target.closest?.('[data-act="readall"]');
+
+  if (readAll) {
+    await sb.rpc("mark_all_notifications_read");
+    await loadNotifications();
+    renderNotifPanel();
+    return;
+  }
+  if (item) {
+    const id = item.dataset.id, link = item.dataset.link;
+    const n = notifItems.find(x => x.id === id);
+    if (n && !n.read_at) {
+      n.read_at = new Date().toISOString();
+      sb.from("notifications").update({ read_at: n.read_at }).eq("id", id).then(() => loadNotifications());
+    }
+    notifOpen = false;
+    panel.classList.add("hidden");
+    if (link) go(String(link).replace(/^[#/]+/, ""));
+    return;
+  }
+  // Klick ausserhalb schliesst das Panel
+  if (notifOpen && !e.target.closest?.("#bellWrap")) {
+    notifOpen = false;
+    panel.classList.add("hidden");
+    $("bellBtn")?.setAttribute("aria-expanded", "false");
+  }
+});
 
 // ============================================================
 // Start
