@@ -60,15 +60,15 @@ Sicherheit:
 
 ## Testkonten (Beta)
 
-Alle mit Passwort `Carfixo2026!`:
+Für die Beta existieren Testkonten (`…@carfixo-test.de`) sowie 6 Demo-Betriebe in Köln
+(`demo-…@carfixo-demo.de`).
 
-| Konto | Rolle |
-|---|---|
-| `kunde@carfixo-test.de` | Kunde |
-| `werkstatt@carfixo-test.de` | Betrieb („Carfixo Testwerkstatt", verifiziert) |
-| `admin@carfixo-test.de` | Admin |
-
-Dazu 6 Demo-Betriebe in Köln (`demo-…@carfixo-demo.de`, gleiches Passwort).
+> **Zugangsdaten stehen bewusst nicht mehr in diesem Repository.**
+> Sie lagen hier zuvor im Klartext – inklusive eines Kontos mit Admin-Rolle.
+> Passwörter bitte ausschließlich über den Passwortmanager teilen.
+>
+> **Vor dem Launch:** Testkonten löschen oder mit neuen, zufälligen Passwörtern
+> versehen – insbesondere das Admin-Konto (siehe `db/2026-07-23_security_hardening.sql`).
 
 ## Lokal starten
 

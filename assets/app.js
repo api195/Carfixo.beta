@@ -105,7 +105,10 @@ async function loadSession() {
   if (me) {
     const { data: p } = await sb.from("profiles").select("*").eq("id", me.id).maybeSingle();
     myProfile = p;
-    sb.rpc("claim_membership").then(() => {});
+    // Muss abgewartet werden: verknüpft eingeladene Team-Mitglieder mit ihrem
+    // Betrieb. Ohne await ist workshop_members beim ersten Login noch leer und
+    // der Betrieb fehlt beim ersten Rendern (Race Condition).
+    await sb.rpc("claim_membership");
     if (p && (p.role === "workshop_owner" || p.role === "workshop_staff")) {
       const { data: w } = await sb.from("workshops").select("*").eq("owner_id", me.id).maybeSingle();
       myWorkshop = w;
@@ -219,7 +222,6 @@ async function doRegister() {
       <div style="font-size:42px"></div>
       <h1 style="margin-top:10px">Fast geschafft!</h1>
       <p class="mm" style="margin-top:10px">Wir haben dir eine Bestätigungs-E-Mail an <b>${esc(email)}</b> geschickt. Klicke auf den Link darin und melde dich dann an.${company ? "<br><br>Dein Betrieb wird beim ersten Login angelegt – trage danach dein Profil ein." : ""}</p>
-      ${company ? `<script>localStorage.setItem("cfx_pending_ws", ${JSON.stringify(company)})<\/script>` : ""}
       <button class="btn wide" style="margin-top:16px" onclick="go('login')">Zum Login</button>
     </div></div>`;
     if (company) localStorage.setItem("cfx_pending_ws", company);
@@ -258,6 +260,8 @@ let searchState = {
   minRating: 0, sort: "rating", shown: 12,
 };
 let searchOrigin = null, searchOriginLabel = "";   // [lat,lng] – Standort des Kunden
+// Labels, die kein eingebbarer Ort sind – sie gehören nicht ins Adressfeld zurück
+const PSEUDO_LOC_LABELS = ["Dein Standort", "Karten-Position"];
 let allWorkshops = null, searchMap = null, compareSet = [];
 
 async function vSearch(_p, query) {
@@ -300,7 +304,7 @@ async function vSearch(_p, query) {
         <button class="btn ghost sm" id="locBtn">Mein Standort</button>
       </div>
       <div class="split" style="margin-top:10px">
-        <input id="locAddr" placeholder="Adresse oder Ort eingeben…" value="${esc(searchOriginLabel && !searchOriginLabel.startsWith("") ? searchOriginLabel : "")}">
+        <input id="locAddr" placeholder="Adresse oder Ort eingeben…" value="${esc(PSEUDO_LOC_LABELS.includes(searchOriginLabel) ? "" : searchOriginLabel || "")}">
         <button class="btn sm" id="locGo" style="flex:0 0 auto">Suchen</button>
       </div>
       <select id="fDistrict" style="margin-top:8px">${opt("… oder Kölner Stadtteil wählen", Object.keys(DISTRICTS), "")}</select>
@@ -624,7 +628,7 @@ async function vWorkshopProfile(id) {
     </div>
     <div class="right">
       <button class="btn ghost sm" id="wsFav">Merken</button>
-      <button class="btn ghost sm" onclick="openReportModal('workshop','${ws.id}','${ws.id}','${esc(ws.name)}')" title="Betrieb melden" aria-label="Betrieb melden">${ico("flag")}</button>
+      <button class="btn ghost sm" onclick="openReportModal('workshop','${ws.id}','${ws.id}',${jsArg(ws.name)})" title="Betrieb melden" aria-label="Betrieb melden">${ico("flag")}</button>
       <button class="btn" id="wsAsk">Anfrage stellen</button>
     </div>
   </div>
@@ -1191,11 +1195,11 @@ async function loadBookingBox(r) {
       <div class="note" style="margin-top:12px">Die Werkstatt schlägt einen neuen Termin vor: <b>${fmtDateTime(bk.proposed_date)}</b>
       <div class="btnRow"><button class="btn green sm" onclick="acceptProposedDate('${bk.id}','${r.id}')">Termin annehmen</button></div></div>` : ""}
     ${(approvals || []).map(a => approvalCardHtml(a, r.id)).join("")}
-    ${bk.status === "completed" && !rev ? `<button class="btn wide" style="margin-top:14px" onclick="openReviewModal('${bk.id}','${w.id}','${esc(w.name)}','${r.id}')">Jetzt bewerten</button>` : ""}
+    ${bk.status === "completed" && !rev ? `<button class="btn wide" style="margin-top:14px" onclick="openReviewModal('${bk.id}','${w.id}',${jsArg(w.name)},'${r.id}')">Jetzt bewerten</button>` : ""}
     ${bk.status === "completed" && rev ? `<div class="okBox" style="margin-bottom:0;margin-top:14px">Deine Bewertung: <span style="color:var(--gold)">${stars(rev.rating)}</span> – danke!</div>` : ""}
     ${active ? `
     <div class="btnRow">
-      ${["ready_for_pickup"].includes(bk.status) || true ? `<button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>` : ""}
+      <button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>
       <button class="btn ghost sm" onclick="openReschedule('${bk.id}','${r.id}')">Termin verschieben</button>
       <button class="btn red sm" onclick="openCancel('${bk.id}','${r.id}')">Stornieren</button>
     </div>` : ""}
@@ -2770,7 +2774,7 @@ function bookingDocsHtml(bk) {
   return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
     ${docs.length ? `<div class="tt" style="font-size:12.5px">Dokumente der Werkstatt</div>
     ${docs.map(d => `<div class="offerLine"><span>${esc(d.type || "Dokument")} · ${esc(d.name || "")}</span>
-      <a href="#" onclick="openBookingDoc('${esc(d.path)}');return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>`).join("")}` : ""}
+      <a href="#" onclick="openBookingDoc(${jsArg(d.path)});return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>`).join("")}` : ""}
     ${bk.warranty_note ? `<div class="note" style="margin:10px 0 0"><b>Gewährleistung/Garantie (durch die Werkstatt):</b><br>${esc(bk.warranty_note)}</div>` : ""}
   </div>`;
 }
@@ -3635,10 +3639,10 @@ async function vVehicleRecord(id) {
         <div class="tt">Dokumente & Rechnungen <span class="badge b-blue">${allDocs.length + (v.registration_doc ? 1 : 0)}</span></div>
         <p class="mm" style="margin-top:4px;font-size:11px">Rechnungen und Berichte werden von der jeweiligen Werkstatt erstellt – Carfixo speichert sie hier für dich.</p>
         <div style="margin-top:8px">
-          ${v.registration_doc ? `<div class="offerLine"><span>Fahrzeugschein (privat)</span><a href="#" onclick="openBookingDoc('${esc(v.registration_doc)}');return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>` : ""}
+          ${v.registration_doc ? `<div class="offerLine"><span>Fahrzeugschein (privat)</span><a href="#" onclick="openBookingDoc(${jsArg(v.registration_doc)});return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>` : ""}
           ${allDocs.length === 0 && !v.registration_doc ? '<p class="mm">Noch keine Dokumente. Werkstätten laden Rechnungen und Berichte nach dem Auftrag hoch.</p>' : ""}
           ${allDocs.map(d => `<div class="offerLine"><span>${esc(d.type || "Dokument")} · ${esc(d.name || "")} <span class="mm">(${esc(d.bk.booking_no || "")}, ${fmtDate(d.uploaded_at)})</span></span>
-            <a href="#" onclick="openBookingDoc('${esc(d.path)}');return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>`).join("")}
+            <a href="#" onclick="openBookingDoc(${jsArg(d.path)});return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>`).join("")}
         </div>
         ${(bks || []).filter(b => b.warranty_note).map(b => `<div class="note" style="margin:10px 0 0"><b>${esc(b.booking_no || "Auftrag")} – Gewährleistung (${esc(b.offers?.workshops?.name || "Werkstatt")}):</b><br>${esc(b.warranty_note)}</div>`).join("")}
       </div>
