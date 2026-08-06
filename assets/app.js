@@ -37,6 +37,7 @@ function priceLevelTxt(n) { return n ? "€".repeat(n) : ""; }
 // ============================================================
 const routes = {
   "login": vLogin, "register": vRegister,
+  "forgot": vForgot, "reset-password": vResetPassword,
   "search": vSearch, "workshop": vWorkshopProfile, "new-request": vNewRequest,
   "diagnose": vDiagnose, "notfall": vNotfall, "vergleich": vCompare,
   "requests": vRequests, "request": vRequestDetail, "teile": vPartsMarket,
@@ -105,7 +106,10 @@ async function loadSession() {
   if (me) {
     const { data: p } = await sb.from("profiles").select("*").eq("id", me.id).maybeSingle();
     myProfile = p;
-    sb.rpc("claim_membership").then(() => {});
+    // Muss abgewartet werden: verknüpft eingeladene Team-Mitglieder mit ihrem
+    // Betrieb. Ohne await ist workshop_members beim ersten Login noch leer und
+    // der Betrieb fehlt beim ersten Rendern (Race Condition).
+    await sb.rpc("claim_membership");
     if (p && (p.role === "workshop_owner" || p.role === "workshop_staff")) {
       const { data: w } = await sb.from("workshops").select("*").eq("owner_id", me.id).maybeSingle();
       myWorkshop = w;
@@ -118,6 +122,9 @@ async function loadSession() {
       }
     }
   }
+  // Glocke an den Sitzungszustand angleichen (bewusst ohne await – die
+  // Benachrichtigungen sollen den Seitenaufbau nicht verzögern).
+  if (me) initNotifications(); else stopNotifications();
 }
 function requireAuth() {
   if (!me) { toast("Bitte zuerst anmelden."); go("login"); return false; }
@@ -147,7 +154,8 @@ async function vLogin() {
     <input id="lEmail" type="email" placeholder="du@beispiel.de" autocapitalize="off">
     <div class="label">Passwort</div>
     <input id="lPass" type="password" placeholder="••••••••">
-    <button class="btn wide" style="margin-top:18px" id="lGo">Anmelden</button>
+    <p class="mm" style="margin-top:8px;text-align:right"><a href="#/forgot" style="color:var(--blue2);font-weight:700">Passwort vergessen?</a></p>
+    <button class="btn wide" style="margin-top:14px" id="lGo">Anmelden</button>
     <div class="err" id="lErr"></div>
     <p class="mm" style="margin-top:16px;text-align:center">Noch kein Konto? <a href="#/register" style="color:var(--blue2);font-weight:700">Jetzt registrieren</a></p>
   </div></div>`;
@@ -161,6 +169,77 @@ async function vLogin() {
     await loadSession();
     toast("Angemeldet ✓");
     go(afterAuth(""));
+  };
+}
+
+// ---------- Passwort vergessen ----------
+async function vForgot() {
+  main.innerHTML = `
+  <div class="authWrap"><div class="authCard">
+    <h1>Passwort zurücksetzen</h1>
+    <p class="mm" style="margin-top:6px">Trage deine E-Mail-Adresse ein – wir schicken dir einen Link, mit dem du ein neues Passwort vergeben kannst.</p>
+    <div class="label">E-Mail</div>
+    <input id="fpEmail" type="email" placeholder="du@beispiel.de" autocapitalize="off">
+    <button class="btn wide" style="margin-top:18px" id="fpGo">Link anfordern</button>
+    <div class="err" id="fpErr"></div>
+    <div id="fpDone"></div>
+    <p class="mm" style="margin-top:16px;text-align:center"><a href="#/login" style="color:var(--blue2);font-weight:700">Zurück zur Anmeldung</a></p>
+  </div></div>`;
+  $("fpEmail").onkeydown = (e) => { if (e.key === "Enter") $("fpGo").click(); };
+  $("fpGo").onclick = async () => {
+    const err = $("fpErr"); err.style.display = "none";
+    const email = $("fpEmail").value.trim();
+    if (!email) return showErr(err, "Bitte deine E-Mail-Adresse eingeben.");
+    $("fpGo").disabled = true; $("fpGo").textContent = "Wird gesendet…";
+    // Ziel ist app.html ohne Hash – der Recovery-Hash von Supabase wird beim
+    // Start erkannt und in die Route #/reset-password überführt.
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: location.origin + location.pathname,
+    });
+    $("fpGo").disabled = false; $("fpGo").textContent = "Link anfordern";
+    // Bewusst immer dieselbe Rückmeldung: sonst liesse sich herausfinden,
+    // welche E-Mail-Adressen bei Carfixo registriert sind.
+    if (error && !/rate|limit|seconds/i.test(error.message)) console.error(error);
+    if (error && /rate|limit|seconds/i.test(error.message)) return showErr(err, "Zu viele Versuche – bitte warte einen Moment.");
+    $("fpDone").innerHTML = `<div class="okBox" style="margin-top:14px">Wenn ein Konto zu <b>${esc(email)}</b> existiert, ist die E-Mail unterwegs. Schau auch im Spam-Ordner nach – der Link ist eine Stunde gültig.</div>`;
+  };
+}
+
+// ---------- Neues Passwort setzen (nach Klick auf den Recovery-Link) ----------
+async function vResetPassword() {
+  if (!me) {
+    main.innerHTML = `
+    <div class="authWrap"><div class="authCard">
+      <h1>Link abgelaufen</h1>
+      <p class="mm" style="margin-top:8px">Dieser Link ist ungültig oder abgelaufen. Fordere einen neuen an.</p>
+      <button class="btn wide" style="margin-top:16px" onclick="go('forgot')">Neuen Link anfordern</button>
+    </div></div>`;
+    return;
+  }
+  main.innerHTML = `
+  <div class="authWrap"><div class="authCard">
+    <h1>Neues Passwort vergeben</h1>
+    <p class="mm" style="margin-top:6px">Für <b>${esc(me.email)}</b>. Mindestens 8 Zeichen.</p>
+    <div class="label">Neues Passwort</div>
+    <input id="rpPass" type="password" placeholder="••••••••">
+    <div class="label">Wiederholen</div>
+    <input id="rpPass2" type="password" placeholder="••••••••">
+    <button class="btn wide" style="margin-top:18px" id="rpGo">Passwort speichern</button>
+    <div class="err" id="rpErr"></div>
+  </div></div>`;
+  $("rpPass2").onkeydown = (e) => { if (e.key === "Enter") $("rpGo").click(); };
+  $("rpGo").onclick = async () => {
+    const err = $("rpErr"); err.style.display = "none";
+    const pw = $("rpPass").value, pw2 = $("rpPass2").value;
+    if (pw.length < 8) return showErr(err, "Das Passwort braucht mindestens 8 Zeichen.");
+    if (pw !== pw2) return showErr(err, "Die beiden Passwörter stimmen nicht überein.");
+    $("rpGo").disabled = true; $("rpGo").textContent = "Wird gespeichert…";
+    const { error } = await sb.auth.updateUser({ password: pw });
+    $("rpGo").disabled = false; $("rpGo").textContent = "Passwort speichern";
+    if (error) return showErr(err, error.message);
+    await loadSession();
+    toast("Passwort geändert ✓");
+    go(myWorkshop ? "ws/dashboard" : "search");
   };
 }
 
@@ -219,7 +298,6 @@ async function doRegister() {
       <div style="font-size:42px"></div>
       <h1 style="margin-top:10px">Fast geschafft!</h1>
       <p class="mm" style="margin-top:10px">Wir haben dir eine Bestätigungs-E-Mail an <b>${esc(email)}</b> geschickt. Klicke auf den Link darin und melde dich dann an.${company ? "<br><br>Dein Betrieb wird beim ersten Login angelegt – trage danach dein Profil ein." : ""}</p>
-      ${company ? `<script>localStorage.setItem("cfx_pending_ws", ${JSON.stringify(company)})<\/script>` : ""}
       <button class="btn wide" style="margin-top:16px" onclick="go('login')">Zum Login</button>
     </div></div>`;
     if (company) localStorage.setItem("cfx_pending_ws", company);
@@ -243,6 +321,7 @@ async function createWorkshopForMe(name) {
 
 async function signOut() {
   cleanRT();
+  stopNotifications();
   await sb.auth.signOut();
   me = null; myProfile = null; myWorkshop = null;
   toast("Abgemeldet.");
@@ -258,6 +337,8 @@ let searchState = {
   minRating: 0, sort: "rating", shown: 12,
 };
 let searchOrigin = null, searchOriginLabel = "";   // [lat,lng] – Standort des Kunden
+// Labels, die kein eingebbarer Ort sind – sie gehören nicht ins Adressfeld zurück
+const PSEUDO_LOC_LABELS = ["Dein Standort", "Karten-Position"];
 let allWorkshops = null, searchMap = null, compareSet = [];
 
 async function vSearch(_p, query) {
@@ -300,7 +381,7 @@ async function vSearch(_p, query) {
         <button class="btn ghost sm" id="locBtn">Mein Standort</button>
       </div>
       <div class="split" style="margin-top:10px">
-        <input id="locAddr" placeholder="Adresse oder Ort eingeben…" value="${esc(searchOriginLabel && !searchOriginLabel.startsWith("") ? searchOriginLabel : "")}">
+        <input id="locAddr" placeholder="Adresse oder Ort eingeben…" value="${esc(PSEUDO_LOC_LABELS.includes(searchOriginLabel) ? "" : searchOriginLabel || "")}">
         <button class="btn sm" id="locGo" style="flex:0 0 auto">Suchen</button>
       </div>
       <select id="fDistrict" style="margin-top:8px">${opt("… oder Kölner Stadtteil wählen", Object.keys(DISTRICTS), "")}</select>
@@ -624,7 +705,7 @@ async function vWorkshopProfile(id) {
     </div>
     <div class="right">
       <button class="btn ghost sm" id="wsFav">Merken</button>
-      <button class="btn ghost sm" onclick="openReportModal('workshop','${ws.id}','${ws.id}','${esc(ws.name)}')" title="Betrieb melden" aria-label="Betrieb melden">${ico("flag")}</button>
+      <button class="btn ghost sm" onclick="openReportModal('workshop','${ws.id}','${ws.id}',${jsArg(ws.name)})" title="Betrieb melden" aria-label="Betrieb melden">${ico("flag")}</button>
       <button class="btn" id="wsAsk">Anfrage stellen</button>
     </div>
   </div>
@@ -1191,11 +1272,11 @@ async function loadBookingBox(r) {
       <div class="note" style="margin-top:12px">Die Werkstatt schlägt einen neuen Termin vor: <b>${fmtDateTime(bk.proposed_date)}</b>
       <div class="btnRow"><button class="btn green sm" onclick="acceptProposedDate('${bk.id}','${r.id}')">Termin annehmen</button></div></div>` : ""}
     ${(approvals || []).map(a => approvalCardHtml(a, r.id)).join("")}
-    ${bk.status === "completed" && !rev ? `<button class="btn wide" style="margin-top:14px" onclick="openReviewModal('${bk.id}','${w.id}','${esc(w.name)}','${r.id}')">Jetzt bewerten</button>` : ""}
+    ${bk.status === "completed" && !rev ? `<button class="btn wide" style="margin-top:14px" onclick="openReviewModal('${bk.id}','${w.id}',${jsArg(w.name)},'${r.id}')">Jetzt bewerten</button>` : ""}
     ${bk.status === "completed" && rev ? `<div class="okBox" style="margin-bottom:0;margin-top:14px">Deine Bewertung: <span style="color:var(--gold)">${stars(rev.rating)}</span> – danke!</div>` : ""}
     ${active ? `
     <div class="btnRow">
-      ${["ready_for_pickup"].includes(bk.status) || true ? `<button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>` : ""}
+      <button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>
       <button class="btn ghost sm" onclick="openReschedule('${bk.id}','${r.id}')">Termin verschieben</button>
       <button class="btn red sm" onclick="openCancel('${bk.id}','${r.id}')">Stornieren</button>
     </div>` : ""}
@@ -2770,7 +2851,7 @@ function bookingDocsHtml(bk) {
   return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
     ${docs.length ? `<div class="tt" style="font-size:12.5px">Dokumente der Werkstatt</div>
     ${docs.map(d => `<div class="offerLine"><span>${esc(d.type || "Dokument")} · ${esc(d.name || "")}</span>
-      <a href="#" onclick="openBookingDoc('${esc(d.path)}');return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>`).join("")}` : ""}
+      <a href="#" onclick="openBookingDoc(${jsArg(d.path)});return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>`).join("")}` : ""}
     ${bk.warranty_note ? `<div class="note" style="margin:10px 0 0"><b>Gewährleistung/Garantie (durch die Werkstatt):</b><br>${esc(bk.warranty_note)}</div>` : ""}
   </div>`;
 }
@@ -3635,10 +3716,10 @@ async function vVehicleRecord(id) {
         <div class="tt">Dokumente & Rechnungen <span class="badge b-blue">${allDocs.length + (v.registration_doc ? 1 : 0)}</span></div>
         <p class="mm" style="margin-top:4px;font-size:11px">Rechnungen und Berichte werden von der jeweiligen Werkstatt erstellt – Carfixo speichert sie hier für dich.</p>
         <div style="margin-top:8px">
-          ${v.registration_doc ? `<div class="offerLine"><span>Fahrzeugschein (privat)</span><a href="#" onclick="openBookingDoc('${esc(v.registration_doc)}');return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>` : ""}
+          ${v.registration_doc ? `<div class="offerLine"><span>Fahrzeugschein (privat)</span><a href="#" onclick="openBookingDoc(${jsArg(v.registration_doc)});return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>` : ""}
           ${allDocs.length === 0 && !v.registration_doc ? '<p class="mm">Noch keine Dokumente. Werkstätten laden Rechnungen und Berichte nach dem Auftrag hoch.</p>' : ""}
           ${allDocs.map(d => `<div class="offerLine"><span>${esc(d.type || "Dokument")} · ${esc(d.name || "")} <span class="mm">(${esc(d.bk.booking_no || "")}, ${fmtDate(d.uploaded_at)})</span></span>
-            <a href="#" onclick="openBookingDoc('${esc(d.path)}');return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>`).join("")}
+            <a href="#" onclick="openBookingDoc(${jsArg(d.path)});return false" style="color:var(--blue2);font-weight:700;font-size:12px">Öffnen →</a></div>`).join("")}
         </div>
         ${(bks || []).filter(b => b.warranty_note).map(b => `<div class="note" style="margin:10px 0 0"><b>${esc(b.booking_no || "Auftrag")} – Gewährleistung (${esc(b.offers?.workshops?.name || "Werkstatt")}):</b><br>${esc(b.warranty_note)}</div>`).join("")}
       </div>
@@ -3984,19 +4065,154 @@ function confirmDeleteAccount() {
 }
 
 // ============================================================
+// BENACHRICHTIGUNGEN (Glocke in der Topbar)
+// ============================================================
+const NOTIF_ICONS = {
+  offer: "euro", message: "chat", booking: "calendar", approval: "alert",
+  lead: "megaphone", part_order: "puzzle", review: "star", reminder: "bell",
+};
+let notifItems = [], notifChannel = null, notifOpen = false;
+
+function relTime(iso) {
+  const s = Math.max(0, (Date.now() - new Date(iso)) / 1000);
+  if (s < 60) return "gerade eben";
+  if (s < 3600) return `vor ${Math.floor(s / 60)} Min.`;
+  if (s < 86400) return `vor ${Math.floor(s / 3600)} Std.`;
+  if (s < 604800) return `vor ${Math.floor(s / 86400)} Tg.`;
+  return fmtDate(iso);
+}
+
+// Der Kanal muss den Routenwechsel überleben, darf also nicht in rtChannels
+// landen – cleanRT() räumt die bei jedem Seitenwechsel ab.
+async function initNotifications() {
+  const wrap = $("bellWrap");
+  if (!wrap) return;
+  if (!me) { wrap.classList.add("hidden"); return; }
+  wrap.classList.remove("hidden");
+  $("bellBtn").innerHTML = ico("bell", 17);
+  $("bellBtn").onclick = (e) => { e.stopPropagation(); toggleNotifPanel(); };
+  await loadNotifications();
+  if (!notifChannel) {
+    notifChannel = sb.channel("notif:" + me.id)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: "user_id=eq." + me.id },
+        () => loadNotifications())
+      .subscribe();
+  }
+}
+function stopNotifications() {
+  if (notifChannel) { try { sb.removeChannel(notifChannel); } catch (e) {} notifChannel = null; }
+  notifItems = []; notifOpen = false;
+  const w = $("bellWrap"); if (w) w.classList.add("hidden");
+  const p = $("notifPanel"); if (p) p.classList.add("hidden");
+}
+async function loadNotifications() {
+  if (!me) return;
+  const { data, error } = await sb.from("notifications")
+    .select("*").order("created_at", { ascending: false }).limit(30);
+  if (error) return;
+  notifItems = data || [];
+  const unread = notifItems.filter(n => !n.read_at).length;
+  const dot = $("bellDot");
+  if (dot) {
+    dot.textContent = unread > 9 ? "9+" : String(unread);
+    dot.classList.toggle("hidden", unread === 0);
+  }
+  if (notifOpen) renderNotifPanel();
+}
+function toggleNotifPanel() {
+  notifOpen = !notifOpen;
+  $("bellBtn").setAttribute("aria-expanded", String(notifOpen));
+  $("notifPanel").classList.toggle("hidden", !notifOpen);
+  if (notifOpen) renderNotifPanel();
+}
+function renderNotifPanel() {
+  const box = $("notifPanel"); if (!box) return;
+  const unread = notifItems.filter(n => !n.read_at).length;
+  box.innerHTML = `
+    <div class="notifHead">
+      <b>Benachrichtigungen${unread ? ` (${unread} neu)` : ""}</b>
+      ${unread ? `<button class="btn ghost sm" data-act="readall">Alle gelesen</button>` : ""}
+    </div>
+    ${notifItems.length === 0
+      ? `<div class="empty" style="padding:26px 14px"><div class="e">${ico("bell", 34)}</div>
+         Noch keine Benachrichtigungen.<br><span class="mm">Neue Angebote, Nachrichten und Termine erscheinen hier.</span></div>`
+      : notifItems.map(n => `
+        <button class="notifItem ${n.read_at ? "" : "unread"}" data-id="${esc(n.id)}" data-link="${esc(n.link || "")}">
+          <span class="ni">${ico(NOTIF_ICONS[n.type] || "bell", 16)}</span>
+          <span style="flex:1;min-width:0">
+            <span class="nt" style="display:block">${esc(n.title)}</span>
+            ${n.body ? `<span class="nb" style="display:block">${esc(n.body)}</span>` : ""}
+            <span class="nd" style="display:block">${relTime(n.created_at)}</span>
+          </span>
+        </button>`).join("")}`;
+}
+// Klicks über Delegation – so landen Titel/Links nie in einem inline-Handler.
+document.addEventListener("click", async (e) => {
+  const panel = $("notifPanel");
+  if (!panel) return;
+  const item = e.target.closest?.(".notifItem");
+  const readAll = e.target.closest?.('[data-act="readall"]');
+
+  if (readAll) {
+    await sb.rpc("mark_all_notifications_read");
+    await loadNotifications();
+    renderNotifPanel();
+    return;
+  }
+  if (item) {
+    const id = item.dataset.id, link = item.dataset.link;
+    const n = notifItems.find(x => x.id === id);
+    if (n && !n.read_at) {
+      n.read_at = new Date().toISOString();
+      sb.from("notifications").update({ read_at: n.read_at }).eq("id", id).then(() => loadNotifications());
+    }
+    notifOpen = false;
+    panel.classList.add("hidden");
+    if (link) go(String(link).replace(/^[#/]+/, ""));
+    return;
+  }
+  // Klick ausserhalb schliesst das Panel
+  if (notifOpen && !e.target.closest?.("#bellWrap")) {
+    notifOpen = false;
+    panel.classList.add("hidden");
+    $("bellBtn")?.setAttribute("aria-expanded", "false");
+  }
+});
+
+// ============================================================
 // Start
 // ============================================================
 window.addEventListener("hashchange", route);
+
+// Supabase nutzt den impliziten Flow: Recovery-Links kommen als
+// #access_token=…&type=recovery zurück. Das muss vor dem ersten Routing
+// ausgewertet werden, sonst deutet der Hash-Router das Fragment als
+// (ungültige) Route und verwirft es.
+const authHash = new URLSearchParams(location.hash.replace(/^#/, ""));
+const isRecoveryLink = authHash.get("type") === "recovery";
+const authLinkError = authHash.get("error_description") || authHash.get("error");
+
 sb.auth.onAuthStateChange((event) => {
   if (event === "SIGNED_OUT") { me = null; myProfile = null; myWorkshop = null; }
+  if (event === "PASSWORD_RECOVERY") go("reset-password");
 });
 (async () => {
   await loadSession();
-  maybeStartTour();
-  // Werkstatt-Registrierung nach E-Mail-Bestätigung abschließen
-  if (me && !myWorkshop && localStorage.getItem("cfx_pending_ws") && myProfile?.role === "customer") {
-    await createWorkshopForMe(localStorage.getItem("cfx_pending_ws"));
-    localStorage.removeItem("cfx_pending_ws");
+  if (authLinkError) {
+    // z.B. abgelaufener oder bereits benutzter Link
+    history.replaceState(null, "", location.pathname + "#/forgot");
+    toast("Der Link ist ungültig oder abgelaufen – fordere einen neuen an.");
+  } else if (isRecoveryLink) {
+    // Tokens aus der Adresszeile entfernen, damit sie nicht im Verlauf landen
+    history.replaceState(null, "", location.pathname + "#/reset-password");
+  } else {
+    maybeStartTour();
+    // Werkstatt-Registrierung nach E-Mail-Bestätigung abschließen
+    if (me && !myWorkshop && localStorage.getItem("cfx_pending_ws") && myProfile?.role === "customer") {
+      await createWorkshopForMe(localStorage.getItem("cfx_pending_ws"));
+      localStorage.removeItem("cfx_pending_ws");
+    }
   }
   route();
 })();

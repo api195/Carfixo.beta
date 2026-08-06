@@ -39,7 +39,7 @@ function emailHtml(title: string, body: string, link?: string) {
         </td></tr>
         <tr><td style="padding-top:18px;font-size:11px;color:#5B6778">
           Du erhältst diese E-Mail, weil du bei Carfixo registriert bist.
-          Einstellungen: <a href="${esc(APP_URL)}/app.html#/settings" style="color:#4D8DFF">Benachrichtigungen verwalten</a>
+          Einstellungen: <a href="${esc(APP_URL)}/app.html#/account" style="color:#4D8DFF">Benachrichtigungen verwalten</a>
         </td></tr>
       </table>
     </td></tr></table>

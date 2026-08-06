@@ -996,6 +996,12 @@ function openStatusLine(opening_hours) {
   return "";
 }
 function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+// Wert sicher als JS-String-Literal in einen inline-Handler schreiben.
+// esc() allein reicht dort nicht: es maskiert HTML, aber ein Apostroph im Text
+// (z.B. "O'Reilly KFZ") würde den umgebenden JS-String beenden.
+// Liefert das Literal inklusive Anführungszeichen – ohne eigene Quotes einsetzen:
+//   onclick="foo(${jsArg(name)})"
+function jsArg(s){ return esc(JSON.stringify(String(s ?? ""))); }
 function fmtDate(d){ try { return new Date(d).toLocaleDateString("de-DE",{day:"2-digit",month:"short",year:"numeric"}); } catch(e){ return String(d); } }
 function fmtDateTime(d){ try { return new Date(d).toLocaleString("de-DE",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}); } catch(e){ return String(d); } }
 function fmtEur(n){ return (Math.round(Number(n)*100)/100).toLocaleString("de-DE",{minimumFractionDigits:0,maximumFractionDigits:2}) + " €"; }

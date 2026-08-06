@@ -60,15 +60,15 @@ Sicherheit:
 
 ## Testkonten (Beta)
 
-Alle mit Passwort `Carfixo2026!`:
+Für die Beta existieren Testkonten (`…@carfixo-test.de`) sowie 6 Demo-Betriebe in Köln
+(`demo-…@carfixo-demo.de`).
 
-| Konto | Rolle |
-|---|---|
-| `kunde@carfixo-test.de` | Kunde |
-| `werkstatt@carfixo-test.de` | Betrieb („Carfixo Testwerkstatt", verifiziert) |
-| `admin@carfixo-test.de` | Admin |
-
-Dazu 6 Demo-Betriebe in Köln (`demo-…@carfixo-demo.de`, gleiches Passwort).
+> **Zugangsdaten stehen bewusst nicht mehr in diesem Repository.**
+> Sie lagen hier zuvor im Klartext – inklusive eines Kontos mit Admin-Rolle.
+> Passwörter bitte ausschließlich über den Passwortmanager teilen.
+>
+> **Vor dem Launch:** Testkonten löschen oder mit neuen, zufälligen Passwörtern
+> versehen – insbesondere das Admin-Konto (siehe `db/2026-07-23_security_hardening.sql`).
 
 ## Lokal starten
 
@@ -76,3 +76,28 @@ Dazu 6 Demo-Betriebe in Köln (`demo-…@carfixo-demo.de`, gleiches Passwort).
 python3 -m http.server 8000
 # → http://localhost:8000
 ```
+
+## Tests
+
+```bash
+python3 -m http.server 8000     # in einem zweiten Terminal
+npm i playwright && node tests/smoke.js
+```
+
+Smoke-Test für Routing, Auth-Ansichten und Handler-Escaping. Prüft bewusst nur, was
+ohne Backend läuft – datengetriebene Inhalte brauchen eine erreichbare Supabase-Instanz.
+
+## Vor dem Launch – offene Punkte
+
+Diese Schritte lassen sich nicht im Code erledigen:
+
+- **Auth → URL Configuration:** `https://carfixo.de` als Site-URL und als Redirect-URL
+  eintragen (zusätzlich `http://localhost:8000/app.html` fürs lokale Testen).
+  Ohne das laufen die Links aus „Passwort vergessen" ins Leere.
+- **Auth → Providers → Password:** „Leaked password protection" aktivieren.
+- **Testkonten** löschen oder Passwörter rotieren (siehe oben).
+- **E-Mail-Versand:** `RESEND_API_KEY` setzen und den Database-Webhook auf
+  `notifications` einrichten, sonst versendet `notify-email` nichts.
+- **Erinnerungen:** `run_due_reminders()` als pg_cron-Job einplanen – sonst werden
+  TÜV-/Service-Erinnerungen nie zugestellt.
+- **Rechtstexte** in `legal.html` durch geprüfte Fassungen ersetzen.
