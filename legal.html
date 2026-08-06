@@ -177,10 +177,15 @@
       übertragen. Sie sind für die Funktion erforderlich (Art. 6 Abs. 1 lit. f):
     </p>
     <ul>
-      <li><b>OpenStreetMap / Nominatim</b> – Adresssuche, wenn ein Ort eingegeben wird.</li>
       <li><b>CARTO</b> – Kartenkacheln, sobald eine Karte angezeigt wird.</li>
       <li><b>jsDelivr (CDN)</b> – lädt die Texterkennungs-Bibliothek für den Fahrzeugschein-Scan.</li>
     </ul>
+    <p>
+      <b>Zur Adresssuche:</b> Die Umkreissuche nutzt Nominatim (OpenStreetMap), wird aber
+      über unseren eigenen Server geleitet. Die <b>IP-Adresse der Nutzer wird dabei nicht</b>
+      an OpenStreetMap übermittelt; dort erscheint nur unser Server. Übertragen wird
+      ausschließlich der eingegebene Ortsname.
+    </p>
     <p>
       <b>Zum Fahrzeugschein-Scan:</b> Die Texterkennung läuft vollständig <b>im Browser</b>.
       Das Foto des Fahrzeugscheins wird dabei <b>nicht</b> an Carfixo oder Dritte übertragen.
@@ -237,7 +242,15 @@
     </ul>
 
     <h3>§ 4 Termine, Stornierung, Nichterscheinen</h3>
-    <p><span class="fill">[Fristen und etwaige Kosten festlegen, z. B. kostenfrei bis 24 h vor Termin]</span></p>
+    <p>
+      Das Stornieren über Carfixo ist kostenlos, da Carfixo lediglich vermittelt und keine
+      Zahlung abwickelt. Für den Auftrag selbst gelten die Bedingungen des jeweiligen Betriebs.
+      <span class="fill">[Prüfen, ob Betriebe eigene Fristen hinterlegen können sollen.]</span>
+    </p>
+    <p style="font-size:12px">
+      Dieser Wortlaut muss mit dem Hinweis in der App übereinstimmen
+      (<code>STORNO_HINWEIS</code> in <code>assets/app.js</code>).
+    </p>
 
     <h3>§ 5 Zahlung</h3>
     <p>

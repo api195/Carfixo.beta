@@ -530,16 +530,32 @@ function setSearchOrigin(ll, label) {
   toast("Standort gesetzt: " + label);
   applyFilters();
 }
-// Nominatim (OpenStreetMap) – funktioniert deutschlandweit
+// Adresssuche über den eigenen Proxy /api/geocode (funktioniert deutschlandweit).
+// Der Proxy setzt den von Nominatim geforderten User-Agent, cacht die Antworten
+// und verhindert, dass die IP-Adressen unserer Nutzer beim Kartendienst landen.
+const geoCache = new Map();
 async function geocodeAddress() {
   const q = $("locAddr").value.trim();
   if (!q) return toast("Bitte eine Adresse oder einen Ort eingeben.");
+
+  const key = q.toLowerCase();
+  if (geoCache.has(key)) {
+    const c = geoCache.get(key);
+    return c ? setSearchOrigin([c.lat, c.lng], c.label) : toast("Adresse nicht gefunden – bitte genauer eingeben.");
+  }
+
   $("locGo").disabled = true; $("locGo").textContent = "…";
   try {
-    const res = await fetch("https://nominatim.openstreetmap.org/search?format=json&countrycodes=de&limit=1&q=" + encodeURIComponent(q), { headers: { "Accept-Language": "de" } });
-    const data = await res.json();
-    if (!data || !data[0]) toast("Adresse nicht gefunden – bitte genauer eingeben.");
-    else setSearchOrigin([+data[0].lat, +data[0].lon], data[0].display_name.split(",").slice(0, 2).join(","));
+    const res = await fetch("/api/geocode?q=" + encodeURIComponent(q));
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data) throw new Error("upstream");
+    if (!data.found) {
+      geoCache.set(key, null);
+      toast("Adresse nicht gefunden – bitte genauer eingeben.");
+    } else {
+      geoCache.set(key, data);
+      setSearchOrigin([data.lat, data.lng], data.label || q);
+    }
   } catch (e) {
     toast("Adresssuche gerade nicht erreichbar.");
   }
@@ -1208,7 +1224,7 @@ function openCheckout(offerId, requestId) {
     <p class="mm" style="margin-top:10px;font-size:11px">
       Mit der Buchung nimmst du das Angebot verbindlich an; alle anderen Angebote werden abgelehnt.
       ${o.is_fixed_price === false ? "Bei einer Kostenschätzung kann sich der Preis nach Diagnose ändern – Zusatzarbeiten benötigen deine Freigabe." : ""}
-      Stornierungsbedingungen: kostenfrei bis 24 h vor Termin (Platzhalter, final vor Launch).
+      ${STORNO_HINWEIS}
       Die Reparaturleistung und Rechnung werden durch die ausgewählte Werkstatt erbracht.</p>
     <div class="btnRow">
       <button class="btn green" id="ckGo">Testbuchung abschließen</button>
@@ -1234,6 +1250,10 @@ const PAY_LABELS = {
   pending: ["Ausstehend", "b-gold"], paid: ["Bezahlt", "b-green"], refunded: ["Erstattet", "b-purple"],
 };
 const CANCEL_REASONS = ["Termin passt nicht mehr", "Problem hat sich erledigt", "Anderes Angebot gewählt", "Preis zu hoch", "Werkstatt nicht erreichbar", "Sonstiges"];
+// Zentrale Stornoregel. Carfixo vermittelt nur und wickelt keine Zahlung ab –
+// über die Plattform zu stornieren kostet daher nichts. Verbindlich sind die
+// Bedingungen des Betriebs. Bei Änderung hier auch legal.html anpassen.
+const STORNO_HINWEIS = "Das Stornieren über Carfixo ist kostenlos. Es gelten die Bedingungen des jeweiligen Betriebs – sage möglichst frühzeitig ab und nutze bei kurzfristigen Änderungen zusätzlich den Chat.";
 
 function bookingTimeline(status) {
   if (status === "cancelled") return `<div class="warn" style="margin:12px 0 0">Dieser Auftrag wurde storniert.</div>`;
@@ -1341,7 +1361,7 @@ async function acceptProposedDate(bkId, reqId) {
 function openCancel(bkId, reqId) {
   openModal(`
     <h2 style="font-size:19px;font-weight:800">Buchung stornieren</h2>
-    <div class="note" style="margin-top:10px">Stornierung aktuell kostenlos. Später gilt: kostenfrei bis 24 h vor Termin (Platzhalter).</div>
+    <div class="note" style="margin-top:10px">${STORNO_HINWEIS}</div>
     <div class="label">Grund</div>
     <select id="ccReason">${CANCEL_REASONS.map(x => `<option>${x}</option>`).join("")}</select>
     <div class="btnRow">
