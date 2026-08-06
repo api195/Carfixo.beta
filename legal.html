@@ -179,7 +179,15 @@
     <ul>
       <li><b>CARTO</b> – Kartenkacheln, sobald eine Karte angezeigt wird.</li>
       <li><b>jsDelivr (CDN)</b> – lädt die Texterkennungs-Bibliothek für den Fahrzeugschein-Scan.</li>
+      <li><b>HaveIBeenPwned</b> – Prüfung bei Registrierung und Passwortänderung, ob das
+          gewählte Passwort in bekannten Datenlecks vorkommt.</li>
     </ul>
+    <p>
+      <b>Zur Passwortprüfung:</b> Das Passwort wird <b>nicht</b> übertragen. Es wird auf dem
+      Gerät gehasht; an HaveIBeenPwned gehen nur die <b>ersten fünf Zeichen dieses Hashwerts</b>
+      (sogenannte k-Anonymität). Der Abgleich findet anschließend wieder lokal statt. Aus der
+      Anfrage lässt sich das Passwort nicht rekonstruieren.
+    </p>
     <p>
       <b>Zur Adresssuche:</b> Die Umkreissuche nutzt Nominatim (OpenStreetMap), wird aber
       über unseren eigenen Server geleitet. Die <b>IP-Adresse der Nutzer wird dabei nicht</b>

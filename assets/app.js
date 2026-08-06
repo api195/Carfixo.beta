@@ -172,6 +172,48 @@ async function vLogin() {
   };
 }
 
+// ---------- Prüfung auf geleakte Passwörter ----------
+// Ersetzt das kostenpflichtige Supabase-Feature. Genutzt wird dieselbe Quelle
+// (HaveIBeenPwned), aber direkt über deren öffentliche API.
+//
+// Das Passwort verlässt das Gerät dabei NICHT: Es wird lokal als SHA-1 gehasht,
+// und nur die ersten fünf Zeichen des Hashes werden angefragt (k-Anonymity).
+// Zurück kommen alle passenden Endungen, verglichen wird wieder lokal.
+// Der Header Add-Padding hält die Antwortgröße konstant, damit sich aus ihr
+// nichts ableiten lässt.
+//
+// Liefert: Trefferzahl (>0 = kompromittiert), 0 = unauffällig,
+//          null = Prüfung nicht möglich (dann bewusst nicht blockieren).
+async function passwordLeakCount(pw) {
+  try {
+    if (!window.crypto?.subtle) return null;   // nur über HTTPS verfügbar
+    const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(pw));
+    const hash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+    const res = await fetch("https://api.pwnedpasswords.com/range/" + hash.slice(0, 5),
+      { headers: { "Add-Padding": "true" } });
+    if (!res.ok) return null;
+    const suffix = hash.slice(5);
+    for (const line of (await res.text()).split("\n")) {
+      const [s, count] = line.trim().split(":");
+      if (s === suffix) return parseInt(count, 10) || 1;
+    }
+    return 0;
+  } catch (e) {
+    return null;   // Netzwerkproblem darf niemanden aussperren
+  }
+}
+// Gemeinsame Passwortprüfung für Registrierung und Zurücksetzen.
+// Gibt eine Fehlermeldung zurück oder null, wenn alles in Ordnung ist.
+async function validateNewPassword(pw) {
+  if (pw.length < 8) return "Das Passwort braucht mindestens 8 Zeichen.";
+  if (!/[a-zA-Z]/.test(pw) || !/[0-9]/.test(pw))
+    return "Bitte mindestens einen Buchstaben und eine Ziffer verwenden.";
+  const leaks = await passwordLeakCount(pw);
+  if (leaks > 0)
+    return `Dieses Passwort taucht in bekannten Datenlecks auf (${leaks.toLocaleString("de-DE")}×). Bitte wähle ein anderes.`;
+  return null;
+}
+
 // ---------- Passwort vergessen ----------
 async function vForgot() {
   main.innerHTML = `
@@ -231,9 +273,11 @@ async function vResetPassword() {
   $("rpGo").onclick = async () => {
     const err = $("rpErr"); err.style.display = "none";
     const pw = $("rpPass").value, pw2 = $("rpPass2").value;
-    if (pw.length < 8) return showErr(err, "Das Passwort braucht mindestens 8 Zeichen.");
     if (pw !== pw2) return showErr(err, "Die beiden Passwörter stimmen nicht überein.");
-    $("rpGo").disabled = true; $("rpGo").textContent = "Wird gespeichert…";
+    $("rpGo").disabled = true; $("rpGo").textContent = "Passwort wird geprüft…";
+    const pwProblem = await validateNewPassword(pw);
+    if (pwProblem) { $("rpGo").disabled = false; $("rpGo").textContent = "Passwort speichern"; return showErr(err, pwProblem); }
+    $("rpGo").textContent = "Wird gespeichert…";
     const { error } = await sb.auth.updateUser({ password: pw });
     $("rpGo").disabled = false; $("rpGo").textContent = "Passwort speichern";
     if (error) return showErr(err, error.message);
@@ -287,9 +331,12 @@ async function doRegister() {
   const email = $("rEmail").value.trim(), pass = $("rPass").value, name = $("rName").value.trim();
   const company = regRole === "workshop" ? $("rCompany").value.trim() : null;
   if (!email || !pass) return showErr(err, "Bitte E-Mail und Passwort ausfüllen.");
-  if (pass.length < 8) return showErr(err, "Das Passwort braucht mindestens 8 Zeichen.");
   if (regRole === "workshop" && !company) return showErr(err, "Bitte den Namen deines Betriebs angeben.");
   $("rGo").disabled = true;
+  $("rGo").textContent = "Passwort wird geprüft…";
+  const pwProblem = await validateNewPassword(pass);
+  $("rGo").textContent = "Kostenlos registrieren";
+  if (pwProblem) { $("rGo").disabled = false; return showErr(err, pwProblem); }
   const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name } } });
   $("rGo").disabled = false;
   if (error) return showErr(err, error.message);

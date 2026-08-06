@@ -94,7 +94,12 @@ Diese Schritte lassen sich nicht im Code erledigen:
 - **Auth → URL Configuration:** `https://carfixo.de` als Site-URL und als Redirect-URL
   eintragen (zusätzlich `http://localhost:8000/app.html` fürs lokale Testen).
   Ohne das laufen die Links aus „Passwort vergessen" ins Leere.
-- **Auth → Providers → Password:** „Leaked password protection" aktivieren.
+- **Auth → Sign In / Providers → Email:** „Minimum password length" von 6 auf **8** anheben
+  und bei „Password requirements" Buchstaben + Ziffern verlangen – beides passt dann zur
+  Prüfung im Frontend.
+  „Prevent use of leaked passwords" lässt sich **nicht** aktivieren, das ist ein Pro-Feature.
+  Die Prüfung übernimmt stattdessen das Frontend direkt über die HaveIBeenPwned-API
+  (`validateNewPassword` in `assets/app.js`) – gleiche Datenquelle, ohne Abo.
 - **Testkonten** löschen oder Passwörter rotieren (siehe oben).
 - **E-Mail-Versand:** Der einzige fehlende Wert ist `resend_api_key` in
   `private.app_secrets`. Trigger, Function, Push-Schlüssel und `app_url` sind bereits
