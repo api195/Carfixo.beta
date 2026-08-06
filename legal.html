@@ -9,85 +9,323 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon.png" sizes="32x32" type="image/png">
 <link rel="stylesheet" href="assets/app.css">
+<style>
+  main{max-width:860px;margin:0 auto;padding:22px 18px 60px}
+  .lg h2{font-size:20px;font-weight:800;margin-bottom:4px}
+  .lg h3{font-size:14px;font-weight:800;margin:18px 0 4px}
+  .lg p,.lg li{font-size:13.5px;color:var(--muted);line-height:1.65}
+  .lg ul{margin:6px 0 0 18px}
+  .lg li{margin-bottom:4px}
+  .lg table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px}
+  .lg td,.lg th{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;color:var(--muted)}
+  .lg th{color:var(--ink);font-weight:700;background:rgba(255,255,255,.03)}
+  /* Auszufüllende Stellen sichtbar markieren, damit vor dem Launch nichts übersehen wird */
+  .fill{background:rgba(255,176,32,.16);border:1px dashed rgba(255,176,32,.55);border-radius:5px;
+        padding:1px 6px;color:#FFD79A;font-weight:700;font-size:12.5px;white-space:nowrap}
+  .toc{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 22px}
+  .toc a{font-size:12px;font-weight:700;color:var(--blue2);border:1px solid var(--line2);
+         border-radius:99px;padding:6px 13px;text-decoration:none}
+  .toc a:hover{border-color:var(--blue2)}
+</style>
 </head>
 <body>
 <header class="topbar">
   <div class="topbarIn">
     <a class="logo" href="index.html">car<b>fixo</b></a>
     <nav class="topNav">
-      <a href="#datenschutz">Datenschutz</a>
-      <a href="#impressum">Impressum</a>
-      <a href="#agb">AGB</a>
-      <a href="#nutzung">Nutzungsbedingungen</a>
-      <a href="#cookies">Cookies</a>
       <a href="app.html" style="color:var(--blue2)">Zur App</a>
     </nav>
   </div>
 </header>
-<main>
-  <div class="warn">⚠️ <b>Hinweis:</b> Die folgenden Texte sind Platzhalter und werden vor dem offiziellen Launch durch rechtlich geprüfte Fassungen ersetzt.</div>
+<main class="lg">
 
+  <div class="warn">
+    <b>Entwurf – noch nicht veröffentlichungsreif.</b> Dieses Dokument ist ein inhaltlich
+    vorstrukturiertes Gerüst, <b>keine Rechtsberatung</b>. Alle <span class="fill">gelb markierten</span>
+    Stellen müssen ausgefüllt und der gesamte Text vor dem Launch anwaltlich geprüft werden.
+    Impressum und Datenschutzerklärung sind gesetzlich verpflichtend (§ 5 DDG, Art. 13 DSGVO).
+  </div>
+
+  <div class="toc">
+    <a href="#rolle">Rolle von Carfixo</a>
+    <a href="#impressum">Impressum</a>
+    <a href="#datenschutz">Datenschutz</a>
+    <a href="#agb">AGB</a>
+    <a href="#widerruf">Widerruf</a>
+    <a href="#bewertungen">Bewertungen</a>
+    <a href="#cookies">Cookies</a>
+  </div>
+
+  <!-- ============================================================ -->
   <div class="card" style="margin-bottom:16px" id="rolle">
-    <h2 style="font-size:20px;font-weight:800">Carfixo als Vermittler</h2>
-    <p class="mm" style="margin-top:10px;font-size:13.5px">
-      Carfixo ist eine Vermittlungsplattform. Die Reparaturleistung, die Rechnung, Gewährleistung, Garantie
-      und die rechtliche Leistungspflicht liegen bei der jeweils ausgewählten Werkstatt bzw. dem Betrieb.
-      Carfixo vermittelt Anfragen und Angebote, ermöglicht Buchung, Kommunikation und Dokumentenablage,
-      führt jedoch selbst keine Reparaturen aus und haftet nicht für Werkstattleistungen.
+    <h2>Die Rolle von Carfixo</h2>
+    <p style="margin-top:8px">
+      Carfixo ist eine <b>Vermittlungsplattform</b>. Wir bringen Autofahrer und Betriebe zusammen,
+      stellen die technische Abwicklung bereit (Anfrage, Angebot, Terminvereinbarung, Nachrichten,
+      Dokumentenablage) und führen selbst <b>keine Reparaturen oder sonstigen Werkleistungen</b> aus.
     </p>
+    <ul>
+      <li>Der Vertrag über die Leistung kommt ausschließlich zwischen <b>Kunde und Betrieb</b> zustande.</li>
+      <li>Rechnung, Gewährleistung, Garantie und Haftung für die Ausführung liegen beim Betrieb.</li>
+      <li>Preisangaben in Angeboten stammen vom jeweiligen Betrieb, nicht von Carfixo.</li>
+      <li>Die KI-Diagnose liefert eine unverbindliche Ersteinschätzung und ersetzt keine Prüfung
+          durch eine Fachwerkstatt.</li>
+    </ul>
   </div>
 
-  <div class="card" style="margin-bottom:16px" id="datenschutz">
-    <h2 style="font-size:20px;font-weight:800">Datenschutzerklärung (Platzhalter)</h2>
-    <p class="mm" style="margin-top:10px;font-size:13.5px">
-      Verantwortlicher: [Name / Firma], [Adresse], [E-Mail].<br><br>
-      Wir verarbeiten personenbezogene Daten (Konto, Fahrzeugdaten, Anfragen, Chat-Nachrichten, hochgeladene
-      Bilder/Dokumente, Standortdaten bei Nutzung der Umkreissuche) zur Bereitstellung der Plattform.
-      Datenhaltung erfolgt bei Supabase (EU-Region Frankfurt). Kartenmaterial: OpenStreetMap/Carto;
-      Adresssuche: Nominatim (OpenStreetMap). Bei Nutzung der KI-Diagnose werden Beschreibung und Bilder
-      zur Erstellung einer unverbindlichen Ersteinschätzung verarbeitet.<br><br>
-      Deine Rechte: Auskunft, Berichtigung, Löschung, Datenübertragbarkeit, Widerruf von Einwilligungen.
-      In der App: Konto → „Daten exportieren" und „Konto löschen".
-    </p>
-  </div>
-
+  <!-- ============================================================ -->
   <div class="card" style="margin-bottom:16px" id="impressum">
-    <h2 style="font-size:20px;font-weight:800">Impressum (Platzhalter)</h2>
-    <p class="mm" style="margin-top:10px;font-size:13.5px">
-      [Firmenname]<br>[Straße Nr.]<br>[PLZ Ort]<br><br>
-      Vertreten durch: [Name]<br>
-      Kontakt: [E-Mail] · [Telefon]<br>
-      Registereintrag: [HRB …] · USt-IdNr.: [DE …]
+    <h2>Impressum</h2>
+    <p style="margin-top:8px">Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG).</p>
+
+    <h3>Anbieter</h3>
+    <p>
+      <span class="fill">[Firmenname, Rechtsform]</span><br>
+      <span class="fill">[Straße und Hausnummer]</span><br>
+      <span class="fill">[PLZ und Ort]</span><br>
+      <span class="fill">[Land]</span>
+    </p>
+
+    <h3>Vertreten durch</h3>
+    <p><span class="fill">[Name der vertretungsberechtigten Person(en)]</span></p>
+
+    <h3>Kontakt</h3>
+    <p>
+      E-Mail: <span class="fill">[kontakt@carfixo.de]</span><br>
+      Telefon: <span class="fill">[Telefonnummer]</span>
+    </p>
+    <p style="font-size:12px;margin-top:6px">
+      Hinweis: Es muss eine Kontaktmöglichkeit bestehen, die eine <i>unmittelbare und effiziente</i>
+      Kommunikation erlaubt. Eine E-Mail-Adresse allein genügt in der Regel; ein reines
+      Kontaktformular reicht nicht aus.
+    </p>
+
+    <h3>Registereintrag</h3>
+    <p>
+      Registergericht: <span class="fill">[Amtsgericht]</span><br>
+      Registernummer: <span class="fill">[HRB …]</span>
+    </p>
+
+    <h3>Umsatzsteuer-Identifikationsnummer</h3>
+    <p>Gemäß § 27a UStG: <span class="fill">[DE …]</span></p>
+
+    <h3>Verantwortlich für den Inhalt</h3>
+    <p><span class="fill">[Name, Anschrift]</span></p>
+
+    <h3>Verbraucherstreitbeilegung</h3>
+    <p>
+      <span class="fill">[Auswählen:]</span> Wir sind
+      <b>nicht bereit oder verpflichtet</b>, an Streitbeilegungsverfahren vor einer
+      Verbraucherschlichtungsstelle teilzunehmen — <i>oder</i>, falls doch, Name und Anschrift der
+      zuständigen Stelle angeben (§ 36 VSBG).
+    </p>
+    <p style="font-size:12px">
+      Hinweis: Die frühere Pflicht, auf die EU-Online-Streitbeilegungsplattform (OS-Plattform) zu
+      verlinken, ist mit deren Einstellung entfallen. Bitte den aktuellen Stand prüfen lassen.
     </p>
   </div>
 
+  <!-- ============================================================ -->
+  <div class="card" style="margin-bottom:16px" id="datenschutz">
+    <h2>Datenschutzerklärung</h2>
+
+    <h3>1. Verantwortlicher</h3>
+    <p><span class="fill">[Firmenname, Anschrift, E-Mail]</span></p>
+    <p style="font-size:12px">
+      Ein Datenschutzbeauftragter ist zu benennen, wenn die gesetzlichen Voraussetzungen vorliegen
+      (Art. 37 DSGVO, § 38 BDSG) — bitte prüfen: <span class="fill">[DSB ja/nein + Kontakt]</span>
+    </p>
+
+    <h3>2. Welche Daten wir verarbeiten</h3>
+    <table>
+      <tr><th>Kategorie</th><th>Inhalt</th><th>Zweck / Rechtsgrundlage</th></tr>
+      <tr><td>Kontodaten</td><td>E-Mail, Name, Telefon, Rolle, Passwort (gehasht)</td>
+          <td>Bereitstellung des Kontos · Art. 6 Abs. 1 lit. b</td></tr>
+      <tr><td>Fahrzeugdaten</td><td>Marke, Modell, Erstzulassung, Kilometerstand, Kennzeichen, HU-Datum</td>
+          <td>Passende Angebote, Fahrzeugakte · lit. b</td></tr>
+      <tr><td>Anfragen &amp; Angebote</td><td>Beschreibung, Fotos/Videos, Budget, Termin, Ort</td>
+          <td>Vermittlung · lit. b</td></tr>
+      <tr><td>Nachrichten</td><td>Chat zwischen Kunde und Betrieb</td>
+          <td>Kommunikation zum Auftrag · lit. b</td></tr>
+      <tr><td>Dokumente</td><td>Rechnungen, Prüfberichte, Fahrzeugschein</td>
+          <td>Auftragsabwicklung, Nachweis · lit. b</td></tr>
+      <tr><td>Standortdaten</td><td>Nur bei aktiver Nutzung der Umkreissuche</td>
+          <td>Umkreissuche · <b>Einwilligung</b>, lit. a</td></tr>
+      <tr><td>Bewertungen</td><td>Sterne, Text, Fotos</td>
+          <td>Transparenz im Marktplatz · lit. b / lit. f</td></tr>
+      <tr><td>Benachrichtigungen</td><td>Hinweise zu Angeboten, Terminen, Nachrichten</td>
+          <td>Vertragsdurchführung · lit. b</td></tr>
+    </table>
+
+    <h3>3. Empfänger und Auftragsverarbeiter</h3>
+    <p>Für Auftragsverarbeiter ist jeweils ein Vertrag nach Art. 28 DSGVO erforderlich:</p>
+    <table>
+      <tr><th>Dienst</th><th>Zweck</th><th>Ort / Hinweis</th></tr>
+      <tr><td>Supabase</td><td>Datenbank, Authentifizierung, Dateispeicher</td>
+          <td>EU (Region Frankfurt) · <span class="fill">[AV-Vertrag prüfen]</span></td></tr>
+      <tr><td>Vercel</td><td>Hosting und Auslieferung der Website</td>
+          <td><span class="fill">[Serverstandort + AV-Vertrag prüfen]</span></td></tr>
+      <tr><td>Resend</td><td>Versand von Benachrichtigungs-E-Mails</td>
+          <td><span class="fill">[AV-Vertrag prüfen; ggf. Drittlandtransfer]</span></td></tr>
+      <tr><td>Betriebe</td><td>Erhalten die zur Bearbeitung nötigen Angaben</td>
+          <td>Eigenständig Verantwortliche</td></tr>
+    </table>
+
+    <h3>4. Beim Aufruf eingebundene Drittanbieter</h3>
+    <p>
+      Bei diesen Diensten wird die <b>IP-Adresse</b> technisch bedingt an den jeweiligen Anbieter
+      übertragen. Sie sind für die Funktion erforderlich (Art. 6 Abs. 1 lit. f):
+    </p>
+    <ul>
+      <li><b>OpenStreetMap / Nominatim</b> – Adresssuche, wenn ein Ort eingegeben wird.</li>
+      <li><b>CARTO</b> – Kartenkacheln, sobald eine Karte angezeigt wird.</li>
+      <li><b>jsDelivr (CDN)</b> – lädt die Texterkennungs-Bibliothek für den Fahrzeugschein-Scan.</li>
+    </ul>
+    <p>
+      <b>Zum Fahrzeugschein-Scan:</b> Die Texterkennung läuft vollständig <b>im Browser</b>.
+      Das Foto des Fahrzeugscheins wird dabei <b>nicht</b> an Carfixo oder Dritte übertragen.
+      Nur wenn der Fahrzeugschein bewusst als Dokument gespeichert wird, landet er
+      im privaten Dateispeicher.
+    </p>
+
+    <h3>5. Speicherdauer</h3>
+    <p>
+      Kontodaten bis zur Löschung des Kontos. Rechnungs- und auftragsbezogene Unterlagen unterliegen
+      den handels- und steuerrechtlichen Aufbewahrungsfristen
+      (<span class="fill">[6 bzw. 10 Jahre – bitte konkretisieren]</span>).
+      Übrige Daten werden gelöscht, sobald der Zweck entfällt.
+    </p>
+
+    <h3>6. Deine Rechte</h3>
+    <ul>
+      <li>Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17)</li>
+      <li>Einschränkung (Art. 18), Datenübertragbarkeit (Art. 20)</li>
+      <li>Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21)</li>
+      <li>Widerruf erteilter Einwilligungen mit Wirkung für die Zukunft (Art. 7 Abs. 3)</li>
+      <li>Beschwerde bei einer Aufsichtsbehörde (Art. 77) —
+          zuständig: <span class="fill">[Aufsichtsbehörde des Sitzes]</span></li>
+    </ul>
+    <p>
+      In der App direkt nutzbar: <b>Konto → „Daten exportieren"</b> und
+      <b>„Konto löschen"</b>.
+    </p>
+  </div>
+
+  <!-- ============================================================ -->
   <div class="card" style="margin-bottom:16px" id="agb">
-    <h2 style="font-size:20px;font-weight:800">Allgemeine Geschäftsbedingungen (Platzhalter)</h2>
-    <p class="mm" style="margin-top:10px;font-size:13.5px">
-      1. Carfixo vermittelt Kfz-Dienstleistungen zwischen Kunden und Betrieben. 2. Verträge über
-      Reparaturleistungen kommen ausschließlich zwischen Kunde und Betrieb zustande. 3. Angebote der
-      Betriebe sind Festpreise oder Kostenschätzungen – Zusatzarbeiten bedürfen der Freigabe des Kunden.
-      4. Stornierungsbedingungen: [Platzhalter – z.B. kostenfrei bis 24 h vor Termin]. 5. Zahlungen werden
-      aktuell nicht abgewickelt (Testmodus); zum Launch erfolgt die Abwicklung über Stripe.
+    <h2>Allgemeine Geschäftsbedingungen</h2>
+
+    <h3>§ 1 Geltungsbereich und Vertragspartner</h3>
+    <p>
+      Diese Bedingungen gelten für die Nutzung der Plattform Carfixo. Carfixo vermittelt;
+      der Vertrag über die Leistung kommt zwischen Kunde und Betrieb zustande.
+    </p>
+
+    <h3>§ 2 Nutzung und Kosten</h3>
+    <p>
+      Die Nutzung ist für Autofahrer kostenlos. Für Betriebe gilt:
+      <span class="fill">[Preismodell / Provision festlegen und beschreiben]</span>
+    </p>
+
+    <h3>§ 3 Anfragen und Angebote</h3>
+    <ul>
+      <li>Kunden stellen Anfragen direkt an einen Betrieb oder öffentlich an alle passenden Betriebe.</li>
+      <li>Angebote sind entweder <b>Festpreis</b> oder ausdrücklich <b>Kostenschätzung</b>.</li>
+      <li>Mit Annahme eines Angebots kommt der Vertrag mit dem Betrieb zustande;
+          die übrigen Angebote werden abgelehnt.</li>
+      <li><b>Zusatzarbeiten</b> bedürfen der vorherigen Freigabe durch den Kunden.</li>
+    </ul>
+
+    <h3>§ 4 Termine, Stornierung, Nichterscheinen</h3>
+    <p><span class="fill">[Fristen und etwaige Kosten festlegen, z. B. kostenfrei bis 24 h vor Termin]</span></p>
+
+    <h3>§ 5 Zahlung</h3>
+    <p>
+      <span class="fill">[Aktuellen Stand eintragen.]</span> Solange keine Online-Zahlung aktiv ist,
+      erfolgt die Bezahlung direkt zwischen Kunde und Betrieb. Der Hinweis in der App muss dazu passen.
+    </p>
+
+    <h3>§ 6 Teile-Marktplatz</h3>
+    <p>
+      Teile werden von den Betrieben angeboten. Kaufvertrag, Versand bzw. Abholung und
+      Gewährleistung liegen beim jeweiligen Betrieb.
+    </p>
+
+    <h3>§ 7 Pflichten der Nutzer</h3>
+    <ul>
+      <li>Wahrheitsgemäße Angaben zu Fahrzeug und Anliegen</li>
+      <li>Keine gefälschten Bewertungen, keine missbräuchlichen Meldungen</li>
+      <li>Respektvolle Kommunikation; keine rechtswidrigen Inhalte oder Bilder</li>
+    </ul>
+
+    <h3>§ 8 Haftung</h3>
+    <p>
+      <span class="fill">[Haftungsregelung anwaltlich formulieren.]</span> Carfixo haftet nicht für
+      die Werkleistung der Betriebe. Die Haftung für Vorsatz, grobe Fahrlässigkeit sowie für
+      Schäden an Leben, Körper und Gesundheit bleibt unberührt und darf nicht ausgeschlossen werden.
+    </p>
+
+    <h3>§ 9 Änderungen und Schlussbestimmungen</h3>
+    <p><span class="fill">[Änderungsvorbehalt, anwendbares Recht, Gerichtsstand]</span></p>
+  </div>
+
+  <!-- ============================================================ -->
+  <div class="card" style="margin-bottom:16px" id="widerruf">
+    <h2>Widerrufsrecht</h2>
+    <p style="margin-top:8px">
+      Verbraucher haben bei außerhalb von Geschäftsräumen und im Fernabsatz geschlossenen Verträgen
+      grundsätzlich ein <b>14-tägiges Widerrufsrecht</b> — dieses besteht gegenüber dem
+      <b>jeweiligen Betrieb</b> als Vertragspartner, nicht gegenüber Carfixo.
+    </p>
+    <p>
+      Praktisch bedeutsam: Soll die Leistung <b>vor Ablauf der Widerrufsfrist</b> beginnen (etwa bei
+      einer eiligen Reparatur), ist dafür ein ausdrückliches Verlangen des Kunden erforderlich,
+      verbunden mit dem Hinweis auf die Folgen für das Widerrufsrecht.
+    </p>
+    <p>
+      <span class="fill">[Muster-Widerrufsbelehrung und Muster-Widerrufsformular ergänzen;
+      klären, ob Carfixo diesen Ablauf technisch abbilden muss.]</span>
     </p>
   </div>
 
-  <div class="card" style="margin-bottom:16px" id="nutzung">
-    <h2 style="font-size:20px;font-weight:800">Nutzungsbedingungen (Platzhalter)</h2>
-    <p class="mm" style="margin-top:10px;font-size:13.5px">
-      Wahrheitsgemäße Angaben, keine Fake-Bewertungen, keine missbräuchlichen Meldungen, respektvolle
-      Kommunikation. Verstöße können zur Sperrung des Kontos führen. Die KI-Diagnose liefert unverbindliche
-      Ersteinschätzungen und ersetzt keine Prüfung durch eine Fachwerkstatt.
+  <!-- ============================================================ -->
+  <div class="card" style="margin-bottom:16px" id="bewertungen">
+    <h2>Umgang mit Bewertungen</h2>
+    <p style="margin-top:8px">
+      Wer Bewertungen zugänglich macht, muss angeben, ob und wie sichergestellt wird, dass sie von
+      Verbrauchern stammen, die die Leistung tatsächlich in Anspruch genommen haben
+      (§ 5b Abs. 3 UWG). Bei Carfixo gilt:
     </p>
+    <ul>
+      <li>Eine Bewertung kann <b>nur</b> abgeben, wer über Carfixo einen Auftrag gebucht hat,
+          der als <b>abgeschlossen</b> markiert ist.</li>
+      <li>Pro Buchung ist genau eine Bewertung möglich; die Prüfung erfolgt technisch in der Datenbank.</li>
+      <li>Bewertungen werden nicht gegen Bezahlung erstellt und nicht nach Belieben gelöscht.</li>
+      <li>Es werden sowohl positive als auch negative Bewertungen angezeigt; der Durchschnitt wird
+          automatisch berechnet.</li>
+      <li><span class="fill">[Ergänzen: Vorgehen bei gemeldeten oder rechtswidrigen Bewertungen.]</span></li>
+    </ul>
   </div>
 
+  <!-- ============================================================ -->
   <div class="card" id="cookies">
-    <h2 style="font-size:20px;font-weight:800">Cookies & lokale Speicherung (Platzhalter)</h2>
-    <p class="mm" style="margin-top:10px;font-size:13.5px">
-      Carfixo verwendet ausschließlich technisch notwendige lokale Speicherung (Login-Sitzung,
-      Tour-Status, Einwilligungen). Es werden keine Tracking- oder Werbe-Cookies gesetzt.
+    <h2>Cookies und lokale Speicherung</h2>
+    <p style="margin-top:8px">
+      Carfixo verwendet <b>keine</b> Tracking- oder Werbe-Cookies und bindet keine Analysedienste ein.
+      Gespeichert wird ausschließlich, was für den Betrieb notwendig ist:
+    </p>
+    <ul>
+      <li>Anmeldesitzung (damit man eingeloggt bleibt)</li>
+      <li>Status der Einführungstour</li>
+      <li>Zwischenstände von Formularen (etwa eine begonnene Diagnose)</li>
+    </ul>
+    <p>
+      Weil dies technisch erforderlich ist, ist dafür keine Einwilligung nötig
+      (§ 25 Abs. 2 TDDDG). Sollten später Analyse- oder Marketingdienste hinzukommen, ist ein
+      Einwilligungsbanner erforderlich.
     </p>
   </div>
+
 </main>
 </body>
 </html>
