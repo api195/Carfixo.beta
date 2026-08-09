@@ -94,10 +94,25 @@ Diese Schritte lassen sich nicht im Code erledigen:
 - **Auth → URL Configuration:** `https://carfixo.de` als Site-URL und als Redirect-URL
   eintragen (zusätzlich `http://localhost:8000/app.html` fürs lokale Testen).
   Ohne das laufen die Links aus „Passwort vergessen" ins Leere.
-- **Auth → Providers → Password:** „Leaked password protection" aktivieren.
+- **Auth → Sign In / Providers → Email:** „Minimum password length" von 6 auf **8** anheben
+  und bei „Password requirements" Buchstaben + Ziffern verlangen – beides passt dann zur
+  Prüfung im Frontend.
+  „Prevent use of leaked passwords" lässt sich **nicht** aktivieren, das ist ein Pro-Feature.
+  Die Prüfung übernimmt stattdessen das Frontend direkt über die HaveIBeenPwned-API
+  (`validateNewPassword` in `assets/app.js`) – gleiche Datenquelle, ohne Abo.
 - **Testkonten** löschen oder Passwörter rotieren (siehe oben).
-- **E-Mail-Versand:** `RESEND_API_KEY` setzen und den Database-Webhook auf
-  `notifications` einrichten, sonst versendet `notify-email` nichts.
-- **Erinnerungen:** `run_due_reminders()` als pg_cron-Job einplanen – sonst werden
-  TÜV-/Service-Erinnerungen nie zugestellt.
 - **Rechtstexte** in `legal.html` durch geprüfte Fassungen ersetzen.
+- **Auth-E-Mails (Registrierung, Passwort zurücksetzen):** laufen **nicht** über
+  `notify-dispatch`, sondern über Supabase Auth. Ohne eigenen SMTP-Server gilt dort ein
+  striktes Limit von wenigen Mails pro Stunde. Vor dem Launch unter
+  **Authentication → Emails → SMTP Settings** den vorhandenen Resend-Zugang eintragen.
+
+Bereits erledigt (nicht erneut einrichten):
+- Der pg_cron-Job `carfixo-daily-reminders` läuft täglich um 6:00 UTC.
+- Benachrichtigungen laufen per Trigger an die Edge Function `notify-dispatch`
+  – ein Database-Webhook wird **nicht** benötigt.
+- **E-Mail-Versand ist aktiv und getestet:** Resend-Key hinterlegt, Domain
+  `carfixo.de` verifiziert, Absender `Carfixo <no-reply@carfixo.de>`.
+  Ende-zu-Ende geprüft (Insert → Trigger → Function → Resend): `emailed: true`.
+- **Web-Push** ist vollständig: Service Worker (`sw.js`), Geräte-Anmeldung im Konto,
+  Versand über `notify-dispatch`.

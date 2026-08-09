@@ -172,6 +172,48 @@ async function vLogin() {
   };
 }
 
+// ---------- Prüfung auf geleakte Passwörter ----------
+// Ersetzt das kostenpflichtige Supabase-Feature. Genutzt wird dieselbe Quelle
+// (HaveIBeenPwned), aber direkt über deren öffentliche API.
+//
+// Das Passwort verlässt das Gerät dabei NICHT: Es wird lokal als SHA-1 gehasht,
+// und nur die ersten fünf Zeichen des Hashes werden angefragt (k-Anonymity).
+// Zurück kommen alle passenden Endungen, verglichen wird wieder lokal.
+// Der Header Add-Padding hält die Antwortgröße konstant, damit sich aus ihr
+// nichts ableiten lässt.
+//
+// Liefert: Trefferzahl (>0 = kompromittiert), 0 = unauffällig,
+//          null = Prüfung nicht möglich (dann bewusst nicht blockieren).
+async function passwordLeakCount(pw) {
+  try {
+    if (!window.crypto?.subtle) return null;   // nur über HTTPS verfügbar
+    const buf = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(pw));
+    const hash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+    const res = await fetch("https://api.pwnedpasswords.com/range/" + hash.slice(0, 5),
+      { headers: { "Add-Padding": "true" } });
+    if (!res.ok) return null;
+    const suffix = hash.slice(5);
+    for (const line of (await res.text()).split("\n")) {
+      const [s, count] = line.trim().split(":");
+      if (s === suffix) return parseInt(count, 10) || 1;
+    }
+    return 0;
+  } catch (e) {
+    return null;   // Netzwerkproblem darf niemanden aussperren
+  }
+}
+// Gemeinsame Passwortprüfung für Registrierung und Zurücksetzen.
+// Gibt eine Fehlermeldung zurück oder null, wenn alles in Ordnung ist.
+async function validateNewPassword(pw) {
+  if (pw.length < 8) return "Das Passwort braucht mindestens 8 Zeichen.";
+  if (!/[a-zA-Z]/.test(pw) || !/[0-9]/.test(pw))
+    return "Bitte mindestens einen Buchstaben und eine Ziffer verwenden.";
+  const leaks = await passwordLeakCount(pw);
+  if (leaks > 0)
+    return `Dieses Passwort taucht in bekannten Datenlecks auf (${leaks.toLocaleString("de-DE")}×). Bitte wähle ein anderes.`;
+  return null;
+}
+
 // ---------- Passwort vergessen ----------
 async function vForgot() {
   main.innerHTML = `
@@ -231,9 +273,11 @@ async function vResetPassword() {
   $("rpGo").onclick = async () => {
     const err = $("rpErr"); err.style.display = "none";
     const pw = $("rpPass").value, pw2 = $("rpPass2").value;
-    if (pw.length < 8) return showErr(err, "Das Passwort braucht mindestens 8 Zeichen.");
     if (pw !== pw2) return showErr(err, "Die beiden Passwörter stimmen nicht überein.");
-    $("rpGo").disabled = true; $("rpGo").textContent = "Wird gespeichert…";
+    $("rpGo").disabled = true; $("rpGo").textContent = "Passwort wird geprüft…";
+    const pwProblem = await validateNewPassword(pw);
+    if (pwProblem) { $("rpGo").disabled = false; $("rpGo").textContent = "Passwort speichern"; return showErr(err, pwProblem); }
+    $("rpGo").textContent = "Wird gespeichert…";
     const { error } = await sb.auth.updateUser({ password: pw });
     $("rpGo").disabled = false; $("rpGo").textContent = "Passwort speichern";
     if (error) return showErr(err, error.message);
@@ -287,9 +331,12 @@ async function doRegister() {
   const email = $("rEmail").value.trim(), pass = $("rPass").value, name = $("rName").value.trim();
   const company = regRole === "workshop" ? $("rCompany").value.trim() : null;
   if (!email || !pass) return showErr(err, "Bitte E-Mail und Passwort ausfüllen.");
-  if (pass.length < 8) return showErr(err, "Das Passwort braucht mindestens 8 Zeichen.");
   if (regRole === "workshop" && !company) return showErr(err, "Bitte den Namen deines Betriebs angeben.");
   $("rGo").disabled = true;
+  $("rGo").textContent = "Passwort wird geprüft…";
+  const pwProblem = await validateNewPassword(pass);
+  $("rGo").textContent = "Kostenlos registrieren";
+  if (pwProblem) { $("rGo").disabled = false; return showErr(err, pwProblem); }
   const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name } } });
   $("rGo").disabled = false;
   if (error) return showErr(err, error.message);
@@ -530,16 +577,32 @@ function setSearchOrigin(ll, label) {
   toast("Standort gesetzt: " + label);
   applyFilters();
 }
-// Nominatim (OpenStreetMap) – funktioniert deutschlandweit
+// Adresssuche über den eigenen Proxy /api/geocode (funktioniert deutschlandweit).
+// Der Proxy setzt den von Nominatim geforderten User-Agent, cacht die Antworten
+// und verhindert, dass die IP-Adressen unserer Nutzer beim Kartendienst landen.
+const geoCache = new Map();
 async function geocodeAddress() {
   const q = $("locAddr").value.trim();
   if (!q) return toast("Bitte eine Adresse oder einen Ort eingeben.");
+
+  const key = q.toLowerCase();
+  if (geoCache.has(key)) {
+    const c = geoCache.get(key);
+    return c ? setSearchOrigin([c.lat, c.lng], c.label) : toast("Adresse nicht gefunden – bitte genauer eingeben.");
+  }
+
   $("locGo").disabled = true; $("locGo").textContent = "…";
   try {
-    const res = await fetch("https://nominatim.openstreetmap.org/search?format=json&countrycodes=de&limit=1&q=" + encodeURIComponent(q), { headers: { "Accept-Language": "de" } });
-    const data = await res.json();
-    if (!data || !data[0]) toast("Adresse nicht gefunden – bitte genauer eingeben.");
-    else setSearchOrigin([+data[0].lat, +data[0].lon], data[0].display_name.split(",").slice(0, 2).join(","));
+    const res = await fetch("/api/geocode?q=" + encodeURIComponent(q));
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data) throw new Error("upstream");
+    if (!data.found) {
+      geoCache.set(key, null);
+      toast("Adresse nicht gefunden – bitte genauer eingeben.");
+    } else {
+      geoCache.set(key, data);
+      setSearchOrigin([data.lat, data.lng], data.label || q);
+    }
   } catch (e) {
     toast("Adresssuche gerade nicht erreichbar.");
   }
@@ -1208,7 +1271,7 @@ function openCheckout(offerId, requestId) {
     <p class="mm" style="margin-top:10px;font-size:11px">
       Mit der Buchung nimmst du das Angebot verbindlich an; alle anderen Angebote werden abgelehnt.
       ${o.is_fixed_price === false ? "Bei einer Kostenschätzung kann sich der Preis nach Diagnose ändern – Zusatzarbeiten benötigen deine Freigabe." : ""}
-      Stornierungsbedingungen: kostenfrei bis 24 h vor Termin (Platzhalter, final vor Launch).
+      ${STORNO_HINWEIS}
       Die Reparaturleistung und Rechnung werden durch die ausgewählte Werkstatt erbracht.</p>
     <div class="btnRow">
       <button class="btn green" id="ckGo">Testbuchung abschließen</button>
@@ -1234,6 +1297,10 @@ const PAY_LABELS = {
   pending: ["Ausstehend", "b-gold"], paid: ["Bezahlt", "b-green"], refunded: ["Erstattet", "b-purple"],
 };
 const CANCEL_REASONS = ["Termin passt nicht mehr", "Problem hat sich erledigt", "Anderes Angebot gewählt", "Preis zu hoch", "Werkstatt nicht erreichbar", "Sonstiges"];
+// Zentrale Stornoregel. Carfixo vermittelt nur und wickelt keine Zahlung ab –
+// über die Plattform zu stornieren kostet daher nichts. Verbindlich sind die
+// Bedingungen des Betriebs. Bei Änderung hier auch legal.html anpassen.
+const STORNO_HINWEIS = "Das Stornieren über Carfixo ist kostenlos. Es gelten die Bedingungen des jeweiligen Betriebs – sage möglichst frühzeitig ab und nutze bei kurzfristigen Änderungen zusätzlich den Chat.";
 
 function bookingTimeline(status) {
   if (status === "cancelled") return `<div class="warn" style="margin:12px 0 0">Dieser Auftrag wurde storniert.</div>`;
@@ -1341,7 +1408,7 @@ async function acceptProposedDate(bkId, reqId) {
 function openCancel(bkId, reqId) {
   openModal(`
     <h2 style="font-size:19px;font-weight:800">Buchung stornieren</h2>
-    <div class="note" style="margin-top:10px">Stornierung aktuell kostenlos. Später gilt: kostenfrei bis 24 h vor Termin (Platzhalter).</div>
+    <div class="note" style="margin-top:10px">${STORNO_HINWEIS}</div>
     <div class="label">Grund</div>
     <select id="ccReason">${CANCEL_REASONS.map(x => `<option>${x}</option>`).join("")}</select>
     <div class="btnRow">
@@ -2306,12 +2373,13 @@ async function vAccount() {
       <div class="card" style="margin-bottom:14px">
         <div class="tt">Benachrichtigungen</div>
         <label class="inline"><input type="checkbox" id="npEmail" ${myProfile?.notify_prefs?.email !== false ? "checked" : ""}> E-Mail-Benachrichtigungen</label>
-        <label class="inline"><input type="checkbox" id="npPush" ${myProfile?.notify_prefs?.push !== false ? "checked" : ""}> Push-Benachrichtigungen (App folgt)</label>
+        <label class="inline"><input type="checkbox" id="npPush" ${myProfile?.notify_prefs?.push !== false ? "checked" : ""}> Push-Benachrichtigungen</label>
         <label class="inline"><input type="checkbox" id="npRem" ${myProfile?.notify_prefs?.reminders !== false ? "checked" : ""}> Erinnerungen (TÜV, Service, Reifen)</label>
         <label class="inline"><input type="checkbox" id="npMkt" ${myProfile?.notify_prefs?.marketing ? "checked" : ""}> Marketing-E-Mails</label>
         <p class="mm" style="margin-top:8px;font-size:11px">Notfall- und sicherheitsrelevante Benachrichtigungen bleiben immer aktiv.</p>
         <button class="btn ghost sm" style="margin-top:10px" id="npSave">Einstellungen speichern</button>
       </div>
+      <div class="card" style="margin-bottom:14px" id="pushBox"><div class="sk" style="height:60px"></div></div>
       <div class="card" style="margin-bottom:14px">
         <div class="tt">Hilfe & Rechtliches</div>
         <div class="btnRow">
@@ -2347,6 +2415,7 @@ async function vAccount() {
           <a href="#/new-request?ws=${w.id}" style="color:var(--blue2);font-weight:700;font-size:12px">Erneut anfragen →</a></div>`;
       }).join("");
   }
+  renderPushBox();
   $("npSave").onclick = async () => {
     const prefs = { email: $("npEmail").checked, push: $("npPush").checked, reminders: $("npRem").checked, marketing: $("npMkt").checked };
     const { error } = await sb.from("profiles").update({ notify_prefs: prefs }).eq("id", me.id);
@@ -4062,6 +4131,105 @@ function confirmDeleteAccount() {
     toast("Konto gelöscht. Alles Gute!");
     go("search");
   };
+}
+
+// ============================================================
+// WEB-PUSH (Geräte-Anmeldung für Benachrichtigungen)
+// ============================================================
+// Serverseitig ist alles vorhanden (VAPID-Schlüssel, Versand über
+// notify-dispatch). Hier fehlte bisher nur die Anmeldung des Geräts.
+const pushSupported = () =>
+  "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+// VAPID-Schlüssel liegt base64url-kodiert vor, subscribe() erwartet Bytes.
+function vapidToBytes(base64url) {
+  const pad = "=".repeat((4 - (base64url.length % 4)) % 4);
+  const raw = atob((base64url + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function pushRegistration() {
+  if (!pushSupported()) return null;
+  return navigator.serviceWorker.register("/sw.js");
+}
+
+// Aktueller Zustand für die Anzeige im Konto
+async function pushStatus() {
+  if (!pushSupported()) return "nicht_unterstuetzt";
+  if (Notification.permission === "denied") return "blockiert";
+  const reg = await navigator.serviceWorker.getRegistration("/sw.js");
+  const sub = reg && await reg.pushManager.getSubscription();
+  return sub ? "aktiv" : "inaktiv";
+}
+
+async function enablePush() {
+  if (!pushSupported()) return toast("Dieses Gerät unterstützt keine Push-Benachrichtigungen.");
+  if (!me) return requireAuth();
+
+  const erlaubnis = await Notification.requestPermission();
+  if (erlaubnis !== "granted") {
+    return toast(erlaubnis === "denied"
+      ? "Benachrichtigungen sind im Browser blockiert – bitte in den Seiteneinstellungen erlauben."
+      : "Ohne Erlaubnis können keine Benachrichtigungen gesendet werden.");
+  }
+  try {
+    const reg = await pushRegistration();
+    await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,   // von Chrome vorausgesetzt
+        applicationServerKey: vapidToBytes(CARFIXO.VAPID_PUBLIC_KEY),
+      });
+    }
+    const j = sub.toJSON();
+    // endpoint ist eindeutig – ein erneutes Anmelden desselben Geräts
+    // aktualisiert den Eintrag, statt ihn zu verdoppeln.
+    const { error } = await sb.from("push_subscriptions").upsert({
+      user_id: me.id,
+      endpoint: j.endpoint,
+      p256dh: j.keys.p256dh,
+      auth: j.keys.auth,
+      ua: navigator.userAgent.slice(0, 200),
+    }, { onConflict: "endpoint" });
+    if (error) throw error;
+    toast("Push aktiviert ✓ – dieses Gerät erhält jetzt Benachrichtigungen.");
+  } catch (e) {
+    toast("Push konnte nicht aktiviert werden: " + (e.message || e));
+  }
+  if ($("pushBox")) renderPushBox();
+}
+
+async function disablePush() {
+  try {
+    const reg = await navigator.serviceWorker.getRegistration("/sw.js");
+    const sub = reg && await reg.pushManager.getSubscription();
+    if (sub) {
+      await sb.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+      await sub.unsubscribe();
+    }
+    toast("Push auf diesem Gerät deaktiviert.");
+  } catch (e) {
+    toast(e.message || String(e));
+  }
+  if ($("pushBox")) renderPushBox();
+}
+
+async function renderPushBox() {
+  const box = $("pushBox"); if (!box) return;
+  const st = await pushStatus();
+  const texte = {
+    aktiv: ["Dieses Gerät erhält Push-Benachrichtigungen.", "Auf diesem Gerät deaktivieren", "b-green", "Aktiv"],
+    inaktiv: ["Erhalte neue Angebote, Nachrichten und Termine sofort – auch wenn Carfixo geschlossen ist.", "Auf diesem Gerät aktivieren", "b-grey", "Inaktiv"],
+    blockiert: ["Benachrichtigungen sind für Carfixo im Browser blockiert. Das lässt sich nur in den Einstellungen deines Browsers wieder erlauben.", null, "b-red", "Blockiert"],
+    nicht_unterstuetzt: ["Dieser Browser unterstützt keine Push-Benachrichtigungen. Auf dem iPhone funktioniert es, sobald Carfixo über „Zum Home-Bildschirm“ installiert wurde.", null, "b-grey", "Nicht verfügbar"],
+  }[st];
+  box.innerHTML = `
+    <div class="tt">Push auf diesem Gerät <span class="badge ${texte[2]}">${texte[3]}</span></div>
+    <p class="mm" style="margin-top:6px">${esc(texte[0])}</p>
+    ${texte[1] ? `<button class="btn ghost sm" style="margin-top:12px" id="pushToggle">${texte[1]}</button>` : ""}`;
+  const btn = $("pushToggle");
+  if (btn) btn.onclick = () => (st === "aktiv" ? disablePush() : enablePush());
 }
 
 // ============================================================
