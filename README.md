@@ -101,13 +101,15 @@ Diese Schritte lassen sich nicht im Code erledigen:
   Die Prüfung übernimmt stattdessen das Frontend direkt über die HaveIBeenPwned-API
   (`validateNewPassword` in `assets/app.js`) – gleiche Datenquelle, ohne Abo.
 - **Testkonten** löschen oder Passwörter rotieren (siehe oben).
-- **E-Mail-Versand:** Der einzige fehlende Wert ist `resend_api_key` in
-  `private.app_secrets`. Trigger, Function, Push-Schlüssel und `app_url` sind bereits
-  eingerichtet – siehe `supabase/functions/notify-dispatch/README.md`.
-  Danach `resend_from` auf die eigene, in Resend verifizierte Domain umstellen.
 - **Rechtstexte** in `legal.html` durch geprüfte Fassungen ersetzen.
+- **Web-Push:** serverseitig fertig, aber im Frontend fehlt die Registrierung
+  (Service Worker + `pushManager.subscribe`). Bis dahin bleibt `push_subscriptions`
+  leer und es werden ausschließlich E-Mails zugestellt.
 
 Bereits erledigt (nicht erneut einrichten):
 - Der pg_cron-Job `carfixo-daily-reminders` läuft täglich um 6:00 UTC.
-- Benachrichtigungen werden per Trigger an die Edge Function `notify-dispatch`
-  übergeben – ein Database-Webhook wird **nicht** benötigt.
+- Benachrichtigungen laufen per Trigger an die Edge Function `notify-dispatch`
+  – ein Database-Webhook wird **nicht** benötigt.
+- **E-Mail-Versand ist aktiv und getestet:** Resend-Key hinterlegt, Domain
+  `carfixo.de` verifiziert, Absender `Carfixo <no-reply@carfixo.de>`.
+  Ende-zu-Ende geprüft (Insert → Trigger → Function → Resend): `emailed: true`.
