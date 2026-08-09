@@ -102,9 +102,10 @@ Diese Schritte lassen sich nicht im Code erledigen:
   (`validateNewPassword` in `assets/app.js`) – gleiche Datenquelle, ohne Abo.
 - **Testkonten** löschen oder Passwörter rotieren (siehe oben).
 - **Rechtstexte** in `legal.html` durch geprüfte Fassungen ersetzen.
-- **Web-Push:** serverseitig fertig, aber im Frontend fehlt die Registrierung
-  (Service Worker + `pushManager.subscribe`). Bis dahin bleibt `push_subscriptions`
-  leer und es werden ausschließlich E-Mails zugestellt.
+- **Auth-E-Mails (Registrierung, Passwort zurücksetzen):** laufen **nicht** über
+  `notify-dispatch`, sondern über Supabase Auth. Ohne eigenen SMTP-Server gilt dort ein
+  striktes Limit von wenigen Mails pro Stunde. Vor dem Launch unter
+  **Authentication → Emails → SMTP Settings** den vorhandenen Resend-Zugang eintragen.
 
 Bereits erledigt (nicht erneut einrichten):
 - Der pg_cron-Job `carfixo-daily-reminders` läuft täglich um 6:00 UTC.
@@ -113,3 +114,5 @@ Bereits erledigt (nicht erneut einrichten):
 - **E-Mail-Versand ist aktiv und getestet:** Resend-Key hinterlegt, Domain
   `carfixo.de` verifiziert, Absender `Carfixo <no-reply@carfixo.de>`.
   Ende-zu-Ende geprüft (Insert → Trigger → Function → Resend): `emailed: true`.
+- **Web-Push** ist vollständig: Service Worker (`sw.js`), Geräte-Anmeldung im Konto,
+  Versand über `notify-dispatch`.

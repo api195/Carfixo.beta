@@ -2373,12 +2373,13 @@ async function vAccount() {
       <div class="card" style="margin-bottom:14px">
         <div class="tt">Benachrichtigungen</div>
         <label class="inline"><input type="checkbox" id="npEmail" ${myProfile?.notify_prefs?.email !== false ? "checked" : ""}> E-Mail-Benachrichtigungen</label>
-        <label class="inline"><input type="checkbox" id="npPush" ${myProfile?.notify_prefs?.push !== false ? "checked" : ""}> Push-Benachrichtigungen (App folgt)</label>
+        <label class="inline"><input type="checkbox" id="npPush" ${myProfile?.notify_prefs?.push !== false ? "checked" : ""}> Push-Benachrichtigungen</label>
         <label class="inline"><input type="checkbox" id="npRem" ${myProfile?.notify_prefs?.reminders !== false ? "checked" : ""}> Erinnerungen (TÜV, Service, Reifen)</label>
         <label class="inline"><input type="checkbox" id="npMkt" ${myProfile?.notify_prefs?.marketing ? "checked" : ""}> Marketing-E-Mails</label>
         <p class="mm" style="margin-top:8px;font-size:11px">Notfall- und sicherheitsrelevante Benachrichtigungen bleiben immer aktiv.</p>
         <button class="btn ghost sm" style="margin-top:10px" id="npSave">Einstellungen speichern</button>
       </div>
+      <div class="card" style="margin-bottom:14px" id="pushBox"><div class="sk" style="height:60px"></div></div>
       <div class="card" style="margin-bottom:14px">
         <div class="tt">Hilfe & Rechtliches</div>
         <div class="btnRow">
@@ -2414,6 +2415,7 @@ async function vAccount() {
           <a href="#/new-request?ws=${w.id}" style="color:var(--blue2);font-weight:700;font-size:12px">Erneut anfragen →</a></div>`;
       }).join("");
   }
+  renderPushBox();
   $("npSave").onclick = async () => {
     const prefs = { email: $("npEmail").checked, push: $("npPush").checked, reminders: $("npRem").checked, marketing: $("npMkt").checked };
     const { error } = await sb.from("profiles").update({ notify_prefs: prefs }).eq("id", me.id);
@@ -4129,6 +4131,105 @@ function confirmDeleteAccount() {
     toast("Konto gelöscht. Alles Gute!");
     go("search");
   };
+}
+
+// ============================================================
+// WEB-PUSH (Geräte-Anmeldung für Benachrichtigungen)
+// ============================================================
+// Serverseitig ist alles vorhanden (VAPID-Schlüssel, Versand über
+// notify-dispatch). Hier fehlte bisher nur die Anmeldung des Geräts.
+const pushSupported = () =>
+  "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+// VAPID-Schlüssel liegt base64url-kodiert vor, subscribe() erwartet Bytes.
+function vapidToBytes(base64url) {
+  const pad = "=".repeat((4 - (base64url.length % 4)) % 4);
+  const raw = atob((base64url + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function pushRegistration() {
+  if (!pushSupported()) return null;
+  return navigator.serviceWorker.register("/sw.js");
+}
+
+// Aktueller Zustand für die Anzeige im Konto
+async function pushStatus() {
+  if (!pushSupported()) return "nicht_unterstuetzt";
+  if (Notification.permission === "denied") return "blockiert";
+  const reg = await navigator.serviceWorker.getRegistration("/sw.js");
+  const sub = reg && await reg.pushManager.getSubscription();
+  return sub ? "aktiv" : "inaktiv";
+}
+
+async function enablePush() {
+  if (!pushSupported()) return toast("Dieses Gerät unterstützt keine Push-Benachrichtigungen.");
+  if (!me) return requireAuth();
+
+  const erlaubnis = await Notification.requestPermission();
+  if (erlaubnis !== "granted") {
+    return toast(erlaubnis === "denied"
+      ? "Benachrichtigungen sind im Browser blockiert – bitte in den Seiteneinstellungen erlauben."
+      : "Ohne Erlaubnis können keine Benachrichtigungen gesendet werden.");
+  }
+  try {
+    const reg = await pushRegistration();
+    await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,   // von Chrome vorausgesetzt
+        applicationServerKey: vapidToBytes(CARFIXO.VAPID_PUBLIC_KEY),
+      });
+    }
+    const j = sub.toJSON();
+    // endpoint ist eindeutig – ein erneutes Anmelden desselben Geräts
+    // aktualisiert den Eintrag, statt ihn zu verdoppeln.
+    const { error } = await sb.from("push_subscriptions").upsert({
+      user_id: me.id,
+      endpoint: j.endpoint,
+      p256dh: j.keys.p256dh,
+      auth: j.keys.auth,
+      ua: navigator.userAgent.slice(0, 200),
+    }, { onConflict: "endpoint" });
+    if (error) throw error;
+    toast("Push aktiviert ✓ – dieses Gerät erhält jetzt Benachrichtigungen.");
+  } catch (e) {
+    toast("Push konnte nicht aktiviert werden: " + (e.message || e));
+  }
+  if ($("pushBox")) renderPushBox();
+}
+
+async function disablePush() {
+  try {
+    const reg = await navigator.serviceWorker.getRegistration("/sw.js");
+    const sub = reg && await reg.pushManager.getSubscription();
+    if (sub) {
+      await sb.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+      await sub.unsubscribe();
+    }
+    toast("Push auf diesem Gerät deaktiviert.");
+  } catch (e) {
+    toast(e.message || String(e));
+  }
+  if ($("pushBox")) renderPushBox();
+}
+
+async function renderPushBox() {
+  const box = $("pushBox"); if (!box) return;
+  const st = await pushStatus();
+  const texte = {
+    aktiv: ["Dieses Gerät erhält Push-Benachrichtigungen.", "Auf diesem Gerät deaktivieren", "b-green", "Aktiv"],
+    inaktiv: ["Erhalte neue Angebote, Nachrichten und Termine sofort – auch wenn Carfixo geschlossen ist.", "Auf diesem Gerät aktivieren", "b-grey", "Inaktiv"],
+    blockiert: ["Benachrichtigungen sind für Carfixo im Browser blockiert. Das lässt sich nur in den Einstellungen deines Browsers wieder erlauben.", null, "b-red", "Blockiert"],
+    nicht_unterstuetzt: ["Dieser Browser unterstützt keine Push-Benachrichtigungen. Auf dem iPhone funktioniert es, sobald Carfixo über „Zum Home-Bildschirm“ installiert wurde.", null, "b-grey", "Nicht verfügbar"],
+  }[st];
+  box.innerHTML = `
+    <div class="tt">Push auf diesem Gerät <span class="badge ${texte[2]}">${texte[3]}</span></div>
+    <p class="mm" style="margin-top:6px">${esc(texte[0])}</p>
+    ${texte[1] ? `<button class="btn ghost sm" style="margin-top:12px" id="pushToggle">${texte[1]}</button>` : ""}`;
+  const btn = $("pushToggle");
+  if (btn) btn.onclick = () => (st === "aktiv" ? disablePush() : enablePush());
 }
 
 // ============================================================
