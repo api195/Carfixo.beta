@@ -28,7 +28,6 @@
       ]
     },
     {
-      "comment": "Service Worker nie aus dem Cache ausliefern – sonst bleibt nach einem Deploy die alte Push-Logik aktiv",
       "source": "/sw.js",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
