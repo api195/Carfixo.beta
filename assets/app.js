@@ -4146,6 +4146,94 @@ function confirmDeleteAccount() {
 const pushSupported = () =>
   "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 
+// ---------- Installation als App (Voraussetzung für Push auf dem iPhone) ----------
+// Apple erlaubt Web-Push ausschliesslich in installierten PWAs. In Safari selbst
+// existiert PushManager nicht – das laesst sich technisch nicht umgehen. Statt
+// die Nutzer damit alleinzulassen, fuehren wir sie aktiv durch die Installation.
+const isStandalone = () =>
+  window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+const isIOS = () =>
+  /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);   // iPad ab iPadOS 13
+
+// Android/Chrome liefern ein Ereignis, mit dem sich die Installation direkt
+// anstossen laesst. Es feuert einmalig und muss dafuer aufgehoben werden.
+let deferredInstall = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstall = e;
+  renderInstallBanner();
+});
+window.addEventListener("appinstalled", () => {
+  deferredInstall = null;
+  $("installBanner")?.remove();
+  toast("Carfixo wurde installiert ✓ – jetzt kannst du Push aktivieren.");
+});
+
+function installState() {
+  if (isStandalone()) return "installiert";
+  if (deferredInstall) return "installierbar";      // Android/Chrome/Edge
+  if (isIOS()) return "ios_manuell";                // nur ueber das Teilen-Menue
+  return "nicht_noetig";                            // Desktop: Push geht auch so
+}
+
+const IOS_SCHRITTE = [
+  "Unten in der Mitte auf <b>Teilen</b> tippen (Quadrat mit Pfeil nach oben)",
+  "Nach unten scrollen zu <b>„Zum Home-Bildschirm“</b>",
+  "Auf <b>Hinzufügen</b> tippen",
+  "Carfixo vom Home-Bildschirm öffnen – <b>nicht mehr über Safari</b>",
+];
+
+// Dezenter Hinweis unten. Erscheint nur, wenn Installation etwas bringt,
+// und laesst sich dauerhaft wegklicken.
+function renderInstallBanner() {
+  if (document.getElementById("installBanner")) return;
+  if (localStorage.getItem("cfx_install_hidden")) return;
+  const st = installState();
+  if (st === "installiert" || st === "nicht_noetig") return;
+  if (!pushSupported() && st !== "ios_manuell") return;
+
+  const el = document.createElement("div");
+  el.id = "installBanner";
+  el.className = "installBanner";
+  el.innerHTML = `
+    <div class="ib-ico">${ico("bell", 20)}</div>
+    <div style="flex:1;min-width:0">
+      <div class="ib-t">Carfixo als App installieren</div>
+      <div class="ib-m">${st === "ios_manuell"
+        ? "Auf dem iPhone nur so möglich – danach bekommst du Angebote sofort als Mitteilung."
+        : "Ein Tippen – danach bekommst du neue Angebote sofort als Mitteilung."}</div>
+    </div>
+    <button class="btn sm" id="ibGo">${st === "ios_manuell" ? "Anleitung" : "Installieren"}</button>
+    <button class="btn ghost sm" id="ibNo" aria-label="Hinweis ausblenden">✕</button>`;
+  document.body.appendChild(el);
+
+  $("ibNo").onclick = () => { localStorage.setItem("cfx_install_hidden", "1"); el.remove(); };
+  $("ibGo").onclick = async () => {
+    if (st === "installierbar" && deferredInstall) {
+      deferredInstall.prompt();
+      const { outcome } = await deferredInstall.userChoice;
+      deferredInstall = null;
+      if (outcome === "accepted") el.remove();
+    } else {
+      openInstallHelp();
+    }
+  };
+}
+
+function openInstallHelp() {
+  openModal(`
+    <h2 style="font-size:20px;font-weight:800">Carfixo aufs iPhone holen</h2>
+    <p class="mm" style="margin-top:8px">
+      Mitteilungen über neue Angebote und Nachrichten erlaubt Apple nur, wenn Carfixo
+      als App installiert ist. Das dauert zehn Sekunden:</p>
+    <ol style="margin:14px 0 0 18px;padding:0">
+      ${IOS_SCHRITTE.map(s => `<li class="mm" style="font-size:13px;line-height:1.7;margin-bottom:6px">${s}</li>`).join("")}
+    </ol>
+    <div class="note" style="margin-top:14px">Bis dahin bekommst du alles Wichtige weiterhin per <b>E-Mail</b> – du verpasst also kein Angebot.</div>
+    <div class="btnRow"><button class="btn" onclick="closeModal()">Alles klar</button></div>`);
+}
+
 // VAPID-Schlüssel liegt base64url-kodiert vor, subscribe() erwartet Bytes.
 function vapidToBytes(base64url) {
   const pad = "=".repeat((4 - (base64url.length % 4)) % 4);
@@ -4160,7 +4248,9 @@ async function pushRegistration() {
 
 // Aktueller Zustand für die Anzeige im Konto
 async function pushStatus() {
-  if (!pushSupported()) return "nicht_unterstuetzt";
+  // Auf dem iPhone fehlt PushManager, solange die App nicht installiert ist.
+  // Das ist kein Defekt, sondern eine Vorbedingung – entsprechend benannt.
+  if (!pushSupported()) return isIOS() && !isStandalone() ? "installation_noetig" : "nicht_unterstuetzt";
   if (Notification.permission === "denied") return "blockiert";
   const reg = await navigator.serviceWorker.getRegistration("/sw.js");
   const sub = reg && await reg.pushManager.getSubscription();
@@ -4227,14 +4317,21 @@ async function renderPushBox() {
     aktiv: ["Dieses Gerät erhält Push-Benachrichtigungen.", "Auf diesem Gerät deaktivieren", "b-green", "Aktiv"],
     inaktiv: ["Erhalte neue Angebote, Nachrichten und Termine sofort – auch wenn Carfixo geschlossen ist.", "Auf diesem Gerät aktivieren", "b-grey", "Inaktiv"],
     blockiert: ["Benachrichtigungen sind für Carfixo im Browser blockiert. Das lässt sich nur in den Einstellungen deines Browsers wieder erlauben.", null, "b-red", "Blockiert"],
-    nicht_unterstuetzt: ["Dieser Browser unterstützt keine Push-Benachrichtigungen. Auf dem iPhone funktioniert es, sobald Carfixo über „Zum Home-Bildschirm“ installiert wurde.", null, "b-grey", "Nicht verfügbar"],
+    installation_noetig: ["Apple erlaubt Mitteilungen nur, wenn Carfixo als App installiert ist. Das dauert zehn Sekunden – danach bekommst du neue Angebote sofort aufs Gerät.", "So geht's", "b-gold", "Installation nötig"],
+    nicht_unterstuetzt: ["Dieser Browser unterstützt keine Mitteilungen. Du bekommst weiterhin alles per E-Mail.", null, "b-grey", "Nicht verfügbar"],
   }[st];
   box.innerHTML = `
     <div class="tt">Push auf diesem Gerät <span class="badge ${texte[2]}">${texte[3]}</span></div>
     <p class="mm" style="margin-top:6px">${esc(texte[0])}</p>
+    ${st === "installation_noetig" ? `<ol style="margin:10px 0 0 18px;padding:0">
+      ${IOS_SCHRITTE.map(s => `<li class="mm" style="font-size:12px;line-height:1.65;margin-bottom:4px">${s}</li>`).join("")}
+    </ol>` : ""}
     ${texte[1] ? `<button class="btn ghost sm" style="margin-top:12px" id="pushToggle">${texte[1]}</button>` : ""}`;
   const btn = $("pushToggle");
-  if (btn) btn.onclick = () => (st === "aktiv" ? disablePush() : enablePush());
+  if (btn) btn.onclick = () => {
+    if (st === "installation_noetig") return openInstallHelp();
+    return st === "aktiv" ? disablePush() : enablePush();
+  };
 }
 
 // ============================================================
@@ -4386,6 +4483,9 @@ sb.auth.onAuthStateChange((event) => {
       await createWorkshopForMe(localStorage.getItem("cfx_pending_ws"));
       localStorage.removeItem("cfx_pending_ws");
     }
+    // Installationshinweis erst nach kurzer Verzögerung – er soll den
+    // Einstieg begleiten, nicht den ersten Eindruck überdecken.
+    if (me) setTimeout(renderInstallBanner, 2500);
   }
   route();
 })();
