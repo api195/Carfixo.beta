@@ -337,7 +337,12 @@ async function doRegister() {
   const pwProblem = await validateNewPassword(pass);
   $("rGo").textContent = "Kostenlos registrieren";
   if (pwProblem) { $("rGo").disabled = false; return showErr(err, pwProblem); }
-  const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name } } });
+  // Ohne emailRedirectTo landet man nach der Bestätigung auf der Startseite
+  // (der Site-URL) statt in der App – und muss sich von dort erst durchklicken.
+  const { data, error } = await sb.auth.signUp({
+    email, password: pass,
+    options: { data: { full_name: name }, emailRedirectTo: location.origin + "/app.html" },
+  });
   $("rGo").disabled = false;
   if (error) return showErr(err, error.message);
   if (!data.session) {
