@@ -51,7 +51,10 @@
     loader = new Promise((resolve) => {
       if (window.google && window.google.maps) return resolve(true);
       const cb = "__carfixoMapsReady";
-      const done = (ok) => { try { delete window[cb]; } catch (e) { window[cb] = undefined; } resolve(ok); };
+      // Nach der Entscheidung bleibt der Callback als Leerfunktion stehen. Loescht
+      // man ihn, wirft ein spaet doch noch eintreffendes Google-Skript einen Fehler,
+      // weil es die Funktion beim Namen aufruft.
+      const done = (ok) => { window[cb] = function () {}; resolve(ok); };
       window[cb] = () => done(true);
       const s = document.createElement("script");
       s.src = "https://maps.googleapis.com/maps/api/js"
@@ -61,7 +64,12 @@
       // Adblocker, fehlender Key, kein Netz: still auf Leaflet zurückfallen.
       s.onerror = () => done(false);
       document.head.appendChild(s);
-      setTimeout(() => done(!!(window.google && window.google.maps)), 10000);
+      // Notbremse: onerror feuert nicht in jedem Fall (haengende Proxys, blockierte
+      // Tunnel). Ohne sie starrt der Nutzer auf einen leeren Kasten. 6 Sekunden sind
+      // reichlich - normal laedt das Skript in unter einer Sekunde. Greift die Bremse
+      // bei einer sehr langsamen Verbindung zu frueh, bekommt der Nutzer die
+      // Leaflet-Karte: anderer Look, aber sofort da statt spaeter.
+      setTimeout(() => done(!!(window.google && window.google.maps)), 6000);
     });
     return loader;
   }
