@@ -44,6 +44,44 @@ Die Bibliotheken (supabase-js, Leaflet) liegen lokal unter `assets/vendor/`.
 **Admin** (`admin.html`)
 - Plattform-KPIs, Werkstätten verifizieren/sperren, Nutzerliste, Anfragen-Monitor
 
+## Karten (Google Maps)
+
+Alle drei Karten (Suche, Werkstattprofil, Betriebs-Onboarding) laufen über die gemeinsame
+Schicht `assets/maps.js`. Welcher Anbieter dahinter steckt, entscheidet **allein der Key**:
+
+| `GOOGLE_MAPS_KEY` in `assets/config.js` | Anbieter |
+|---|---|
+| gesetzt | Google Maps |
+| leer, Skript blockiert oder Google nicht erreichbar | Leaflet + OpenStreetMap (Rückfall) |
+
+Die App bleibt also ohne Key voll funktionsfähig – nichts bricht.
+
+**Einrichtung** (Google Cloud Console, [console.cloud.google.com](https://console.cloud.google.com)):
+
+1. Projekt anlegen und **Abrechnungskonto** verknüpfen. Ohne Abrechnung liefert Google nur
+   graue Karten mit „For development purposes only". Google gewährt monatlich ein
+   kostenloses Kontingent, das für die Beta reichlich ist.
+2. Unter **APIs & Services → Library** aktivieren:
+   - **Maps JavaScript API** (die Karten im Browser)
+   - **Geocoding API** (Adresse → Koordinaten, serverseitig)
+3. Zwei **getrennte** Schlüssel unter **Credentials → Create credentials → API key** anlegen:
+
+   | Schlüssel | Ablage | Einschränkungen |
+   |---|---|---|
+   | Browser-Key | `GOOGLE_MAPS_KEY` in `assets/config.js` | *Application restrictions:* Websites → `https://carfixo.de/*`, `http://localhost:8000/*`<br>*API restrictions:* nur **Maps JavaScript API** |
+   | Server-Key | Vercel-Umgebungsvariable `GOOGLE_MAPS_SERVER_KEY` | *Application restrictions:* keine (oder IP)<br>*API restrictions:* nur **Geocoding API** |
+
+   Der Browser-Key steht zwangsläufig im Quelltext – das ist bei Google so vorgesehen.
+   Der Schutz kommt aus der Website-Beschränkung, **nicht** aus Geheimhaltung.
+   Der Server-Key darf niemals ins Frontend.
+4. Unter **Billing → Budgets & alerts** ein Budget mit E-Mail-Warnung setzen (z. B. 20 €).
+   Google stoppt bei Budgetüberschreitung **nicht** automatisch – die Warnung ist die Bremse.
+
+**Datenschutz:** Karten werden erst geladen, wenn sie aktiv geöffnet werden
+(„Karte anzeigen"). Vorher geht keine einzige Anfrage an Google. Die Adresssuche läuft
+über `/api/geocode`, also über unseren Server – die IP-Adressen der Nutzer erreichen
+Google dabei nicht. Siehe `legal.html`.
+
 ## Backend (Supabase)
 
 Projekt: `boozzfiroukraekyijfq` (EU) – Verbindung in `assets/config.js` (öffentlicher Publishable Key).
@@ -100,6 +138,10 @@ Diese Schritte lassen sich nicht im Code erledigen:
   „Prevent use of leaked passwords" lässt sich **nicht** aktivieren, das ist ein Pro-Feature.
   Die Prüfung übernimmt stattdessen das Frontend direkt über die HaveIBeenPwned-API
   (`validateNewPassword` in `assets/app.js`) – gleiche Datenquelle, ohne Abo.
+- **Google-Maps-Schlüssel** eintragen (siehe „Karten" oben): Browser-Key in
+  `assets/config.js`, Server-Key als Vercel-Umgebungsvariable `GOOGLE_MAPS_SERVER_KEY`.
+  Beide Schlüssel einschränken und ein Budget mit Warnung setzen. Solange das offen ist,
+  läuft Carfixo auf Leaflet + OpenStreetMap weiter – funktioniert, sieht nur anders aus.
 - **Testkonten** löschen oder Passwörter rotieren (siehe oben).
 - **Rechtstexte** in `legal.html` durch geprüfte Fassungen ersetzen.
 - **Auth-E-Mails (Registrierung, Passwort zurücksetzen):** laufen **nicht** über

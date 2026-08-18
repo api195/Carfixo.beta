@@ -20,7 +20,9 @@ Zahlungen laufen bis zum Launch ausschließlich im **Testmodus** (keine echten S
 
 - Statisches Frontend (`index.html`, `app.html`, `admin.html` + `assets/`), kein Build-Schritt
 - Supabase: Postgres + RLS, Auth, Storage, Realtime; Migrationen über MCP versioniert
-- Karten: Leaflet + OSM/Carto (lokal gevendort); Geocoding: Nominatim (deutschlandweit)
+- Karten: Google Maps über die Schicht `assets/maps.js`; ohne Key automatischer Rückfall auf
+  Leaflet + OSM/Carto (lokal gevendort). Geocoding serverseitig über `/api/geocode`:
+  Google Geocoding API, Nominatim als Rückfall
 - KI-Diagnose: regelbasierte Beta (klar als „unverbindliche Ersteinschätzung" gekennzeichnet);
   später austauschbar gegen echtes Modell (Serverless Function)
 - Zahlungen: UI/Statusmodell fertig, Stripe-Anbindung kommt kurz vor Launch
