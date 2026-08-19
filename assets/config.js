@@ -14,5 +14,5 @@ window.CARFIXO = {
   //      http://localhost:8000/* begrenzen
   //   2. "API restrictions" auf "Maps JavaScript API" begrenzen
   // Solange dieser Wert leer ist, nutzt Carfixo weiter Leaflet + OpenStreetMap.
-  GOOGLE_MAPS_KEY: "",
+  GOOGLE_MAPS_KEY:"AIzaSyCAu0lLgkeqqtOZleFsWefCM17Foi1h8o4",
 };
