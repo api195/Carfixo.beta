@@ -74,7 +74,7 @@ async function route() {
   const view = routes[name];
   if (!view) return go("search");
   renderNav(name);
-  try { await view(param, query); } catch (e) {
+  try { await view(param, query); mountFilterSheet(); } catch (e) {
     console.error(e);
     main.innerHTML = `<div class="warn">Fehler beim Laden: ${esc(e.message || e)}</div>`;
   }
@@ -98,6 +98,71 @@ function renderNav(active) {
     av.onclick = () => go("account");
   } else av.classList.add("hidden");
 }
+
+/* ------------------------------------------------------------------
+   Filterschublade auf dem Handy
+   Auf schmalen Bildschirmen steht die Filterspalte sonst als lange Liste
+   vor den Ergebnissen. Hier bekommt sie einen festen Öffner über den
+   Ergebnissen und liegt ansonsten als Schublade am unteren Rand.
+   Wird nach jedem Seitenaufbau aufgerufen und räumt vorher auf.
+------------------------------------------------------------------ */
+function setFilterSheet(open) {
+  const box = document.querySelector(".filterBox");
+  const back = $("sheetBack"), btn = $("mFilterOpen");
+  if (!box || !back) return;
+  box.classList.toggle("open", open);
+  back.classList.toggle("show", open);
+  document.body.classList.toggle("sheetOpen", open);
+  if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
+  if (!open) box.scrollTop = 0;
+}
+
+function updateFilterCount(n) {
+  const el = $("mFilterCount");
+  if (!el) return;
+  el.textContent = n;
+  el.hidden = !n;
+}
+
+function mountFilterSheet() {
+  // Reste der vorigen Seite entfernen – sonst bleibt die Sperre am Body hängen
+  $("mFilterBar")?.remove();
+  $("sheetBack")?.remove();
+  document.body.classList.remove("sheetOpen");
+
+  const box = document.querySelector(".filterBox");
+  if (!box) return;
+  box.classList.remove("open");
+
+  const grid = box.parentElement;
+  const bar = document.createElement("div");
+  bar.id = "mFilterBar";
+  bar.className = "mFilterBar";
+  bar.innerHTML = `<button class="btn ghost sm" type="button" id="mFilterOpen" aria-expanded="false">
+    ${ico("gear", 16)} Filter &amp; Umkreis <span class="fCount" id="mFilterCount" hidden></span></button>`;
+  grid.parentNode.insertBefore(bar, grid);
+
+  const back = document.createElement("div");
+  back.id = "sheetBack";
+  back.className = "sheetBack";
+  back.addEventListener("click", () => setFilterSheet(false));
+  document.body.appendChild(back);
+
+  if (!box.querySelector(".sheetDone")) {
+    const done = document.createElement("button");
+    done.type = "button";
+    done.className = "btn wide sheetDone";
+    done.textContent = "Ergebnisse anzeigen";
+    done.addEventListener("click", () => setFilterSheet(false));
+    box.appendChild(done);
+  }
+
+  $("mFilterOpen").addEventListener("click", () => setFilterSheet(true));
+  renderActiveFilters();
+}
+
+// Escape schließt die Schublade – gleiche Erwartung wie bei den Dialogen
+document.addEventListener("keydown", e => { if (e.key === "Escape") setFilterSheet(false); });
 
 async function loadSession() {
   const { data: { session } } = await sb.auth.getSession();
@@ -412,8 +477,8 @@ async function vSearch(_p, query) {
 
   <div class="card" style="margin-bottom:14px;padding:8px 8px 8px 18px;display:flex;align-items:center;gap:10px">
     <span style="font-size:18px"></span>
-    <input id="fQ" value="${esc(s.q || "")}" placeholder="Wonach suchst du? z.B. Ölwechsel, Chiptuning, Felgen aufbereiten, Betriebsname…"
-      style="border:none;background:none;font-size:15.5px;padding:12px 0" autocomplete="off">
+    <input id="fQ" value="${esc(s.q || "")}" placeholder="Leistung oder Betrieb suchen…"
+      style="border:none;background:none;font-size:16px;padding:12px 0" autocomplete="off">
     ${s.q ? `<button class="btn ghost sm" id="fQClear" style="flex:0 0 auto" aria-label="Suche zurücksetzen">✕</button>` : ""}
   </div>
 
@@ -486,6 +551,7 @@ async function vSearch(_p, query) {
   <div id="compareBar"></div>`;
 
   fillCatSelect();
+  mountFilterSheet();
 
   // Freitext-Suche
   $("fQ").oninput = () => {
@@ -694,6 +760,7 @@ function renderActiveFilters() {
   if (s.mobile) add("Mobil", "mobile");
   if (s.minRating) add(`★ ${s.minRating}+`, "minRating");
   box.innerHTML = chips.join("");
+  updateFilterCount(chips.length);
   box.querySelectorAll("[data-clear]").forEach(c => c.onclick = () => {
     const k = c.dataset.clear;
     if (k === "minRating") searchState.minRating = 0;

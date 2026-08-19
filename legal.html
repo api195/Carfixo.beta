@@ -11,17 +11,30 @@
 <link rel="stylesheet" href="assets/app.css">
 <style>
   main{max-width:860px;margin:0 auto;padding:22px 18px 60px}
+  @media(max-width:760px){
+    main{padding:16px 14px 40px}
+    .lg h2{font-size:18px}
+    .lg p,.lg li{font-size:13px}
+    .toc{gap:6px;margin:12px 0 18px}
+    .toc a{font-size:11.5px;padding:7px 12px}
+    /* Lieber seitlich wischen als drei Spalten auf Wortbreite quetschen */
+    .lg table{min-width:440px}
+  }
   .lg h2{font-size:20px;font-weight:800;margin-bottom:4px}
   .lg h3{font-size:14px;font-weight:800;margin:18px 0 4px}
   .lg p,.lg li{font-size:13.5px;color:var(--muted);line-height:1.65}
   .lg ul{margin:6px 0 0 18px}
   .lg li{margin-bottom:4px}
+  /* Tabellen dürfen die Seite nicht breiter machen als das Gerät */
+  .tblScroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .lg table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px}
   .lg td,.lg th{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;color:var(--muted)}
   .lg th{color:var(--ink);font-weight:700;background:rgba(255,255,255,.03)}
   /* Auszufüllende Stellen sichtbar markieren, damit vor dem Launch nichts übersehen wird */
   .fill{background:rgba(255,176,32,.16);border:1px dashed rgba(255,176,32,.55);border-radius:5px;
-        padding:1px 6px;color:#FFD79A;font-weight:700;font-size:12.5px;white-space:nowrap}
+        padding:1px 6px;color:#FFD79A;font-weight:700;font-size:12.5px;
+        /* kein nowrap: lange Platzhalter haben die Seite sonst aufgespreizt */
+        display:inline;overflow-wrap:anywhere}
   .toc{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 22px}
   .toc a{font-size:12px;font-weight:700;color:var(--blue2);border:1px solid var(--line2);
          border-radius:99px;padding:6px 13px;text-decoration:none}
@@ -137,7 +150,7 @@
     </p>
 
     <h3>2. Welche Daten wir verarbeiten</h3>
-    <table>
+    <div class="tblScroll"><table>
       <tr><th>Kategorie</th><th>Inhalt</th><th>Zweck / Rechtsgrundlage</th></tr>
       <tr><td>Kontodaten</td><td>E-Mail, Name, Telefon, Rolle, Passwort (gehasht)</td>
           <td>Bereitstellung des Kontos · Art. 6 Abs. 1 lit. b</td></tr>
@@ -155,11 +168,11 @@
           <td>Transparenz im Marktplatz · lit. b / lit. f</td></tr>
       <tr><td>Benachrichtigungen</td><td>Hinweise zu Angeboten, Terminen, Nachrichten</td>
           <td>Vertragsdurchführung · lit. b</td></tr>
-    </table>
+    </table></div>
 
     <h3>3. Empfänger und Auftragsverarbeiter</h3>
     <p>Für Auftragsverarbeiter ist jeweils ein Vertrag nach Art. 28 DSGVO erforderlich:</p>
-    <table>
+    <div class="tblScroll"><table>
       <tr><th>Dienst</th><th>Zweck</th><th>Ort / Hinweis</th></tr>
       <tr><td>Supabase</td><td>Datenbank, Authentifizierung, Dateispeicher</td>
           <td>EU (Region Frankfurt) · <span class="fill">[AV-Vertrag prüfen]</span></td></tr>
@@ -169,7 +182,7 @@
           <td><span class="fill">[AV-Vertrag prüfen; ggf. Drittlandtransfer]</span></td></tr>
       <tr><td>Betriebe</td><td>Erhalten die zur Bearbeitung nötigen Angaben</td>
           <td>Eigenständig Verantwortliche</td></tr>
-    </table>
+    </table></div>
 
     <h3>4. Beim Aufruf eingebundene Drittanbieter</h3>
     <p>
