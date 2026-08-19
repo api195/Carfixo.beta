@@ -177,7 +177,9 @@
       übertragen. Sie sind für die Funktion erforderlich (Art. 6 Abs. 1 lit. f):
     </p>
     <ul>
-      <li><b>CARTO</b> – Kartenkacheln, sobald eine Karte angezeigt wird.</li>
+      <li><b>Google Maps</b> (Google Ireland Limited) – Kartendarstellung und Adresssuche,
+          sobald eine Karte angezeigt wird.</li>
+      <li><b>CARTO / OpenStreetMap</b> – Kartenkacheln, wenn Google Maps nicht verfügbar ist.</li>
       <li><b>jsDelivr (CDN)</b> – lädt die Texterkennungs-Bibliothek für den Fahrzeugschein-Scan.</li>
       <li><b>HaveIBeenPwned</b> – Prüfung bei Registrierung und Passwortänderung, ob das
           gewählte Passwort in bekannten Datenlecks vorkommt.</li>
@@ -189,10 +191,25 @@
       Anfrage lässt sich das Passwort nicht rekonstruieren.
     </p>
     <p>
-      <b>Zur Adresssuche:</b> Die Umkreissuche nutzt Nominatim (OpenStreetMap), wird aber
-      über unseren eigenen Server geleitet. Die <b>IP-Adresse der Nutzer wird dabei nicht</b>
-      an OpenStreetMap übermittelt; dort erscheint nur unser Server. Übertragen wird
-      ausschließlich der eingegebene Ortsname.
+      <b>Zur Adresssuche:</b> Die Umkreissuche läuft über unseren eigenen Server. Die
+      <b>IP-Adresse der Nutzer wird dabei nicht</b> an den Kartendienst übermittelt; dort
+      erscheint nur unser Server. Übertragen wird ausschließlich der eingegebene Ortsname.
+    </p>
+    <p>
+      <b>Zu den Karten:</b> Karten werden über <b>Google Maps</b> dargestellt. Anders als
+      bei der Adresssuche lässt sich das nicht über unseren Server leiten – die Karte wird
+      direkt vom Browser bei Google geladen. Dabei übermittelt der Browser an Google
+      unter anderem die <b>IP-Adresse</b>, den ausgewählten Kartenausschnitt und technische
+      Angaben zum Gerät. Eine Übermittlung in die <b>USA</b> ist dabei möglich; Google LLC
+      ist nach dem EU-US Data Privacy Framework zertifiziert.
+    </p>
+    <p>
+      Deshalb wird eine Karte <b>erst geladen, wenn sie aktiv geöffnet wird</b> – auf der
+      Suchseite etwa erst nach einem Klick auf „Karte anzeigen“. Wer keine Karte öffnet,
+      baut auch keine Verbindung zu Google auf; die Werkstattsuche funktioniert vollständig
+      über die Ergebnisliste. Rechtsgrundlage ist Art. 6 Abs. 1 lit. a DSGVO (Einwilligung
+      durch das bewusste Öffnen der Karte). Weitere Angaben:
+      <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Datenschutzerklärung von Google</a>.
     </p>
     <p>
       <b>Zum Fahrzeugschein-Scan:</b> Die Texterkennung läuft vollständig <b>im Browser</b>.

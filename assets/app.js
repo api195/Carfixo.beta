@@ -401,7 +401,7 @@ async function vSearch(_p, query) {
     if (query.world && WORLDS.some(w => w.key === query.world)) searchState.world = query.world;
   }
   const pendingLoc = query?.loc || "";
-  searchMap = null; mapMarkers = []; // Karte wird beim Einblenden neu initialisiert
+  searchMap = null; // Karte wird beim Einblenden neu initialisiert
   const s = searchState;
   main.innerHTML = `
   <div class="pageHead">
@@ -554,13 +554,10 @@ async function vSearch(_p, query) {
     $("mapToggle").textContent = show ? "Karte ausblenden" : "Karte anzeigen";
     if (show) {
       if (!searchMap) {
-        searchMap = L.map("map", { scrollWheelZoom: false }).setView(searchOrigin || CITY_CENTER, 12);
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-          attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com/">CARTO</a>', maxZoom: 19,
-        }).addTo(searchMap);
-        searchMap.on("click", (e) => setSearchOrigin([e.latlng.lat, e.latlng.lng], "Karten-Position"));
+        searchMap = CarfixoMaps.create("map", { center: searchOrigin || CITY_CENTER, zoom: 12 });
+        searchMap.onClick((ll) => setSearchOrigin(ll, "Karten-Position"));
       }
-      setTimeout(() => { searchMap.invalidateSize(); applyFilters(); }, 60);
+      setTimeout(() => { searchMap.refresh(); applyFilters(); }, 60);
     }
   };
 
@@ -625,7 +622,6 @@ function fillServiceSelect() {
   $("fService").innerHTML = opt(searchState.cat ? "Alle Leistungen" : "Erst Kategorie wählen", services, searchState.service);
   $("fService").disabled = !searchState.cat;
 }
-let mapMarkers = [];
 function applyFilters() {
   if (!$("results") || !allWorkshops) return;
   const s = searchState;
@@ -668,21 +664,17 @@ function applyFilters() {
   renderActiveFilters();
   // Karte aktualisieren (nur wenn eingeblendet/initialisiert)
   if (searchMap) {
-    mapMarkers.forEach(m => searchMap.removeLayer(m));
-    mapMarkers = [];
-    if (searchOrigin) {
-      const om = L.circleMarker(searchOrigin, { radius: 8, color: "#38BDF8", fillColor: "#38BDF8", fillOpacity: .9 }).addTo(searchMap);
-      om.bindPopup("Dein Standort");
-      mapMarkers.push(om);
-    }
+    searchMap.clearMarkers();
+    if (searchOrigin) searchMap.addDot(searchOrigin, { radius: 8, color: "#38BDF8", stroke: "#7DD3FC", popup: "Dein Standort" });
     visible.forEach(ws => {
       if (ws.lat == null || ws.lng == null) return;
-      const icon = L.divIcon({ className: "", html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:linear-gradient(135deg,#2E77FF,#0A47C2);box-shadow:0 6px 16px rgba(30,107,255,.5);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);color:#fff">${ico(ws.categories[0] || "reparatur", 13)}</span></div>`, iconSize: [30, 30], iconAnchor: [15, 30] });
-      const m = L.marker([ws.lat, ws.lng], { icon }).addTo(searchMap);
-      m.bindPopup(`<b>${esc(ws.name)}</b><br><span style="color:#FFB020">${stars(ws.rating_avg)}</span> ${ws.rating_avg ?? "–"} · ${esc(ws.district || ws.city || "")}<br><a href="#/workshop/${ws.id}" style="color:#4D8DFF;font-weight:700">Profil ansehen →</a>`);
-      mapMarkers.push(m);
+      searchMap.addPin([ws.lat, ws.lng], {
+        iconName: ws.categories[0] || "reparatur",
+        title: ws.name,
+        popup: `<b>${esc(ws.name)}</b><br><span style="color:#FFB020">${stars(ws.rating_avg)}</span> ${ws.rating_avg ?? "–"} · ${esc(ws.district || ws.city || "")}<br><a href="#/workshop/${ws.id}" style="color:#4D8DFF;font-weight:700">Profil ansehen →</a>`,
+      });
     });
-    if (mapMarkers.length) searchMap.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.25));
+    searchMap.fitMarkers();
   }
   renderCompareBar();
 }
@@ -825,7 +817,13 @@ async function vWorkshopProfile(id) {
         <p class="mm" style="margin-top:8px">${esc(ws.street || "")}<br>${esc(ws.zip || "")} ${esc(ws.city || "Köln")}${ws.district ? "-" + esc(ws.district) : ""}</p>
         ${ws.phone ? `<p class="mm" style="margin-top:5px">${esc(ws.phone)}</p>` : ""}
         ${ws.website ? `<p class="mm" style="margin-top:3px">${esc(ws.website)}</p>` : ""}
-        <div class="mapWrap" style="height:200px;margin-top:12px"><div id="wsMap"></div></div>
+        <div class="mapWrap" style="height:200px;margin-top:12px">
+          <div id="wsMap"></div>
+          <button class="mapConsent" id="wsMapLoad" type="button">
+            ${ico("search", 20)}<b>Karte anzeigen</b>
+            <span>Dabei wird eine Verbindung zu Google Maps aufgebaut.</span>
+          </button>
+        </div>
       </div>
       <div class="card">
         <div class="tt">Öffnungszeiten</div>
@@ -848,9 +846,12 @@ async function vWorkshopProfile(id) {
   sb.from("reviews").select("id", { count: "exact", head: true }).eq("workshop_id", ws.id)
     .then(({ count }) => { /* Anzahl über Bewertungen sichtbar */ });
   if (ws.lat != null && ws.lng != null) {
-    const m = L.map("wsMap", { scrollWheelZoom: false, dragging: false, zoomControl: false }).setView([ws.lat, ws.lng], 14);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { maxZoom: 19 }).addTo(m);
-    L.circleMarker([ws.lat, ws.lng], { radius: 9, color: "#4D8DFF", fillColor: "#1E6BFF", fillOpacity: .9 }).addTo(m);
+    // Karte erst auf Klick laden – vorher geht keine Anfrage an den Kartendienst.
+    $("wsMapLoad").onclick = () => {
+      $("wsMapLoad").remove();
+      const m = CarfixoMaps.create("wsMap", { center: [ws.lat, ws.lng], zoom: 14, interactive: false });
+      m.addDot([ws.lat, ws.lng], { radius: 9, color: "#1E6BFF", stroke: "#4D8DFF" });
+    };
   } else $("wsMap").parentElement.classList.add("hidden");
 }
 
@@ -3052,6 +3053,7 @@ async function vWsProfile() {
   profServices = [...(w.services || [])];
   profBrands = [...(w.brands || [])];
   profLatLng = w.lat != null ? [w.lat, w.lng] : null;
+  profMap = null; profMarker = null;   // Karte wird erst beim Klick neu aufgebaut
   const oh = w.opening_hours || {};
   const days = [["mo", "Mo"], ["di", "Di"], ["mi", "Mi"], ["do", "Do"], ["fr", "Fr"], ["sa", "Sa"], ["so", "So"]];
   main.innerHTML = `
@@ -3100,7 +3102,13 @@ async function vWsProfile() {
         <div class="label">Stadtteil</div>
         <select id="pDistrict">${opt("Wählen…", Object.keys(DISTRICTS), w.district)}</select>
         <div class="label">Standort auf der Karte (klicken zum Setzen)</div>
-        <div class="mapWrap" style="height:230px"><div id="obMap"></div></div>
+        <div class="mapWrap" style="height:230px">
+          <div id="obMap"></div>
+          <button class="mapConsent" id="obMapLoad" type="button">
+            ${ico("search", 20)}<b>Karte anzeigen</b>
+            <span>Zum Setzen des Standort-Pins. Dabei wird eine Verbindung zu Google Maps aufgebaut.</span>
+          </button>
+        </div>
         <p class="mm" id="pLatLng" style="margin-top:6px">${profLatLng ? "Standort gesetzt" : "Noch kein Standort – auf die Karte klicken oder Stadtteil wählen."}</p>
       </div>
       <div class="card">
@@ -3210,13 +3218,17 @@ async function vWsProfile() {
   document.querySelectorAll("#pPay .chip").forEach(c => c.onclick = () => c.classList.toggle("on"));
   renderProfServices();
 
-  profMap = L.map("obMap", { scrollWheelZoom: false }).setView(profLatLng || CITY_CENTER, profLatLng ? 14 : 11);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { maxZoom: 19 }).addTo(profMap);
-  if (profLatLng) profMarker = L.marker(profLatLng, { draggable: true }).addTo(profMap);
-  profMap.on("click", (e) => setProfLatLng([e.latlng.lat, e.latlng.lng]));
+  // Karte erst auf Klick laden – vorher geht keine Anfrage an den Kartendienst.
+  $("obMapLoad").onclick = () => {
+    $("obMapLoad").remove();
+    profMap = CarfixoMaps.create("obMap", { center: profLatLng || CITY_CENTER, zoom: profLatLng ? 14 : 11 });
+    if (profLatLng) profMarker = profMap.addDraggable(profLatLng, (ll) => { profLatLng = ll; });
+    profMap.onClick((ll) => setProfLatLng(ll));
+  };
+  // Stadtteil-Auswahl setzt den Standort auch ohne geöffnete Karte.
   $("pDistrict").onchange = () => {
     const d = DISTRICTS[$("pDistrict").value];
-    if (d) { setProfLatLng(d); profMap.setView(d, 14); }
+    if (d) { setProfLatLng(d); if (profMap) profMap.setView(d, 14); }
   };
   $("pSave").onclick = saveWsProfile.bind(null, () => priceLevel);
   loadTeamList();
@@ -3271,8 +3283,8 @@ async function toggleMember(id, active) {
 }
 function setProfLatLng(ll) {
   profLatLng = ll;
-  if (profMarker) profMarker.setLatLng(ll);
-  else { profMarker = L.marker(ll, { draggable: true }).addTo(profMap); profMarker.on("dragend", () => { const p = profMarker.getLatLng(); profLatLng = [p.lat, p.lng]; }); }
+  if (profMarker) profMarker.setPosition(ll);
+  else if (profMap) profMarker = profMap.addDraggable(ll, (p) => { profLatLng = p; });
   $("pLatLng").textContent = "Standort gesetzt";
 }
 function renderProfServices() {

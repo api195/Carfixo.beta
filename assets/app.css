@@ -136,6 +136,20 @@ input[type=date]{color-scheme:dark}
 .leaflet-popup-content-wrapper{background:var(--panel2);color:var(--ink);border-radius:12px;border:1px solid var(--line2)}
 .leaflet-popup-tip{background:var(--panel2)}
 .leaflet-bar a{background:var(--panel2)!important;color:#fff!important;border-color:var(--line)!important}
+/* Google Maps: Infofenster + Steuerelemente ans dunkle Carfixo-Design angleichen */
+.gm-style .gm-style-iw-c{background:var(--panel2)!important;border:1px solid var(--line2);border-radius:12px;padding:0!important;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.gm-style .gm-style-iw-d{overflow:hidden!important;background:transparent}
+.gm-style .gm-style-iw-tc::after{background:var(--panel2)!important}
+.gm-style .gm-style-iw-c button.gm-ui-hover-effect>span{background-color:var(--ink)!important}
+.gmInfo{color:var(--ink);font:inherit;font-size:13px;line-height:1.5;padding:10px 12px}
+.gmInfo a{text-decoration:none}
+/* Einwilligungs-Platzhalter: Karte wird erst auf Klick vom Kartendienst geladen */
+.mapConsent{position:absolute;inset:0;z-index:2;width:100%;border:0;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  background:#0A101E;color:var(--ink);font:inherit;text-align:center;padding:16px}
+.mapConsent b{font-size:14px}
+.mapConsent span{font-size:12px;color:var(--muted);max-width:32ch;line-height:1.45}
+.mapConsent:hover{background:#111A2C}
 .wsCard{display:flex;gap:14px;align-items:flex-start}
 .wsAv{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,rgba(77,141,255,.3),rgba(56,189,248,.12));display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:var(--blue2);flex-shrink:0}
 .ratingLine{color:var(--gold);font-size:12px;letter-spacing:1px}
