@@ -571,6 +571,24 @@ async function vSearch(_p, query) {
   // Ort von der Startseite übernehmen (z.B. „Köln" oder PLZ)
   if (pendingLoc && $("locAddr")) { $("locAddr").value = pendingLoc; geocodeAddress(); }
 }
+// Route zur Werkstatt in Google Maps. Bewusst ein normaler Link statt der
+// Directions API: kostet nichts, braucht keinen Schluessel und oeffnet auf dem
+// Handy direkt die Maps-App (bzw. Apple Maps, wenn Maps nicht installiert ist).
+// Die Adresse ist als Ziel lesbarer als Koordinaten - fehlt sie, nehmen wir den
+// Karten-Pin, den der Betrieb selbst gesetzt hat.
+function mapsDirUrl(ws) {
+  const ort = [ws.zip, ws.city].filter(Boolean).join(" ").trim();
+  const adresse = [ws.street, ort].filter(Boolean).join(", ").trim();
+  const link = z => "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(z);
+  // Vollstaendige Adresse ist das beste Ziel: in Maps lesbar und eindeutig.
+  if (ws.street && ort) return link(adresse);
+  // Sonst der Karten-Pin des Betriebs - genauer als eine halbe Adresse.
+  if (ws.lat != null && ws.lng != null) return link(`${ws.lat},${ws.lng}`);
+  // Bruchstueck (nur Ort oder nur Strasse) ist immer noch besser als nichts.
+  if (adresse) return link(adresse);
+  // Ohne jede Ortsangabe keinen Button zeigen - "Köln" waere hier geraten.
+  return null;
+}
 function setSearchOrigin(ll, label) {
   searchOrigin = ll; searchOriginLabel = label;
   const info = $("locInfo");
@@ -817,6 +835,9 @@ async function vWorkshopProfile(id) {
         <p class="mm" style="margin-top:8px">${esc(ws.street || "")}<br>${esc(ws.zip || "")} ${esc(ws.city || "Köln")}${ws.district ? "-" + esc(ws.district) : ""}</p>
         ${ws.phone ? `<p class="mm" style="margin-top:5px">${esc(ws.phone)}</p>` : ""}
         ${ws.website ? `<p class="mm" style="margin-top:3px">${esc(ws.website)}</p>` : ""}
+        ${mapsDirUrl(ws) ? `<a class="btn ghost sm wide" style="margin-top:12px;text-decoration:none"
+          href="${esc(mapsDirUrl(ws))}" target="_blank" rel="noopener noreferrer">
+          ${ico("pin")} Route in Google Maps</a>` : ""}
         <div class="mapWrap" style="height:200px;margin-top:12px">
           <div id="wsMap"></div>
           <button class="mapConsent" id="wsMapLoad" type="button">
