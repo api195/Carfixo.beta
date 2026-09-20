@@ -227,14 +227,48 @@ async function vLogin() {
   $("lPass").onkeydown = (e) => { if (e.key === "Enter") $("lGo").click(); };
   $("lGo").onclick = async () => {
     const err = $("lErr"); err.style.display = "none";
+    const email = $("lEmail").value.trim(), pass = $("lPass").value;
+    // Ohne diese Pruefung geht eine sinnlose Anfrage raus und der Nutzer sieht
+    // Supabases englische Antwort statt eines brauchbaren Hinweises.
+    if (!email || !pass) return showErr(err, "Bitte E-Mail und Passwort ausfüllen.");
     $("lGo").disabled = true;
-    const { error } = await sb.auth.signInWithPassword({ email: $("lEmail").value.trim(), password: $("lPass").value });
+    const { error } = await sb.auth.signInWithPassword({ email, password: pass });
     $("lGo").disabled = false;
-    if (error) return showErr(err, error.message === "Invalid login credentials" ? "E-Mail oder Passwort falsch." : error.message);
+    if (error) return showErr(err, authFehler(error));
     await loadSession();
     toast("Angemeldet ✓");
     go(afterAuth(""));
   };
+}
+
+// ---------- Auth-Fehler in verständliches Deutsch übersetzen ----------
+// Supabase antwortet auf Englisch und oft technisch ("Invalid login
+// credentials", "Email not confirmed"). Ungefiltert durchgereicht ist das für
+// Nutzer wertlos. Verglichen wird auf Teilstrings, weil der genaue Wortlaut
+// je nach Supabase-Version schwankt.
+function authFehler(error) {
+  const roh = String((error && error.message) || "");
+  const m = roh.toLowerCase();
+  const treffer = [
+    ["invalid login credentials",        "E-Mail oder Passwort falsch."],
+    ["email not confirmed",              "Bitte bestätige zuerst den Link in deiner Registrierungs-E-Mail."],
+    ["user already registered",          "Für diese E-Mail gibt es bereits ein Konto. Melde dich stattdessen an."],
+    ["already been registered",          "Für diese E-Mail gibt es bereits ein Konto. Melde dich stattdessen an."],
+    ["unable to validate email",         "Diese E-Mail-Adresse sieht nicht gültig aus."],
+    ["invalid format",                   "Diese E-Mail-Adresse sieht nicht gültig aus."],
+    ["should be different",              "Das neue Passwort muss sich vom bisherigen unterscheiden."],
+    ["token has expired",                "Der Link ist abgelaufen. Fordere bitte einen neuen an."],
+    ["is invalid or has expired",        "Der Link ist abgelaufen. Fordere bitte einen neuen an."],
+    ["rate limit",                       "Zu viele Versuche. Bitte warte ein paar Minuten."],
+    ["for security purposes",            "Zu viele Versuche. Bitte warte ein paar Minuten."],
+    ["signups not allowed",              "Registrierungen sind derzeit nicht möglich."],
+    ["failed to fetch",                  "Keine Verbindung zum Server. Prüfe deine Internetverbindung."],
+    ["networkerror",                     "Keine Verbindung zum Server. Prüfe deine Internetverbindung."],
+    ["load failed",                      "Keine Verbindung zum Server. Prüfe deine Internetverbindung."],
+  ].find(([schluessel]) => m.includes(schluessel));
+  // Unbekanntes lieber im Original zeigen als verschlucken – sonst steht der
+  // Nutzer ohne jeden Anhaltspunkt da und wir sehen im Support nichts.
+  return treffer ? treffer[1] : (roh || "Unbekannter Fehler. Bitte später erneut versuchen.");
 }
 
 // ---------- Prüfung auf geleakte Passwörter ----------
@@ -345,7 +379,7 @@ async function vResetPassword() {
     $("rpGo").textContent = "Wird gespeichert…";
     const { error } = await sb.auth.updateUser({ password: pw });
     $("rpGo").disabled = false; $("rpGo").textContent = "Passwort speichern";
-    if (error) return showErr(err, error.message);
+    if (error) return showErr(err, authFehler(error));
     await loadSession();
     toast("Passwort geändert ✓");
     go(myWorkshop ? "ws/dashboard" : "search");
@@ -409,7 +443,7 @@ async function doRegister() {
     options: { data: { full_name: name }, emailRedirectTo: location.origin + "/app.html" },
   });
   $("rGo").disabled = false;
-  if (error) return showErr(err, error.message);
+  if (error) return showErr(err, authFehler(error));
   if (!data.session) {
     main.innerHTML = `<div class="authWrap"><div class="authCard" style="text-align:center">
       <div style="font-size:42px"></div>
