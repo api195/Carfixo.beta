@@ -74,6 +74,28 @@
     return loader;
   }
 
+  // ---- Leaflet erst bei Bedarf nachladen ------------------------------
+  // Leaflet ist nur noch der Notfall-Rueckfall. Frueher hing es fest in
+  // app.html und kostete jeden Besucher 158 KB (JS + CSS) fuer einen Fall,
+  // der so gut wie nie eintritt. Jetzt kommt es erst, wenn es gebraucht wird.
+  let leafletLoader = null;
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve(true);
+    if (leafletLoader) return leafletLoader;
+    leafletLoader = new Promise((resolve) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "assets/vendor/leaflet.css";
+      document.head.appendChild(css);
+      const s = document.createElement("script");
+      s.src = "assets/vendor/leaflet.js";
+      s.onload = () => resolve(!!window.L);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+    return leafletLoader;
+  }
+
   // ---- Marker-Grafik: Tropfen-Pin mit Kategorie-Icon als Data-URI -----
   function pinDataUri(iconName) {
     const inner = String(window.ico ? window.ico(iconName || "reparatur", 15) : "")
@@ -231,18 +253,29 @@
       return out;
     }
 
+    function flush() {
+      queue.forEach(([name, args, shell]) => runOn(impl, name, args, shell));
+      queue.length = 0;
+    }
+
     function boot(useGoogle) {
       const el = document.getElementById(elId);
       if (!el) return;                       // Ansicht wurde inzwischen verlassen
-      try {
-        impl = useGoogle ? googleImpl(el, o) : leafletImpl(el, o);
-        handle.provider = useGoogle ? "google" : "leaflet";
-      } catch (e) {
-        if (useGoogle) { impl = leafletImpl(el, o); handle.provider = "leaflet"; }
-        else throw e;
+      if (useGoogle) {
+        try {
+          impl = googleImpl(el, o);
+          handle.provider = "google";
+          return flush();
+        } catch (e) { /* Google da, aber unbrauchbar -> unten Leaflet nachladen */ }
       }
-      queue.forEach(([name, args, shell]) => runOn(impl, name, args, shell));
-      queue.length = 0;
+      loadLeaflet().then((ok) => {
+        // Waehrend des Nachladens kann die Ansicht gewechselt worden sein.
+        const el2 = document.getElementById(elId);
+        if (!ok || !el2) return;             // ohne Leaflet bleibt der Kasten leer
+        impl = leafletImpl(el2, o);
+        handle.provider = "leaflet";
+        flush();
+      });
     }
 
     if (WANT_GOOGLE) loadGoogle().then(boot);

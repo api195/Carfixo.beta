@@ -13,6 +13,8 @@ Kunden beschreiben ihr Anliegen einmal – passende Betriebe antworten mit echte
 
 Alles ist statisches HTML/CSS/JS ohne Build-Schritt – direkt über GitHub Pages o. ä. hostbar.
 Die Bibliotheken (supabase-js, Leaflet) liegen lokal unter `assets/vendor/`.
+Leaflet wird **nicht** fest eingebunden, sondern erst nachgeladen, wenn Google Maps
+ausfällt – das spart jedem Besucher 158 KB (siehe „Karten").
 
 ## Funktionen
 
@@ -55,6 +57,10 @@ Schicht `assets/maps.js`. Welcher Anbieter dahinter steckt, entscheidet **allein
 | leer, Skript blockiert oder Google nicht erreichbar | Leaflet + OpenStreetMap (Rückfall) |
 
 Die App bleibt also ohne Key voll funktionsfähig – nichts bricht.
+
+Leaflet lädt `maps.js` erst im Rückfall nach (JS + CSS zur Laufzeit). Im Normalbetrieb
+mit Google Maps wird es nie geholt. Wer daran etwas ändert, sollte beide Wege prüfen:
+Google erreichbar **und** Google blockiert.
 
 **Einrichtung** (Google Cloud Console, [console.cloud.google.com](https://console.cloud.google.com)):
 

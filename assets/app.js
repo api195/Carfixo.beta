@@ -436,7 +436,7 @@ async function vSearch(_p, query) {
         <input id="locAddr" placeholder="Adresse oder Ort eingeben…" value="${esc(PSEUDO_LOC_LABELS.includes(searchOriginLabel) ? "" : searchOriginLabel || "")}">
         <button class="btn sm" id="locGo" style="flex:0 0 auto">Suchen</button>
       </div>
-      <select id="fDistrict" style="margin-top:8px">${opt("… oder Kölner Stadtteil wählen", Object.keys(DISTRICTS), "")}</select>
+      <select id="fDistrict" aria-label="Kölner Stadtteil" style="margin-top:8px">${opt("… oder Kölner Stadtteil wählen", Object.keys(DISTRICTS), "")}</select>
       <p class="mm" id="locInfo" style="margin-top:7px">${searchOrigin ? "" + esc(searchOriginLabel) : "Kein Standort gesetzt – Entfernungen ab Kölner Zentrum."}</p>
       <div class="label">Umkreis</div>
       <div class="chips" id="fRadius">
@@ -451,7 +451,7 @@ async function vSearch(_p, query) {
         ${WORLDS.map(w => `<span class="chip ${s.world === w.key ? "on" : ""}" data-w="${w.key}">${ico(w.key)} ${w.name}</span>`).join("")}
       </div>
       <div class="label">Sortierung</div>
-      <select id="fSort">
+      <select id="fSort" aria-label="Sortierung">
         <option value="rating" ${s.sort === "rating" ? "selected" : ""}>Beste Bewertung</option>
         <option value="distance" ${s.sort === "distance" ? "selected" : ""}>Entfernung</option>
         <option value="price" ${s.sort === "price" ? "selected" : ""}>Preisniveau</option>
@@ -459,18 +459,18 @@ async function vSearch(_p, query) {
       <button class="btn ghost wide sm" style="margin-top:14px" id="fMoreBtn"></button>
       <div id="fAdvanced" class="hidden">
         <div class="label">Kategorie</div>
-        <select id="fCat"></select>
+        <select id="fCat" aria-label="Kategorie"></select>
         <div class="label">Leistung</div>
-        <select id="fService"></select>
+        <select id="fService" aria-label="Leistung"></select>
         <div class="label">Fahrzeugmarke</div>
-        <select id="fBrand">${opt("Alle Marken", Object.keys(BRANDS), s.brand)}</select>
+        <select id="fBrand" aria-label="Fahrzeugmarke">${opt("Alle Marken", Object.keys(BRANDS), s.brand)}</select>
         <div class="label">Ausstattung</div>
         <label class="inline"><input type="checkbox" id="fOpen" ${s.openNow ? "checked" : ""}> Jetzt geöffnet</label>
         <label class="inline"><input type="checkbox" id="fPickup" ${s.pickup ? "checked" : ""}> Hol- &amp; Bringservice</label>
         <label class="inline"><input type="checkbox" id="fReplace" ${s.replacement ? "checked" : ""}> Ersatzwagen</label>
         <label class="inline"><input type="checkbox" id="fMobile" ${s.mobile ? "checked" : ""}> Mobile Werkstatt</label>
         <div class="label">Mindestbewertung</div>
-        <select id="fRating"><option value="0">Alle</option><option value="4" ${s.minRating == 4 ? "selected" : ""}>★ 4,0+</option><option value="4.5" ${s.minRating == 4.5 ? "selected" : ""}>★ 4,5+</option></select>
+        <select id="fRating" aria-label="Mindestbewertung"><option value="0">Alle</option><option value="4" ${s.minRating == 4 ? "selected" : ""}>★ 4,0+</option><option value="4.5" ${s.minRating == 4.5 ? "selected" : ""}>★ 4,5+</option></select>
       </div>
       <button class="btn ghost wide sm" style="margin-top:14px" id="fReset">Filter zurücksetzen</button>
     </div>

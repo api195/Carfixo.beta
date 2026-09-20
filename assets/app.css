@@ -260,3 +260,17 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
 .installBanner .ib-t{font-size:13px;font-weight:800;line-height:1.3}
 .installBanner .ib-m{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:2px}
 @media(min-width:900px){.installBanner{bottom:18px}}
+
+/* Bewegung reduzieren, wenn das System es verlangt.
+   index.html hat das bereits – die App fehlte bisher.
+   Das Lade-Skelett (.sk) behaelt seinen Farbverlauf und bleibt auch ohne
+   Animation sichtbar, der Ladezustand geht also nicht verloren. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:hover, .btn:active { transform: none !important; }
+}
