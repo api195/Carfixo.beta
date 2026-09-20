@@ -131,6 +131,35 @@ npm i playwright && node tests/smoke.js
 Smoke-Test für Routing, Auth-Ansichten und Handler-Escaping. Prüft bewusst nur, was
 ohne Backend läuft – datengetriebene Inhalte brauchen eine erreichbare Supabase-Instanz.
 
+## Content-Security-Policy (Report-Only)
+
+Die Richtlinie steht in `vercel.json` als **`Content-Security-Policy-Report-Only`**.
+In diesem Modus **blockiert der Browser nichts** – er meldet nur, was er blockieren
+*würde*. Das ist Absicht: Eine zu enge Richtlinie legt sonst die Seite lahm.
+
+Verstöße landen über `/api/csp-report` in den **Vercel-Logs** (Projekt → Logs, nach
+`CSP-Verstoß` filtern) und zusätzlich immer in der Browser-Konsole.
+
+**Ablauf zum Scharfschalten:**
+
+1. Ein paar Tage echten Traffic laufen lassen.
+2. Logs durchsehen. Jeder Eintrag nennt Richtlinie, blockierte Quelle und Seite.
+3. Fehlende Quellen in `vercel.json` ergänzen – oder, wenn eine Quelle dort nichts
+   zu suchen hat, die Ursache im Code beheben.
+4. Erst wenn über mehrere Tage nichts Neues mehr kommt: den Header-Schlüssel von
+   `Content-Security-Policy-Report-Only` auf `Content-Security-Policy` ändern.
+
+**Was die Richtlinie heute leistet – und was nicht:**
+
+`script-src` enthält `'unsafe-inline'`, weil `assets/app.js` 77 Inline-`onclick`-Handler
+erzeugt und `index.html` ein Inline-Skript hat. Damit schützt die Richtlinie **nicht**
+vor XSS über eingeschleustes Inline-JavaScript. Sie begrenzt aber, von **welchen
+fremden Servern** überhaupt Skripte, Bilder und Verbindungen kommen dürfen – ein
+Angreifer kann also keine Daten an eine eigene Domain ausleiten.
+
+Echten XSS-Schutz gäbe es erst, wenn die Inline-Handler durch `addEventListener`
+ersetzt werden und `'unsafe-inline'` verschwindet. Das ist ein eigenes Vorhaben.
+
 ## Vor dem Launch – offene Punkte
 
 Diese Schritte lassen sich nicht im Code erledigen:
@@ -150,6 +179,8 @@ Diese Schritte lassen sich nicht im Code erledigen:
   läuft Carfixo auf Leaflet + OpenStreetMap weiter – funktioniert, sieht nur anders aus.
 - **Testkonten** löschen oder Passwörter rotieren (siehe oben).
 - **Rechtstexte** in `legal.html` durch geprüfte Fassungen ersetzen.
+- **CSP scharfschalten**, sobald die Report-Only-Logs mehrere Tage ruhig sind
+  (siehe „Content-Security-Policy" oben).
 - **Auth-E-Mails (Registrierung, Passwort zurücksetzen):** laufen **nicht** über
   `notify-dispatch`, sondern über Supabase Auth. Ohne eigenen SMTP-Server gilt dort ein
   striktes Limit von wenigen Mails pro Stunde. Vor dem Launch unter
