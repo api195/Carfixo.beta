@@ -18,6 +18,8 @@
 <!-- Perf: Verbindung zu Supabase früh aufbauen, damit Live-Inhalte schneller laden -->
 <link rel="preconnect" href="https://boozzfiroukraekyijfq.supabase.co" crossorigin>
 <link rel="dns-prefetch" href="https://boozzfiroukraekyijfq.supabase.co">
+<!-- Perf: Hero-Bild ist das LCP-Element – ohne Preload startet der Download erst nach dem CSS -->
+<link rel="preload" as="image" href="assets/hero.jpg" fetchpriority="high">
 <!-- SEO / Social Preview -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Carfixo">
@@ -100,7 +102,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,su
 @media(prefers-reduced-motion:reduce){.rv{opacity:1!important;transform:none!important;transition:none!important}*{animation:none!important}html{scroll-behavior:auto}}
 
 /* ================= Nav ================= */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:background .35s,border-color .35s;border-bottom:1px solid transparent}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;transition:background .35s,border-color .35s,transform .28s cubic-bezier(.22,.61,.36,1);border-bottom:1px solid transparent}
 nav.scrolled{background:rgba(5,7,13,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-color:var(--line)}
 .navIn{position:relative;display:flex;align-items:center;gap:26px;height:72px;max-width:1140px;margin:0 auto;padding:0 22px}
 .logo{font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1}
@@ -171,7 +173,7 @@ h1 .grad{background:linear-gradient(100deg,#4D8DFF 10%,#38BDF8 55%,#7C5CFF 95%);
 .sbField{flex:1;padding:8px 16px;min-width:0}
 .sbField.grow{flex:1.7}
 .sbField label{display:block;font-size:9.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
-.sbField input{width:100%;background:none;border:none;outline:none;color:var(--ink);font-size:15px;font-family:inherit;padding:3px 0}
+.sbField input{width:100%;background:none;border:none;outline:none;color:var(--ink);font-size:16px;font-family:inherit;padding:3px 0}
 .sbField input::placeholder{color:var(--dim)}
 .sbDivider{width:1px;background:var(--line2);margin:8px 0;flex:0 0 auto}
 .sbGo{flex:0 0 auto;align-self:center;height:52px;padding:0 30px;border:none;border-radius:13px;background:linear-gradient(135deg,#2E77FF,#0A47C2);color:#fff;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 10px 30px rgba(30,107,255,.4);transition:transform .15s,box-shadow .2s}
@@ -321,6 +323,161 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
 .footIn .logo{font-size:18px}
 .footLinks{margin-left:auto;display:flex;gap:20px;flex-wrap:wrap}
 .footLinks a:hover{color:#fff}
+
+/* =========================================================================
+   MOBILE-FEINSCHLIFF
+   Ziel: gleiche Inhalte, aber die Dichte und Bedienbarkeit einer App –
+   seitlich wischbare Reihen statt endloser Umbrüche, große Tippflächen,
+   Eingabefelder mit 16px (kleiner löst auf iOS den Auto-Zoom aus).
+   ========================================================================= */
+
+/* Notch & Home-Indicator respektieren */
+@supports(padding:max(0px)){
+  .wrap,.navIn{padding-left:max(22px,env(safe-area-inset-left));padding-right:max(22px,env(safe-area-inset-right))}
+}
+/* Sprungziele nicht unter der fixen Navigation verstecken */
+section[id],header[id]{scroll-margin-top:84px}
+
+/* Wischbare Reihe: Kinder brechen nicht um, sondern scrollen horizontal.
+   Die negativen Ränder lassen die Reihe bis an den Bildschirmrand laufen –
+   so ist sichtbar, dass es weitergeht. */
+@media(max-width:760px){
+  .railX{
+    display:flex;flex-wrap:nowrap;justify-content:flex-start;
+    overflow-x:auto;overflow-y:hidden;
+    scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+    scrollbar-width:none;-ms-overflow-style:none;
+    margin-left:-16px;margin-right:-16px;padding-left:16px;padding-right:16px;scroll-padding-left:16px}
+  .railX::-webkit-scrollbar{display:none}
+  .railX>*{flex:0 0 auto;scroll-snap-align:start}
+}
+
+@media(max-width:760px){
+  .wrap,.navIn{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+  .wrap{padding-top:0;padding-bottom:0}
+  section{padding:26px 0}
+
+  /* ---- Navigation: flacher, Menü scrollt bei Bedarf ---- */
+  .navIn{height:60px;gap:12px}
+  .logo{font-size:25px}
+  .navToggle{width:42px;height:42px}
+  .navLinks{max-height:calc(100dvh - 61px);overflow-y:auto;overscroll-behavior:contain}
+
+  /* ---- Hero ---- */
+  .hero{padding:78px 0 22px}
+  .heroImg{background-position:58% center}
+  h1{font-size:clamp(27px,7.4vw,34px);line-height:1.12;letter-spacing:-.9px}
+  .heroSub{font-size:14px;line-height:1.55;margin-top:10px;max-width:36ch}
+
+  /* ---- Suchwidget ---- */
+  .searchBox{margin-top:18px;padding:8px;border-radius:16px}
+  .sbField{padding:9px 14px}
+  .sbField label{font-size:9px;letter-spacing:1px}
+  .sbGo{height:52px;font-size:16px;margin-top:6px;border-radius:12px}
+
+  /* ---- Kategorien & Vertrauen: eine Wischleiste statt vier Zeilen ---- */
+  .catStrip{margin-top:16px;gap:8px}
+  .catStrip a{font-size:13px;padding:10px 15px}
+  .trustStrip{margin-top:12px;gap:8px}
+  .trustStrip>span{font-size:11.5px;padding:8px 13px;white-space:nowrap}
+
+  /* ---- Schnell-Einstiege: 3er-Raster wie eine App-Startseite ---- */
+  .quickTiles{grid-template-columns:repeat(3,1fr);gap:8px}
+  .qt{min-height:90px;justify-content:center;padding:12px 6px;border-radius:14px;gap:7px}
+  .qt .qe{font-size:22px}
+  .qt .qn{font-size:11px;line-height:1.25;letter-spacing:-.1px}
+
+  /* ---- Abschnittsköpfe ---- */
+  .rowHead{align-items:center;gap:10px;margin-bottom:12px}
+  .rowHead h2{font-size:17.5px;line-height:1.25;display:flex;align-items:center;gap:8px;min-width:0}
+  .rowHead h2>span[data-ico]{flex:none;display:flex}
+  .rowHead .sub{display:none}
+  .rowHead .all{font-size:12.5px;flex:none}
+
+  /* ---- Ergebnis-Karten als wischbare Reihe ---- */
+  .cardsGrid{display:flex}
+  .cardsGrid>.cCard,.cardsGrid>.skRow{width:min(78vw,300px)}
+  .cardsGrid>.skRow{height:134px}
+  .cardsGrid>.liveEmpty{width:100%;white-space:normal;padding:22px 18px}
+  .cCard{padding:14px}
+  .pImg,.pImgPh{height:108px}
+
+  /* ---- Beliebte Leistungen: zwei Zeilen, seitlich wischbar ---- */
+  .popular.railX{display:grid;grid-auto-flow:column;grid-template-rows:auto auto;grid-auto-columns:max-content;gap:8px;align-content:start}
+  .popular a{font-size:12.5px;padding:9px 14px}
+  .bandChips{margin-top:12px}
+
+  /* ---- So funktioniert's ---- */
+  .stepsHead{margin-bottom:16px}
+  .steps{gap:10px}
+  .step{padding:18px 16px;border-radius:16px}
+  .stepIco{width:42px;height:42px;margin-bottom:10px}
+  .stepNo{font-size:36px;top:14px;right:16px}
+  .step p{font-size:12.5px}
+
+  /* ---- Kostenrechner ---- */
+  .calcHead{margin-bottom:16px}
+  .calcHead p{font-size:13px}
+  .calcWrap{padding:18px 16px;border-radius:18px}
+  /* 16px: sonst zoomt iOS beim Antippen in die Seite hinein */
+  .calcSelect{font-size:16px;padding:14px 42px 14px 14px}
+
+  /* ---- Für Betriebe ---- */
+  #pro{padding:34px 0}
+  #pro .proBox{padding:26px 18px;border-radius:22px;gap:26px}
+  .checkList div{font-size:13px}
+  .heroBtns{gap:10px;margin-top:20px}
+  .heroBtns .btn{flex:1 1 100%}
+  .leadCard{padding:15px}
+
+  /* ---- FAQ: Zusammenklapper mit sicherer Tippfläche ---- */
+  #faq{padding:34px 0}
+  .faqItem summary{padding:15px 16px;font-size:14px;min-height:54px}
+  .faqItem .fqA{padding:0 16px 15px;font-size:13px}
+
+  /* ---- Footer ---- */
+  footer{padding:24px 0 16px;margin-top:18px}
+  .footIn{gap:10px}
+  .footLinks{margin-left:0;width:100%;gap:12px 18px}
+}
+
+/* Sehr schmale Geräte (iPhone SE & Co.) */
+@media(max-width:360px){
+  .quickTiles{gap:7px}
+  .qt .qn{font-size:10.5px}
+  .catStrip a{font-size:12.5px;padding:9px 13px}
+}
+
+/* =========================================================================
+   Mobile Aktionsleiste – die beiden wichtigsten Wege bleiben immer erreichbar
+   ========================================================================= */
+.mobBar{display:none}
+@media(max-width:760px){
+  .mobBar{
+    position:fixed;left:0;right:0;bottom:0;z-index:95;display:flex;gap:9px;
+    padding:9px max(14px,env(safe-area-inset-left)) calc(9px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-right));
+    background:rgba(6,9,16,.94);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-top:1px solid var(--line);
+    transform:translateY(105%);transition:transform .28s cubic-bezier(.22,.61,.36,1);
+    pointer-events:none;visibility:hidden}
+  .mobBar.show{transform:none;pointer-events:auto;visibility:visible}
+  .mobBtn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    height:48px;border-radius:13px;font-size:13.5px;font-weight:800;white-space:nowrap;min-width:0}
+  .mobBtn.primary{background:linear-gradient(135deg,#2E77FF,#0A47C2);color:#fff;box-shadow:0 8px 24px rgba(30,107,255,.42)}
+  .mobBtn.ghost{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--ink)}
+  .mobBtn svg{width:17px;height:17px;flex:none}
+  /* Platz, damit die Leiste den Footer nie überdeckt */
+  body{padding-bottom:calc(66px + env(safe-area-inset-bottom))}
+  /* Bei offenem Menü friert die Seite dahinter ein */
+  body.navOpen{overflow:hidden}
+}
+@media(prefers-reduced-motion:reduce){.mobBar{transition:none}nav{transition:background .35s,border-color .35s}nav.hideUp{transform:none}}
+
+/* Beim Nach-unten-Lesen fährt die Leiste weg und gibt 60px Bildschirm frei,
+   beim kleinsten Zurückwischen ist sie sofort wieder da. */
+@media(max-width:760px){
+  nav.hideUp{transform:translateY(-100%)}
+}
 </style>
 </head>
 <body>
@@ -366,7 +523,7 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
     <form class="searchBox rv" style="--d:.1s" id="homeSearch">
       <div class="sbField grow">
         <label for="hq" data-i18n="search_was_label">Was?</label>
-        <input id="hq" data-i18n-ph="search_was_ph" placeholder="z.B. Ölwechsel, TÜV, Chiptuning, Felgen aufbereiten…" autocomplete="off">
+        <input id="hq" data-i18n-ph="search_was_ph" placeholder="z.B. Ölwechsel, TÜV, Chiptuning…" autocomplete="off">
       </div>
       <div class="sbDivider"></div>
       <div class="sbField">
@@ -376,7 +533,7 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
       <button class="sbGo" type="submit" data-i18n="search_go">Suchen</button>
     </form>
 
-    <div class="catStrip rv" style="--d:.15s">
+    <div class="catStrip railX rv" style="--d:.15s">
       <a href="app.html#/search?cat=reparatur"><span data-ico="reparatur"></span> <span data-i18n="cat_reparatur">Reparatur</span></a>
       <a href="app.html#/search?cat=inspektion"><span data-ico="inspektion"></span> <span data-i18n="cat_inspektion">Inspektion</span></a>
       <a href="app.html#/search?cat=reifen"><span data-ico="reifen"></span> <span data-i18n="cat_reifen">Reifen &amp; Felgen</span></a>
@@ -390,7 +547,7 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
       <a class="more" href="app.html#/search" data-i18n="cat_alle">Alle Kategorien →</a>
     </div>
 
-    <div class="trustStrip rv" style="--d:.2s">
+    <div class="trustStrip railX rv" style="--d:.2s">
       <span><b>✓</b> <span data-i18n="trust_1">Geprüfte &amp; verifizierte Betriebe</span></span>
       <span><b>✓</b> <span data-i18n="trust_2">100 % kostenlos für Kunden</span></span>
       <span><b>✓</b> <span data-i18n="trust_3">1 Anfrage – mehrere Angebote</span></span>
@@ -468,7 +625,7 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
       <span class="sub" data-i18n="sec_topws_sub">nach Bewertung</span>
       <a class="all" href="app.html#/search" data-i18n="sec_topws_all">Alle Betriebe →</a>
     </div>
-    <div class="cardsGrid" id="wsRow">
+    <div class="cardsGrid railX" id="wsRow">
       <div class="skRow"></div><div class="skRow"></div><div class="skRow"></div>
     </div>
   </div>
@@ -482,7 +639,7 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
       <span class="sub" data-i18n="sec_parts_sub">direkt vom Betrieb</span>
       <a class="all" href="app.html#/teile" data-i18n="sec_parts_all">Alle Teile →</a>
     </div>
-    <div class="cardsGrid" id="partsRow">
+    <div class="cardsGrid railX" id="partsRow">
       <div class="skRow"></div><div class="skRow"></div><div class="skRow"></div>
     </div>
   </div>
@@ -496,8 +653,8 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
       <span class="sub" data-i18n="band_werkstatt_sub">Reparatur · Inspektion · Reifen · Klima</span>
       <a class="all" href="app.html#/search?world=werkstatt" data-i18n="band_werkstatt_all">Alle Werkstätten →</a>
     </div>
-    <div class="cardsGrid" data-cards></div>
-    <div class="popular bandChips rv">
+    <div class="cardsGrid railX" data-cards></div>
+    <div class="popular bandChips railX rv">
       <a href="app.html#/search?q=%C3%96lwechsel">Ölwechsel</a>
       <a href="app.html#/search?q=Bremsen">Bremsen</a>
       <a href="app.html#/search?q=Inspektion">Inspektion</a>
@@ -515,8 +672,8 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
       <span class="sub" data-i18n="band_tuning_sub">Leistung · Optik · Felgen · Software</span>
       <a class="all" href="app.html#/search?world=tuning" data-i18n="band_tuning_all">Alle Tuner →</a>
     </div>
-    <div class="cardsGrid" data-cards></div>
-    <div class="popular bandChips rv">
+    <div class="cardsGrid railX" data-cards></div>
+    <div class="popular bandChips railX rv">
       <a href="app.html#/search?q=Chiptuning">Chiptuning</a>
       <a href="app.html#/search?q=Stage%201">Stage 1–3</a>
       <a href="app.html#/search?q=Felgenaufbereitung">Felgenaufbereitung</a>
@@ -535,8 +692,8 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
       <span class="sub" data-i18n="band_pflege_sub">Detailing · Keramik · Lack · Folie</span>
       <a class="all" href="app.html#/search?world=pflege" data-i18n="band_pflege_all">Alle Aufbereiter →</a>
     </div>
-    <div class="cardsGrid" data-cards></div>
-    <div class="popular bandChips rv">
+    <div class="cardsGrid railX" data-cards></div>
+    <div class="popular bandChips railX rv">
       <a href="app.html#/search?q=Komplettaufbereitung">Komplettaufbereitung</a>
       <a href="app.html#/search?q=Keramikversiegelung">Keramikversiegelung</a>
       <a href="app.html#/search?q=Politur">Politur</a>
@@ -554,8 +711,8 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
       <span class="sub" data-i18n="band_tuev_sub">HU/AU · Checks · Gutachten · Eintragungen</span>
       <a class="all" href="app.html#/search?world=tuev" data-i18n="band_tuev_all">Alle Prüfstellen →</a>
     </div>
-    <div class="cardsGrid" data-cards></div>
-    <div class="popular bandChips rv">
+    <div class="cardsGrid railX" data-cards></div>
+    <div class="popular bandChips railX rv">
       <a href="app.html#/search?q=HU">HU + AU</a>
       <a href="app.html#/search?q=T%C3%9CV-Vorbereitung">TÜV-Vorbereitung</a>
       <a href="app.html#/search?q=Gebrauchtwagencheck">Gebrauchtwagencheck</a>
@@ -596,7 +753,7 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
 <section>
   <div class="wrap">
     <div class="rowHead rv"><h2><span data-ico="bolt"></span> <span data-i18n="popular_h">Beliebte Leistungen</span></h2></div>
-    <div class="popular rv">
+    <div class="popular railX rv">
       <a href="app.html#/search?q=%C3%96lwechsel">Ölwechsel</a>
       <a href="app.html#/search?q=HU">TÜV / HU + AU</a>
       <a href="app.html#/search?q=Bremsen">Bremsen erneuern</a>
@@ -693,6 +850,14 @@ footer{border-top:1px solid var(--line);padding:34px 0;font-size:12.5px;color:va
   </div>
 </footer>
 
+<!-- ================= MOBILE AKTIONSLEISTE ================= -->
+<!-- Erscheint erst nach dem Hero: solange die große Suche sichtbar ist,
+     wäre eine zweite Handlungsaufforderung nur Doppelung. -->
+<div class="mobBar" id="mobBar">
+  <a class="mobBtn ghost" href="app.html#/diagnose"><span data-ico="robot" data-ico-size="17"></span><span data-i18n="mob_diag">KI-Diagnose</span></a>
+  <a class="mobBtn primary" href="app.html#/search"><span data-ico="search" data-ico-size="17"></span><span data-i18n="mob_find">Betrieb finden</span></a>
+</div>
+
 <script src="assets/config.js"></script>
 <script src="assets/icons.js"></script>
 <script>
@@ -701,9 +866,10 @@ const I18N = {
   de:{
     skip_link:"Zum Inhalt springen",lang_label:"Sprache",
     nav_werkstaetten:"Werkstätten",nav_teile:"Teile",nav_diagnose:"KI-Diagnose",nav_pro:"Für Betriebe",nav_cta:"App öffnen",
+    mob_find:"Betrieb finden",mob_diag:"KI-Diagnose",
     hero_h1:'Was braucht <span class="grad">dein Auto?</span>',
     hero_sub:"Werkstatt, Tuning, Aufbereitung, TÜV oder Teile – vergleiche echte Angebote von geprüften Betrieben. Kostenlos für Kunden.",
-    search_was_label:"Was?",search_was_ph:"z.B. Ölwechsel, TÜV, Chiptuning, Felgen aufbereiten…",search_wo_label:"Wo?",search_wo_ph:"PLZ oder Ort – z.B. Köln",search_go:"Suchen",
+    search_was_label:"Was?",search_was_ph:"z.B. Ölwechsel, TÜV, Chiptuning…",search_wo_label:"Wo?",search_wo_ph:"PLZ oder Ort – z.B. Köln",search_go:"Suchen",
     cat_reparatur:"Reparatur",cat_inspektion:"Inspektion",cat_reifen:"Reifen & Felgen",cat_tuev:"TÜV",cat_tuning:"Tuning",cat_pflege:"Aufbereitung",cat_lack:"Lack & Folierung",cat_klima:"Klima",cat_karosserie:"Karosserie",cat_teile:"Teile",cat_alle:"Alle Kategorien →",
     cat_autoglas:"Autoglas",cat_schluessel:"Schlüssel",cat_oldtimer:"Oldtimer",cat_eauto:"E-Auto",
     trust_1:"Geprüfte & verifizierte Betriebe",trust_2:"100 % kostenlos für Kunden",trust_3:"1 Anfrage – mehrere Angebote",trust_4:"Teile direkt vom Betrieb",
@@ -735,9 +901,10 @@ const I18N = {
   tr:{
     skip_link:"İçeriğe geç",lang_label:"Dil",
     nav_werkstaetten:"Servisler",nav_teile:"Parçalar",nav_diagnose:"Yapay Zekâ Teşhis",nav_pro:"İşletmeler için",nav_cta:"Uygulamayı aç",
+    mob_find:"İşletme bul",mob_diag:"Teşhis",
     hero_h1:'Aracının <span class="grad">neye ihtiyacı var?</span>',
     hero_sub:"Servis, tuning, detaylı temizlik, TÜV veya parça – onaylı işletmelerden gerçek teklifleri karşılaştır. Müşteriler için ücretsiz.",
-    search_was_label:"Ne?",search_was_ph:"örn. yağ değişimi, TÜV, chip tuning, jant yenileme…",search_wo_label:"Nerede?",search_wo_ph:"Posta kodu veya şehir – örn. Köln",search_go:"Ara",
+    search_was_label:"Ne?",search_was_ph:"örn. yağ değişimi, TÜV, chip tuning…",search_wo_label:"Nerede?",search_wo_ph:"Posta kodu veya şehir – örn. Köln",search_go:"Ara",
     cat_reparatur:"Onarım",cat_inspektion:"Bakım",cat_reifen:"Lastik & Jant",cat_tuev:"TÜV",cat_tuning:"Tuning",cat_pflege:"Detaylı Temizlik",cat_lack:"Boya & Kaplama",cat_klima:"Klima",cat_karosserie:"Kaporta",cat_teile:"Parçalar",cat_alle:"Tüm kategoriler →",
     cat_autoglas:"Oto Cam",cat_schluessel:"Anahtar",cat_oldtimer:"Klasik",cat_eauto:"Elektrikli",
     trust_1:"Onaylı & doğrulanmış işletmeler",trust_2:"Müşteriler için %100 ücretsiz",trust_3:"1 talep – birden çok teklif",trust_4:"Parçalar doğrudan işletmeden",
@@ -769,9 +936,10 @@ const I18N = {
   en:{
     skip_link:"Skip to content",lang_label:"Language",
     nav_werkstaetten:"Workshops",nav_teile:"Parts",nav_diagnose:"AI Diagnosis",nav_pro:"For Businesses",nav_cta:"Open app",
+    mob_find:"Find a business",mob_diag:"AI diagnosis",
     hero_h1:'What does your <span class="grad">car need?</span>',
     hero_sub:"Repairs, tuning, detailing, inspection or parts – compare real quotes from verified businesses. Free for customers.",
-    search_was_label:"What?",search_was_ph:"e.g. oil change, inspection, chip tuning, wheel refurb…",search_wo_label:"Where?",search_wo_ph:"ZIP or city – e.g. Cologne",search_go:"Search",
+    search_was_label:"What?",search_was_ph:"e.g. oil change, inspection, chip tuning…",search_wo_label:"Where?",search_wo_ph:"ZIP or city – e.g. Cologne",search_go:"Search",
     cat_reparatur:"Repair",cat_inspektion:"Service",cat_reifen:"Tyres & Wheels",cat_tuev:"Inspection",cat_tuning:"Tuning",cat_pflege:"Detailing",cat_lack:"Paint & Wrap",cat_klima:"A/C",cat_karosserie:"Bodywork",cat_teile:"Parts",cat_alle:"All categories →",
     cat_autoglas:"Auto glass",cat_schluessel:"Keys",cat_oldtimer:"Classic",cat_eauto:"EV",
     trust_1:"Vetted & verified businesses",trust_2:"100% free for customers",trust_3:"1 request – multiple quotes",trust_4:"Parts direct from the business",
@@ -836,17 +1004,44 @@ document.querySelectorAll("[data-ico]").forEach(function(el){
 
 /* ================= Nav-Zustand ================= */
 const nav = document.getElementById("nav");
-const onNav = () => nav.classList.toggle("scrolled", scrollY > 8);
-addEventListener("scroll", onNav, { passive: true });
-onNav();
-
-/* ================= Burger-Menü ================= */
+const mobBar = document.getElementById("mobBar");
+const heroEl = document.getElementById("top");
+// Muss vor onScroll() stehen: der erste Aufruf liest den Menü-Zustand mit
 const navToggle = document.getElementById("navToggle");
 const navMenu = document.getElementById("navMenu");
-function setMenu(open){ navToggle.setAttribute("aria-expanded", open ? "true" : "false"); navMenu.classList.toggle("open", open); }
+let lastY = 0;
+function onScroll(){
+  const y = scrollY;
+  nav.classList.toggle("scrolled", y > 8);
+  // Aktionsleiste ab dem Ende des Hero – vorher steht die Suche selbst im Bild
+  const past = y > Math.max(240, heroEl.offsetHeight - 140);
+  mobBar.classList.toggle("show", past);
+  // Navigation nur beim Lesen nach unten ausblenden, nie bei offenem Menü
+  const menuOpen = navToggle.getAttribute("aria-expanded") === "true";
+  if (!menuOpen && Math.abs(y - lastY) > 6) {
+    nav.classList.toggle("hideUp", y > lastY && y > 320);
+  }
+  lastY = y;
+}
+addEventListener("scroll", onScroll, { passive: true });
+addEventListener("resize", onScroll, { passive: true });
+onScroll();
+
+/* ================= Burger-Menü ================= */
+function setMenu(open){
+  navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+  navMenu.classList.toggle("open", open);
+  // Ohne Sperre scrollt auf dem Handy die Seite hinter dem offenen Menü weg
+  document.body.classList.toggle("navOpen", open);
+}
 navToggle.addEventListener("click", () => setMenu(navToggle.getAttribute("aria-expanded") !== "true"));
 navMenu.querySelectorAll("a").forEach(a => a.addEventListener("click", () => setMenu(false)));
 addEventListener("keydown", e => { if(e.key === "Escape") setMenu(false); });
+// Tipp neben das Menü schließt es – auf dem Handy die erwartete Geste
+document.addEventListener("click", e => {
+  if(navToggle.getAttribute("aria-expanded") !== "true") return;
+  if(!navMenu.contains(e.target) && !navToggle.contains(e.target)) setMenu(false);
+});
 
 /* ================= Reveal ================= */
 const io = new IntersectionObserver((es) => {
