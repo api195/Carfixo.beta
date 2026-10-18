@@ -55,12 +55,30 @@ function parseHash() {
   const [pathPart, queryPart] = h.split("?");
   const segs = pathPart.split("/").filter(Boolean);
   const query = {};
-  (queryPart || "").split("&").forEach(kv => { const [k, v] = kv.split("="); if (k) query[k] = decodeURIComponent(v || ""); });
+  // decodeURIComponent wirft bei kaputten %-Folgen ("?q=50%"). Ungefangen
+  // bliebe die App dann dauerhaft auf "Lade Carfixo…" stehen.
+  const dec = (s) => { try { return decodeURIComponent(s); } catch (e) { return s; } };
+  (queryPart || "").split("&").forEach(kv => { const [k, v] = kv.split("="); if (k) query[k] = dec(v || ""); });
   let name = segs[0] || "", param = segs[1] || null;
   if (name === "ws" && segs[1]) { name = "ws/" + segs[1]; param = segs[2] || null; }
   return { name, param, query };
 }
 function go(path) { location.hash = "#/" + path; }
+
+// Unbekannte Adresse: sagen, was passiert ist, statt still auf die Suche
+// umzuleiten – sonst hält man einen veralteten oder vertippten Link für
+// einen Fehler der Suche.
+function vNotFound() {
+  main.innerHTML = `<div class="empty" style="padding:48px 20px">
+    <div class="e">${ico("search", 40)}</div>
+    <b style="font-size:18px">Diese Seite gibt es nicht</b>
+    <p class="mm" style="margin-top:8px">Vielleicht ist der Link veraltet oder vertippt.</p>
+    <div class="btnRow" style="justify-content:center;margin-top:16px">
+      <a class="btn" href="#/search">Zur Werkstatt-Suche</a>
+      <a class="btn ghost" href="index.html">Zur Startseite</a>
+    </div>
+  </div>`;
+}
 
 async function route() {
   cleanRT();
@@ -71,8 +89,7 @@ async function route() {
     if (myProfile?.role === "workshop_owner" || myProfile?.role === "workshop_staff") return go("ws/dashboard");
     return go("search");
   }
-  const view = routes[name];
-  if (!view) return go("search");
+  const view = routes[name] || vNotFound;
   renderNav(name);
   try { await view(param, query); mountFilterSheet(); } catch (e) {
     console.error(e);
@@ -822,6 +839,16 @@ function renderActiveFilters() {
     searchState.shown = 12; vSearch();
   });
 }
+// Vertrauens-Abzeichen eines Betriebs. Beispielbetriebe (is_demo) zeigen
+// bewusst weder "verifiziert" noch "Gesponsert" noch "Meisterbetrieb":
+// Ein erfundener Betrieb mit Prüfsiegel wäre irreführend.
+function trustBadges(ws, style = "") {
+  const b = (cls, txt) => `<span class="badge ${cls}" style="${style}">${txt}</span>`;
+  if (ws.is_demo) return b("b-blue", "Beispielbetrieb");
+  return (ws.is_premium ? b("b-gold", "Gesponsert") : "")
+    + (ws.is_verified ? b("b-green", "✓ verifiziert") : "")
+    + (ws.master_certified ? b("b-gold", "Meisterbetrieb") : "");
+}
 function wsCardHtml(ws) {
   const d = ws._dist;
   const open = isOpenNow(ws.opening_hours);
@@ -830,7 +857,7 @@ function wsCardHtml(ws) {
     <div class="wsCard">
       <div class="wsAv" style="${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent` : ""}">${esc(initials(ws.name))}</div>
       <div style="flex:1;min-width:0">
-        <div class="tt">${esc(ws.name)} ${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:2px">Gesponsert</span>' : ""}${ws.is_verified ? '<span class="badge b-green" style="vertical-align:2px">✓ verifiziert</span>' : ""}${ws.master_certified ? '<span class="badge b-gold" style="vertical-align:2px">Meisterbetrieb</span>' : ""}
+        <div class="tt">${esc(ws.name)} ${trustBadges(ws, "vertical-align:2px")}
           ${open === true ? '<span class="badge b-green" style="vertical-align:2px">Geöffnet</span>' : open === false ? '<span class="badge b-grey" style="vertical-align:2px">Geschlossen</span>' : ""}</div>
         <div class="ratingLine">${stars(ws.rating_avg)}<span class="cnt">${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${ws.rating_count || 0} Bewertungen</span></div>
         <div class="mm">${esc(ws.district || ws.city || "")}${d != null ? ` · ${d.toFixed(1).replace(".", ",")} km` : ""}${ws.service_mode !== "stationary" ? " · mobil" : ""}${ws.pickup_service ? " · Hol/Bring" : ""}${ws.replacement_car ? " · Ersatzwagen" : ""}${ws.price_level ? " · " + priceLevelTxt(ws.price_level) : ""}</div>
@@ -878,16 +905,21 @@ async function vWorkshopProfile(id) {
   <div class="pageHead" style="${ws.cover_url ? "position:relative;padding:0 18px" : ""}">
     <div class="wsAv" style="width:64px;height:64px;font-size:23px;${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent;` : ""}${ws.cover_url ? "border:3px solid var(--bg);" : ""}">${esc(initials(ws.name))}</div>
     <div style="flex:1">
-      <h1>${esc(ws.name)} ${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:6px">Gesponsert</span>' : ""} ${ws.is_verified ? '<span class="badge b-green" style="vertical-align:6px">✓ Verifiziert durch Carfixo</span>' : ""}</h1>
+      <h1>${esc(ws.name)} ${ws.is_demo ? '<span class="badge b-blue" style="vertical-align:6px">Beispielbetrieb</span>'
+        : `${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:6px">Gesponsert</span>' : ""} ${ws.is_verified ? '<span class="badge b-green" style="vertical-align:6px">✓ Verifiziert durch Carfixo</span>' : ""}`}</h1>
       <div class="ratingLine" style="margin-top:4px">${stars(ws.rating_avg)}<span class="cnt">${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${ws.rating_count || 0} Bewertungen · ${esc(ws.district || ws.city || "Köln")}</span></div>
       ${openStatusLine(ws.opening_hours)}
     </div>
     <div class="right">
       <button class="btn ghost sm" id="wsFav">Merken</button>
       <button class="btn ghost sm" onclick="openReportModal('workshop','${ws.id}','${ws.id}',${jsArg(ws.name)})" title="Betrieb melden" aria-label="Betrieb melden">${ico("flag")}</button>
-      <button class="btn" id="wsAsk">Anfrage stellen</button>
+      <button class="btn" id="wsAsk" ${ws.is_demo ? "disabled" : ""}>Anfrage stellen</button>
     </div>
   </div>
+  ${ws.is_demo ? `<div class="note" style="margin-bottom:14px"><b>Das ist ein Beispielbetrieb.</b>
+    Er zeigt, wie ein Werkstattprofil auf Carfixo aussieht. Anfragen und Bestellungen sind hier nicht möglich –
+    nutze die <a href="#/search" style="color:var(--blue2)">Suche</a> oder stelle eine
+    <a href="#/new-request" style="color:var(--blue2)">Ausschreibung</a> an alle passenden Betriebe.</div>` : ""}
   <div class="searchGrid" style="grid-template-columns:1fr 340px">
     <div>
       <div class="card" style="margin-bottom:14px">
@@ -895,7 +927,7 @@ async function vWorkshopProfile(id) {
         <p class="mm" style="margin-top:8px;font-size:13px">${esc(ws.description || "Keine Beschreibung hinterlegt.")}</p>
         ${ws.founded_year ? `<p class="mm" style="margin-top:6px">Gegründet ${ws.founded_year}</p>` : ""}
         <div class="foot" style="border:none;padding-top:8px">
-          ${ws.master_certified ? '<span class="badge b-gold">Meisterbetrieb</span>' : ""}
+          ${ws.master_certified && !ws.is_demo ? '<span class="badge b-gold">Meisterbetrieb</span>' : ""}
           ${ws.service_mode !== "stationary" ? '<span class="badge b-blue">Mobiler Service</span>' : ""}
           ${ws.pickup_service ? '<span class="badge b-blue">Hol- & Bringservice</span>' : ""}
           ${ws.replacement_car ? '<span class="badge b-blue">Ersatzwagen</span>' : ""}
@@ -996,8 +1028,15 @@ async function vNewRequest(_p, query) {
   nrServices = query.service ? [query.service] : [];
   nrFiles = []; nrTargetWs = null;
   if (query.ws) {
-    const { data: ws } = await sb.from("workshops").select("id,name,categories").eq("id", query.ws).maybeSingle();
-    nrTargetWs = ws;
+    // select("*") statt fester Spaltenliste: is_demo kommt erst mit der
+    // Migration 2026-10-18. Eine explizit genannte, fehlende Spalte ließe die
+    // Abfrage scheitern und Direktanfragen bis dahin komplett ausfallen.
+    const { data: ws } = await sb.from("workshops").select("*").eq("id", query.ws).maybeSingle();
+    if (ws?.is_demo) {
+      toast("Das ist ein Beispielbetrieb – deine Anfrage geht stattdessen an alle passenden Betriebe.");
+    } else {
+      nrTargetWs = ws;
+    }
     if (ws && ws.categories?.length && !query.cat) nrCat = ws.categories[0];
   }
   const { data: cars } = await sb.from("vehicles").select("*").eq("owner_id", me.id).order("created_at");
@@ -1451,6 +1490,11 @@ async function loadBookingBox(r) {
   const pay = PAY_LABELS[bk.payment_status] || PAY_LABELS.none;
   const w = bk.offers?.workshops || {};
   const active = !["completed", "cancelled"].includes(bk.status);
+  // Abschließen (und damit Bewerten) erst, wenn der Betrieb fertig gemeldet
+  // hat oder der Termin vorbei ist – sonst ließe sich ein Betrieb bewerten,
+  // bevor er überhaupt gearbeitet hat. Dieselbe Regel prüft die Datenbank.
+  const canComplete = bk.status === "ready_for_pickup"
+    || (!!bk.scheduled_at && new Date(bk.scheduled_at) < new Date());
   const [{ data: rev }, { data: approvals }] = await Promise.all([
     sb.from("reviews").select("id,rating").eq("booking_id", bk.id).maybeSingle(),
     sb.from("approvals").select("*").eq("booking_id", bk.id).order("created_at", { ascending: false }),
@@ -1469,9 +1513,10 @@ async function loadBookingBox(r) {
     ${(approvals || []).map(a => approvalCardHtml(a, r.id)).join("")}
     ${bk.status === "completed" && !rev ? `<button class="btn wide" style="margin-top:14px" onclick="openReviewModal('${bk.id}','${w.id}',${jsArg(w.name)},'${r.id}')">Jetzt bewerten</button>` : ""}
     ${bk.status === "completed" && rev ? `<div class="okBox" style="margin-bottom:0;margin-top:14px">Deine Bewertung: <span style="color:var(--gold)">${stars(rev.rating)}</span> – danke!</div>` : ""}
+    ${active && !canComplete ? `<p class="mm" style="margin-top:12px;font-size:12px">Abschließen und bewerten kannst du, sobald die Werkstatt den Auftrag als fertig meldet oder der Termin vorbei ist.</p>` : ""}
     ${active ? `
     <div class="btnRow">
-      <button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>
+      ${canComplete ? `<button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>` : ""}
       <button class="btn ghost sm" onclick="openReschedule('${bk.id}','${r.id}')">Termin verschieben</button>
       <button class="btn red sm" onclick="openCancel('${bk.id}','${r.id}')">Stornieren</button>
     </div>` : ""}
@@ -2000,7 +2045,7 @@ async function vPartsMarket(_p, query) {
   if (me && !myWorkshop) loadMyPartOrders();
   if (!allParts) {
     const { data, error } = await sb.from("parts")
-      .select("*, workshops(id,name,district,city,phone,lat,lng)")
+      .select("*, workshops(*)")
       .eq("active", true).order("created_at", { ascending: false }).limit(500);
     if (!$("ptList")) return; // Nutzer hat die Seite inzwischen verlassen
     if (error) { $("ptList").innerHTML = `<div class="warn" style="grid-column:1/-1">${esc(error.message)}</div>`; return; }
@@ -2045,7 +2090,7 @@ function partCardHtml(p) {
         <div class="mm">${ico(p.category)} ${esc(c[1])} · <span class="badge ${p.condition === "neu" ? "b-green" : "b-grey"}">${esc(PART_CONDITIONS[p.condition] || p.condition)}</span> · <span class="badge ${av.cls}">${av.txt}</span></div>
         <div class="mm">${p.install_service ? "Einbau möglich · " : ""}${p.shipping ? "Versand · " : ""}${p.fits ? "Passend für: " + esc(p.fits) : ""}</div>
         <div style="font-weight:800;font-size:16px;margin-top:6px">${p.price != null ? fmtEur(p.price) : "Preis auf Anfrage"}${p.price_note ? ` <span class="mm">${esc(p.price_note)}</span>` : ""}</div>
-        <div class="mm" style="margin-top:2px">${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}${p._dist != null ? " · " + p._dist.toFixed(1).replace(".", ",") + " km" : ""}</div>
+        <div class="mm" style="margin-top:2px">${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}${p._dist != null ? " · " + p._dist.toFixed(1).replace(".", ",") + " km" : ""}${p.workshops?.is_demo ? ' <span class="badge b-blue">Beispiel</span>' : ""}</div>
       </div>
     </div></div>`;
 }
@@ -2078,9 +2123,10 @@ function openPartDetail(id) {
       <div class="offerLine"><span>Versand</span><span>${p.shipping ? "✓ möglich" : "– nur Abholung"}</span></div>
       <div class="offerLine"><span>Anbieter</span><span>${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}</span></div>
     </div>
+    ${p.workshops?.is_demo ? `<div class="note" style="margin-top:12px">Das ist ein <b>Beispielangebot</b> eines Beispielbetriebs – es zeigt, wie Teile auf Carfixo aussehen. Kauf und Anfrage sind hier nicht möglich.</div>` : ""}
     <div class="btnRow">
-      <button class="btn green" id="ptBuy" ${av.sold ? "disabled" : ""}>${av.sold ? "Vergriffen" : "Direkt kaufen"}</button>
-      <button class="btn ghost" id="ptAsk">Frage stellen</button>
+      <button class="btn green" id="ptBuy" ${av.sold || p.workshops?.is_demo ? "disabled" : ""}>${av.sold ? "Vergriffen" : "Direkt kaufen"}</button>
+      <button class="btn ghost" id="ptAsk" ${p.workshops?.is_demo ? "disabled" : ""}>Frage stellen</button>
       <a class="btn ghost" href="#/workshop/${p.workshop_id}" onclick="closeModal()">Zum Betrieb</a>
     </div>
     <p class="mm" style="margin-top:10px;font-size:11px">Kauf und Abwicklung erfolgen direkt mit dem Betrieb – Verfügbarkeit, Versand/Abholung und Bezahlung werden vor dem Kauf mit dem Betrieb abgestimmt. Carfixo vermittelt.</p>`);
@@ -3662,7 +3708,7 @@ function runDiagnose() {
 async function loadDiagnoseParts(top) {
   const box = $("dgParts"); if (!box) return;
   if (!allParts) {
-    const { data } = await sb.from("parts").select("*, workshops(id,name,district,city,phone,lat,lng)")
+    const { data } = await sb.from("parts").select("*, workshops(*)")
       .eq("active", true).order("created_at", { ascending: false }).limit(500);
     allParts = data || [];
   }

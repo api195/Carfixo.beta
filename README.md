@@ -104,15 +104,23 @@ Sicherheit:
 
 ## Testkonten (Beta)
 
-Für die Beta existieren Testkonten (`…@carfixo-test.de`) sowie 6 Demo-Betriebe in Köln
+Es gibt 3 Testkonten (`…@carfixo-test.de`) und 6 Demo-Betriebe in Köln
 (`demo-…@carfixo-demo.de`).
 
-> **Zugangsdaten stehen bewusst nicht mehr in diesem Repository.**
-> Sie lagen hier zuvor im Klartext – inklusive eines Kontos mit Admin-Rolle.
-> Passwörter bitte ausschließlich über den Passwortmanager teilen.
+> **Alle 9 Konten sind seit 2026-10-18 gesperrt.** Ihre Zugangsdaten standen früher
+> im Klartext in diesem (öffentlichen) Repository und sind über die Git-Historie
+> weiterhin lesbar. Gesperrt über `auth.users.banned_until`, laufende Sitzungen
+> beendet. Das frühere Admin-Konto `admin@carfixo-test.de` ist zusätzlich auf
+> `customer` herabgestuft.
 >
-> **Vor dem Launch:** Testkonten löschen oder mit neuen, zufälligen Passwörtern
-> versehen – insbesondere das Admin-Konto (siehe `db/2026-07-23_security_hardening.sql`).
+> Admin ist jetzt das Inhaberkonto. Neue Testkonten bitte mit eigenen, zufälligen
+> Passwörtern anlegen und **nie** ins Repository schreiben.
+
+Die Betriebe dieser Konten bleiben als **Beispielbetriebe** sichtbar (zum Vorzeigen),
+sobald `db/2026-10-18_vertrauensfelder_und_beispielbetriebe.sql` eingespielt ist:
+mit Hinweis „Beispielbetrieb", ohne Prüfsiegel, ohne Anfrage- oder Kaufmöglichkeit.
+Vor dem echten Launch ausblenden mit
+`update public.workshops set is_verified = false where is_demo;`
 
 ## Lokal starten
 
@@ -140,13 +148,22 @@ In diesem Modus **blockiert der Browser nichts** – er meldet nur, was er block
 Verstöße landen über `/api/csp-report` in den **Vercel-Logs** (Projekt → Logs, nach
 `CSP-Verstoß` filtern) und zusätzlich immer in der Browser-Konsole.
 
-**Ablauf zum Scharfschalten:**
+> **Achtung, Hobby-Plan:** Vercel hält Laufzeit-Logs dort nur **eine Stunde**.
+> Meldungen über Tage zu sammeln funktioniert so nicht – sie sind verfallen, bevor
+> man nachsieht. Für eine echte Sammlung bräuchte der Endpunkt einen dauerhaften
+> Speicher (z. B. eine Supabase-Tabelle) oder den Pro-Plan.
 
-1. Ein paar Tage echten Traffic laufen lassen.
-2. Logs durchsehen. Jeder Eintrag nennt Richtlinie, blockierte Quelle und Seite.
+**Ablauf zum Scharfschalten (ohne dauerhafte Sammlung):**
+
+1. Live-Seite öffnen, Browser-Konsole auf (Safari: ⌥⌘C), alle Hauptwege einmal
+   durchklicken: Startseite, Suche mit Karte, Werkstattprofil mit Karte, Login,
+   Teile, Fahrzeugschein-Scan. Verstöße stehen als `[Report Only]` in der Konsole.
+2. Die Richtlinie mit Googles offizieller CSP-Liste für die Maps JavaScript API
+   abgleichen – Google lädt zur Laufzeit von mehr Domains als nur
+   `maps.googleapis.com`.
 3. Fehlende Quellen in `vercel.json` ergänzen – oder, wenn eine Quelle dort nichts
    zu suchen hat, die Ursache im Code beheben.
-4. Erst wenn über mehrere Tage nichts Neues mehr kommt: den Header-Schlüssel von
+4. Erst wenn die Konsole sauber ist: den Header-Schlüssel von
    `Content-Security-Policy-Report-Only` auf `Content-Security-Policy` ändern.
 
 **Was die Richtlinie heute leistet – und was nicht:**
@@ -177,7 +194,12 @@ Diese Schritte lassen sich nicht im Code erledigen:
   `assets/config.js`, Server-Key als Vercel-Umgebungsvariable `GOOGLE_MAPS_SERVER_KEY`.
   Beide Schlüssel einschränken und ein Budget mit Warnung setzen. Solange das offen ist,
   läuft Carfixo auf Leaflet + OpenStreetMap weiter – funktioniert, sieht nur anders aus.
-- **Testkonten** löschen oder Passwörter rotieren (siehe oben).
+- **Migration `db/2026-10-18_vertrauensfelder_und_beispielbetriebe.sql` einspielen.**
+  Sie schließt nachgewiesene Lücken: Betriebe können sich bislang selbst verifizieren
+  und Bewertungen fälschen, gesperrte Nutzer sich selbst entsperren, Kunden den
+  Buchungspreis ändern und Buchungen als bezahlt markieren. Vorher die App-Abläufe
+  gegenprüfen (siehe Dateikopf).
+- **Beispielbetriebe ausblenden** (siehe „Testkonten").
 - **Rechtstexte** in `legal.html` durch geprüfte Fassungen ersetzen.
 - **CSP scharfschalten**, sobald die Report-Only-Logs mehrere Tage ruhig sind
   (siehe „Content-Security-Policy" oben).

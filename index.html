@@ -895,7 +895,7 @@ const I18N = {
     faq_q5:"Was ist die KI-Diagnose?",faq_a5:"Eine unverbindliche Ersteinschätzung: Du beschreibst Symptome, Warnleuchten oder lädst ein Foto hoch und bekommst eine erste Orientierung samt Preisrahmen. Sie ersetzt keine Werkstattprüfung.",
     faq_q6:"In welchen Städten ist Carfixo verfügbar?",faq_a6:"Carfixo startet in Köln und Umgebung. Weitere Städte folgen – als Betrieb kannst du dich schon jetzt registrieren.",
     foot_search:"Werkstatt-Suche",foot_parts:"Teile-Marktplatz",foot_pro:"Für Betriebe",foot_legal:"Datenschutz & Impressum",foot_notfall:"Notfall",foot_app:"App öffnen",
-    card_cond_neu:"Neu",card_cond_gebraucht:"Gebraucht",card_cond_general:"Generalüberholt",card_install:"Einbau möglich",card_shipping:"Versand",card_price_req:"Preis auf Anfrage",card_pickup:"Hol/Bring",card_emergency:"Notdienst",card_rating_new:"Neu",
+    card_cond_neu:"Neu",card_cond_gebraucht:"Gebraucht",card_cond_general:"Generalüberholt",card_install:"Einbau möglich",card_shipping:"Versand",card_price_req:"Preis auf Anfrage",card_pickup:"Hol/Bring",card_emergency:"Notdienst",card_rating_new:"Neu",card_demo:"Beispielbetrieb",
     doc_title:"Carfixo – Werkstätten, Tuning, Aufbereitung & Teile vergleichen",doc_desc:"Carfixo verbindet Autofahrer mit Werkstätten, Tuning-Betrieben, Aufbereitern und Prüfstellen. Angebote vergleichen, Teile kaufen, direkt buchen."
   },
   tr:{
@@ -930,7 +930,7 @@ const I18N = {
     faq_q5:"Yapay zekâ teşhis nedir?",faq_a5:"Bağlayıcı olmayan bir ön değerlendirme: belirtileri, uyarı ışıklarını anlatır veya fotoğraf yüklersin ve fiyat aralığıyla bir ilk fikir alırsın. Servis kontrolünün yerini tutmaz.",
     faq_q6:"Carfixo hangi şehirlerde mevcut?",faq_a6:"Carfixo, Köln ve çevresinde başlıyor. Diğer şehirler geliyor – işletme olarak şimdiden kaydolabilirsin.",
     foot_search:"Servis arama",foot_parts:"Parça pazarı",foot_pro:"İşletmeler için",foot_legal:"Gizlilik & Künye",foot_notfall:"Acil",foot_app:"Uygulamayı aç",
-    card_cond_neu:"Sıfır",card_cond_gebraucht:"İkinci el",card_cond_general:"Yenilenmiş",card_install:"Montaj mümkün",card_shipping:"Kargo",card_price_req:"Fiyat sorunuz",card_pickup:"Al-götür",card_emergency:"Acil servis",card_rating_new:"Yeni",
+    card_cond_neu:"Sıfır",card_cond_gebraucht:"İkinci el",card_cond_general:"Yenilenmiş",card_install:"Montaj mümkün",card_shipping:"Kargo",card_price_req:"Fiyat sorunuz",card_pickup:"Al-götür",card_emergency:"Acil servis",card_rating_new:"Yeni",card_demo:"Örnek işletme",
     doc_title:"Carfixo – Servis, tuning, temizlik & parça karşılaştır",doc_desc:"Carfixo sürücüleri onaylı servisler, tuning işletmeleri, detayçılar ve muayene yerleriyle buluşturur. Teklifleri karşılaştır, parça al, hemen randevu al."
   },
   en:{
@@ -965,7 +965,7 @@ const I18N = {
     faq_q5:"What is the AI diagnosis?",faq_a5:"A non-binding first estimate: describe symptoms or warning lights, or upload a photo, and get initial guidance plus a price range. It does not replace a workshop inspection.",
     faq_q6:"Which cities is Carfixo available in?",faq_a6:"Carfixo is launching in Cologne and its surroundings. More cities are coming – businesses can already register now.",
     foot_search:"Workshop search",foot_parts:"Parts marketplace",foot_pro:"For businesses",foot_legal:"Privacy & imprint",foot_notfall:"Emergency",foot_app:"Open app",
-    card_cond_neu:"New",card_cond_gebraucht:"Used",card_cond_general:"Reconditioned",card_install:"Fitting available",card_shipping:"Shipping",card_price_req:"Price on request",card_pickup:"Pickup",card_emergency:"Breakdown",card_rating_new:"New",
+    card_cond_neu:"New",card_cond_gebraucht:"Used",card_cond_general:"Reconditioned",card_install:"Fitting available",card_shipping:"Shipping",card_price_req:"Price on request",card_pickup:"Pickup",card_emergency:"Breakdown",card_rating_new:"New",card_demo:"Example business",
     doc_title:"Carfixo – Compare workshops, tuning, detailing & parts",doc_desc:"Carfixo connects drivers with verified workshops, tuning businesses, detailers and test centres. Compare quotes, buy parts, book directly."
   }
 };
@@ -1115,7 +1115,7 @@ function wsCard(w) {
           <div class="cT">${esc(w.name)}</div>
           <div class="cM"><span class="stars">${stars(w.rating_avg)}</span> ${w.rating_avg > 0 ? Number(w.rating_avg).toLocaleString("de-DE") : t("card_rating_new")} (${w.rating_count || 0}) · ${esc(w.district || w.city || "Köln")}</div>
         </div>
-        <span class="badge b-green">✓</span>
+        ${w.is_demo ? `<span class="badge b-grey">${esc(t("card_demo"))}</span>` : '<span class="badge b-green">✓</span>'}
       </div>
       <div class="cPills">
         ${(w.categories || []).slice(0, 3).map(c => `<span class="pill">${ico(c)} ${esc(catName(c))}</span>`).join("")}
@@ -1180,7 +1180,12 @@ function renderParts(){
 
 (async () => {
   try {
-    const ws = await sbGet("workshops?is_verified=eq.true&select=id,name,district,city,rating_avg,rating_count,categories,logo_url,price_level,pickup_service,emergency_service&order=rating_avg.desc,rating_count.desc&limit=60");
+    const felder = "id,name,district,city,rating_avg,rating_count,categories,logo_url,price_level,pickup_service,emergency_service";
+    const rest = "&order=rating_avg.desc,rating_count.desc&limit=60";
+    // is_demo kommt erst mit der Migration 2026-10-18. Bis dahin lehnt die
+    // Datenbank die Spalte ab (400) – dann ohne sie laden statt leer bleiben.
+    const ws = await sbGet(`workshops?is_verified=eq.true&select=${felder},is_demo${rest}`)
+      .catch(() => sbGet(`workshops?is_verified=eq.true&select=${felder}${rest}`));
     wsData = Array.isArray(ws) ? ws : [];
   } catch (e) { wsData = []; }
   renderWs();
