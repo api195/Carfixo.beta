@@ -44,7 +44,7 @@
 {"@type":"Question","name":"Wie funktioniert eine Anfrage?","acceptedAnswer":{"@type":"Answer","text":"Du stellst eine Anfrage – direkt an einen Betrieb oder öffentlich an alle passenden. Betriebe antworten mit Angeboten, du vergleichst und buchst den, der am besten passt."}},
 {"@type":"Question","name":"Wer haftet für die Reparatur?","acceptedAnswer":{"@type":"Answer","text":"Carfixo ist Vermittler. Reparaturleistung, Rechnung und Gewährleistung liegen bei der ausführenden Werkstatt – wie bei einem direkten Werkstattbesuch."}},
 {"@type":"Question","name":"Sind die Betriebe geprüft?","acceptedAnswer":{"@type":"Answer","text":"Ja. Betriebe erscheinen in der Suche erst nach Verifizierung durch unser Team. Bewertungen kommen ausschließlich von Kunden mit abgeschlossenen Aufträgen."}},
-{"@type":"Question","name":"Was ist die KI-Diagnose?","acceptedAnswer":{"@type":"Answer","text":"Eine unverbindliche Ersteinschätzung: Du beschreibst Symptome, Warnleuchten oder lädst ein Foto hoch und bekommst eine erste Orientierung samt Preisrahmen. Sie ersetzt keine Werkstattprüfung."}},
+{"@type":"Question","name":"Was ist die Schnell-Diagnose?","acceptedAnswer":{"@type":"Answer","text":"Eine unverbindliche Ersteinschätzung: Du beschreibst Symptome, Warnleuchten oder lädst ein Foto hoch und bekommst eine erste Orientierung samt Preisrahmen. Sie ersetzt keine Werkstattprüfung."}},
 {"@type":"Question","name":"In welchen Städten ist Carfixo verfügbar?","acceptedAnswer":{"@type":"Answer","text":"Carfixo startet in Köln und Umgebung. Weitere Städte folgen – als Betrieb kannst du dich schon jetzt registrieren."}}
 ]}
 ]}
@@ -494,7 +494,7 @@ section[id],header[id]{scroll-margin-top:84px}
     <div class="navLinks" id="navMenu">
       <a data-i18n="nav_werkstaetten" href="app.html#/search">Werkstätten</a>
       <a data-i18n="nav_teile" href="app.html#/teile">Teile</a>
-      <a data-i18n="nav_diagnose" href="app.html#/diagnose">KI-Diagnose</a>
+      <a data-i18n="nav_diagnose" href="app.html#/diagnose">Diagnose</a>
       <a data-i18n="nav_pro" href="#pro">Für Betriebe</a>
       <div class="langWrap">
         <label class="srOnly" for="langSel" data-i18n="lang_label">Sprache</label>
@@ -564,7 +564,7 @@ section[id],header[id]{scroll-margin-top:84px}
         <span class="qm" data-i18n="qt_find_m">Vergleichen &amp; anfragen</span>
       </a>
       <a class="qt" href="app.html#/diagnose">
-        <span class="qe" data-ico="robot" data-ico-size="24"></span><span class="qn" data-i18n="qt_ki_n">KI-Diagnose</span>
+        <span class="qe" data-ico="robot" data-ico-size="24"></span><span class="qn" data-i18n="qt_ki_n">Diagnose</span>
         <span class="qm" data-i18n="qt_ki_m">Ersteinschätzung + Preisrahmen</span>
       </a>
       <a class="qt" href="app.html#/teile">
@@ -599,7 +599,7 @@ section[id],header[id]{scroll-margin-top:84px}
         <span class="stepNo">1</span>
         <div class="stepIco" data-ico="megaphone"></div>
         <h3 data-i18n="how_s1_t">Anliegen beschreiben</h3>
-        <p data-i18n="how_s1_m">Was braucht dein Auto? Einmal eingeben – mit Foto, Video oder KI-Diagnose.</p>
+        <p data-i18n="how_s1_m">Was braucht dein Auto? Einmal eingeben – mit Foto, Video oder Diagnose.</p>
       </div>
       <div class="step">
         <span class="stepNo">2</span>
@@ -828,7 +828,7 @@ section[id],header[id]{scroll-margin-top:84px}
       <details class="faqItem"><summary><span data-i18n="faq_q2">Wie funktioniert eine Anfrage?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a2">Du stellst eine Anfrage – direkt an einen Betrieb oder öffentlich an alle passenden. Betriebe antworten mit Angeboten, du vergleichst und buchst den, der am besten passt.</div></details>
       <details class="faqItem"><summary><span data-i18n="faq_q3">Wer haftet für die Reparatur?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a3">Carfixo ist Vermittler. Reparaturleistung, Rechnung und Gewährleistung liegen bei der ausführenden Werkstatt – wie bei einem direkten Werkstattbesuch.</div></details>
       <details class="faqItem"><summary><span data-i18n="faq_q4">Sind die Betriebe geprüft?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a4">Ja. Betriebe erscheinen in der Suche erst nach Verifizierung durch unser Team. Bewertungen kommen ausschließlich von Kunden mit abgeschlossenen Aufträgen.</div></details>
-      <details class="faqItem"><summary><span data-i18n="faq_q5">Was ist die KI-Diagnose?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a5">Eine unverbindliche Ersteinschätzung: Du beschreibst Symptome, Warnleuchten oder lädst ein Foto hoch und bekommst eine erste Orientierung samt Preisrahmen. Sie ersetzt keine Werkstattprüfung.</div></details>
+      <details class="faqItem"><summary><span data-i18n="faq_q5">Was ist die Schnell-Diagnose?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a5">Eine unverbindliche Ersteinschätzung: Du beschreibst Symptome, Warnleuchten oder lädst ein Foto hoch und bekommst eine erste Orientierung samt Preisrahmen. Sie ersetzt keine Werkstattprüfung.</div></details>
       <details class="faqItem"><summary><span data-i18n="faq_q6">In welchen Städten ist Carfixo verfügbar?</span><span class="fqIco" data-ico="plus"></span></summary><div class="fqA" data-i18n="faq_a6">Carfixo startet in Köln und Umgebung. Weitere Städte folgen – als Betrieb kannst du dich schon jetzt registrieren.</div></details>
     </div>
   </div>
@@ -844,6 +844,8 @@ section[id],header[id]{scroll-margin-top:84px}
       <a href="app.html#/teile" data-i18n="foot_parts">Teile-Marktplatz</a>
       <a href="#pro" data-i18n="foot_pro">Für Betriebe</a>
       <a href="legal.html" data-i18n="foot_legal">Datenschutz &amp; Impressum</a>
+      <a href="legal.html#agb" data-i18n="foot_agb">AGB</a>
+      <a href="app.html#/kuendigen" data-i18n="foot_cancel" style="font-weight:700">Verträge hier kündigen</a>
       <a href="app.html#/notfall" data-i18n="foot_notfall">Notfall</a>
       <a href="app.html" data-i18n="foot_app">App öffnen</a>
     </div>
@@ -854,7 +856,7 @@ section[id],header[id]{scroll-margin-top:84px}
 <!-- Erscheint erst nach dem Hero: solange die große Suche sichtbar ist,
      wäre eine zweite Handlungsaufforderung nur Doppelung. -->
 <div class="mobBar" id="mobBar">
-  <a class="mobBtn ghost" href="app.html#/diagnose"><span data-ico="robot" data-ico-size="17"></span><span data-i18n="mob_diag">KI-Diagnose</span></a>
+  <a class="mobBtn ghost" href="app.html#/diagnose"><span data-ico="robot" data-ico-size="17"></span><span data-i18n="mob_diag">Diagnose</span></a>
   <a class="mobBtn primary" href="app.html#/search"><span data-ico="search" data-ico-size="17"></span><span data-i18n="mob_find">Betrieb finden</span></a>
 </div>
 
@@ -865,16 +867,16 @@ section[id],header[id]{scroll-margin-top:84px}
 const I18N = {
   de:{
     skip_link:"Zum Inhalt springen",lang_label:"Sprache",
-    nav_werkstaetten:"Werkstätten",nav_teile:"Teile",nav_diagnose:"KI-Diagnose",nav_pro:"Für Betriebe",nav_cta:"App öffnen",
-    mob_find:"Betrieb finden",mob_diag:"KI-Diagnose",
+    nav_werkstaetten:"Werkstätten",nav_teile:"Teile",nav_diagnose:"Diagnose",nav_pro:"Für Betriebe",nav_cta:"App öffnen",
+    mob_find:"Betrieb finden",mob_diag:"Diagnose",
     hero_h1:'Was braucht <span class="grad">dein Auto?</span>',
     hero_sub:"Werkstatt, Tuning, Aufbereitung, TÜV oder Teile – vergleiche echte Angebote von geprüften Betrieben. Kostenlos für Kunden.",
     search_was_label:"Was?",search_was_ph:"z.B. Ölwechsel, TÜV, Chiptuning…",search_wo_label:"Wo?",search_wo_ph:"PLZ oder Ort – z.B. Köln",search_go:"Suchen",
     cat_reparatur:"Reparatur",cat_inspektion:"Inspektion",cat_reifen:"Reifen & Felgen",cat_tuev:"TÜV",cat_tuning:"Tuning",cat_pflege:"Aufbereitung",cat_lack:"Lack & Folierung",cat_klima:"Klima",cat_karosserie:"Karosserie",cat_teile:"Teile",cat_alle:"Alle Kategorien →",
     cat_autoglas:"Autoglas",cat_schluessel:"Schlüssel",cat_oldtimer:"Oldtimer",cat_eauto:"E-Auto",
     trust_1:"Geprüfte & verifizierte Betriebe",trust_2:"100 % kostenlos für Kunden",trust_3:"1 Anfrage – mehrere Angebote",trust_4:"Teile direkt vom Betrieb",
-    qt_find_n:"Betrieb finden",qt_find_m:"Vergleichen & anfragen",qt_ki_n:"KI-Diagnose",qt_ki_m:"Ersteinschätzung + Preisrahmen",qt_teile_n:"Teile kaufen",qt_teile_m:"Neu & gebraucht, mit Einbau",qt_anfrage_n:"Anfrage erstellen",qt_anfrage_m:"Betriebe melden sich bei dir",qt_notfall_n:"Notfall-Hilfe",qt_notfall_m:"Notdienst & mobile Hilfe",qt_pro_n:"Für Betriebe",qt_pro_m:"Kunden gewinnen, Teile verkaufen",
-    how_kick:"So funktioniert's",how_h:"In 3 Schritten zum besten Angebot",how_s1_t:"Anliegen beschreiben",how_s1_m:"Was braucht dein Auto? Einmal eingeben – mit Foto, Video oder KI-Diagnose.",how_s2_t:"Angebote vergleichen",how_s2_m:"Geprüfte Betriebe antworten mit echten Preisen. Du vergleichst in Ruhe.",how_s3_t:"Buchen & bewerten",how_s3_m:"Wähle das beste Angebot, buche direkt und bewerte nach dem Termin.",
+    qt_find_n:"Betrieb finden",qt_find_m:"Vergleichen & anfragen",qt_ki_n:"Diagnose",qt_ki_m:"Ersteinschätzung + Preisrahmen",qt_teile_n:"Teile kaufen",qt_teile_m:"Neu & gebraucht, mit Einbau",qt_anfrage_n:"Anfrage erstellen",qt_anfrage_m:"Betriebe melden sich bei dir",qt_notfall_n:"Notfall-Hilfe",qt_notfall_m:"Notdienst & mobile Hilfe",qt_pro_n:"Für Betriebe",qt_pro_m:"Kunden gewinnen, Teile verkaufen",
+    how_kick:"So funktioniert's",how_h:"In 3 Schritten zum besten Angebot",how_s1_t:"Anliegen beschreiben",how_s1_m:"Was braucht dein Auto? Einmal eingeben – mit Foto, Video oder Diagnose.",how_s2_t:"Angebote vergleichen",how_s2_m:"Geprüfte Betriebe antworten mit echten Preisen. Du vergleichst in Ruhe.",how_s3_t:"Buchen & bewerten",how_s3_m:"Wähle das beste Angebot, buche direkt und bewerte nach dem Termin.",
     sec_topws_h:"Top-Betriebe in Köln",sec_topws_sub:"nach Bewertung",sec_topws_all:"Alle Betriebe →",
     sec_parts_h:"Neu im Teile-Marktplatz",sec_parts_sub:"direkt vom Betrieb",sec_parts_all:"Alle Teile →",
     live_empty_ws:"Betriebe werden geladen – oder starte direkt deine Suche.",live_empty_parts:"Noch keine Teile geladen – schau im Marktplatz vorbei.",live_cta_ws:"Zur Werkstatt-Suche →",live_cta_parts:"Zum Teile-Marktplatz →",
@@ -892,15 +894,15 @@ const I18N = {
     faq_q2:"Wie funktioniert eine Anfrage?",faq_a2:"Du stellst eine Anfrage – direkt an einen Betrieb oder öffentlich an alle passenden. Betriebe antworten mit Angeboten, du vergleichst und buchst den, der am besten passt.",
     faq_q3:"Wer haftet für die Reparatur?",faq_a3:"Carfixo ist Vermittler. Reparaturleistung, Rechnung und Gewährleistung liegen bei der ausführenden Werkstatt – wie bei einem direkten Werkstattbesuch.",
     faq_q4:"Sind die Betriebe geprüft?",faq_a4:"Ja. Betriebe erscheinen in der Suche erst nach Verifizierung durch unser Team. Bewertungen kommen ausschließlich von Kunden mit abgeschlossenen Aufträgen.",
-    faq_q5:"Was ist die KI-Diagnose?",faq_a5:"Eine unverbindliche Ersteinschätzung: Du beschreibst Symptome, Warnleuchten oder lädst ein Foto hoch und bekommst eine erste Orientierung samt Preisrahmen. Sie ersetzt keine Werkstattprüfung.",
+    faq_q5:"Was ist die Schnell-Diagnose?",faq_a5:"Eine unverbindliche Ersteinschätzung: Du beschreibst Symptome, Warnleuchten oder lädst ein Foto hoch und bekommst eine erste Orientierung samt Preisrahmen. Sie ersetzt keine Werkstattprüfung.",
     faq_q6:"In welchen Städten ist Carfixo verfügbar?",faq_a6:"Carfixo startet in Köln und Umgebung. Weitere Städte folgen – als Betrieb kannst du dich schon jetzt registrieren.",
-    foot_search:"Werkstatt-Suche",foot_parts:"Teile-Marktplatz",foot_pro:"Für Betriebe",foot_legal:"Datenschutz & Impressum",foot_notfall:"Notfall",foot_app:"App öffnen",
-    card_cond_neu:"Neu",card_cond_gebraucht:"Gebraucht",card_cond_general:"Generalüberholt",card_install:"Einbau möglich",card_shipping:"Versand",card_price_req:"Preis auf Anfrage",card_pickup:"Hol/Bring",card_emergency:"Notdienst",card_rating_new:"Neu",
+    foot_search:"Werkstatt-Suche",foot_parts:"Teile-Marktplatz",foot_pro:"Für Betriebe",foot_legal:"Datenschutz & Impressum",foot_agb:"AGB",foot_cancel:"Verträge hier kündigen",foot_notfall:"Notfall",foot_app:"App öffnen",
+    card_cond_neu:"Neu",card_cond_gebraucht:"Gebraucht",card_cond_general:"Generalüberholt",card_install:"Einbau möglich",card_shipping:"Versand",card_price_req:"Preis auf Anfrage",card_pickup:"Hol/Bring",card_emergency:"Notdienst",card_rating_new:"Neu",card_demo:"Beispielbetrieb",
     doc_title:"Carfixo – Werkstätten, Tuning, Aufbereitung & Teile vergleichen",doc_desc:"Carfixo verbindet Autofahrer mit Werkstätten, Tuning-Betrieben, Aufbereitern und Prüfstellen. Angebote vergleichen, Teile kaufen, direkt buchen."
   },
   tr:{
     skip_link:"İçeriğe geç",lang_label:"Dil",
-    nav_werkstaetten:"Servisler",nav_teile:"Parçalar",nav_diagnose:"Yapay Zekâ Teşhis",nav_pro:"İşletmeler için",nav_cta:"Uygulamayı aç",
+    nav_werkstaetten:"Servisler",nav_teile:"Parçalar",nav_diagnose:"Teşhis",nav_pro:"İşletmeler için",nav_cta:"Uygulamayı aç",
     mob_find:"İşletme bul",mob_diag:"Teşhis",
     hero_h1:'Aracının <span class="grad">neye ihtiyacı var?</span>',
     hero_sub:"Servis, tuning, detaylı temizlik, TÜV veya parça – onaylı işletmelerden gerçek teklifleri karşılaştır. Müşteriler için ücretsiz.",
@@ -908,8 +910,8 @@ const I18N = {
     cat_reparatur:"Onarım",cat_inspektion:"Bakım",cat_reifen:"Lastik & Jant",cat_tuev:"TÜV",cat_tuning:"Tuning",cat_pflege:"Detaylı Temizlik",cat_lack:"Boya & Kaplama",cat_klima:"Klima",cat_karosserie:"Kaporta",cat_teile:"Parçalar",cat_alle:"Tüm kategoriler →",
     cat_autoglas:"Oto Cam",cat_schluessel:"Anahtar",cat_oldtimer:"Klasik",cat_eauto:"Elektrikli",
     trust_1:"Onaylı & doğrulanmış işletmeler",trust_2:"Müşteriler için %100 ücretsiz",trust_3:"1 talep – birden çok teklif",trust_4:"Parçalar doğrudan işletmeden",
-    qt_find_n:"İşletme bul",qt_find_m:"Karşılaştır & talep et",qt_ki_n:"Yapay zekâ teşhis",qt_ki_m:"İlk değerlendirme + fiyat aralığı",qt_teile_n:"Parça satın al",qt_teile_m:"Sıfır & ikinci el, montajlı",qt_anfrage_n:"Talep oluştur",qt_anfrage_m:"İşletmeler sana ulaşır",qt_notfall_n:"Acil yardım",qt_notfall_m:"Acil servis & mobil yardım",qt_pro_n:"İşletmeler için",qt_pro_m:"Müşteri kazan, parça sat",
-    how_kick:"Nasıl çalışır",how_h:"3 adımda en iyi teklif",how_s1_t:"İhtiyacını anlat",how_s1_m:"Aracın neye ihtiyacı var? Bir kez gir – foto, video veya yapay zekâ teşhisiyle.",how_s2_t:"Teklifleri karşılaştır",how_s2_m:"Onaylı işletmeler gerçek fiyatlarla yanıt verir. Rahatça karşılaştırırsın.",how_s3_t:"Randevu al & değerlendir",how_s3_m:"En iyi teklifi seç, doğrudan randevu al ve sonra değerlendir.",
+    qt_find_n:"İşletme bul",qt_find_m:"Karşılaştır & talep et",qt_ki_n:"Hızlı teşhis",qt_ki_m:"İlk değerlendirme + fiyat aralığı",qt_teile_n:"Parça satın al",qt_teile_m:"Sıfır & ikinci el, montajlı",qt_anfrage_n:"Talep oluştur",qt_anfrage_m:"İşletmeler sana ulaşır",qt_notfall_n:"Acil yardım",qt_notfall_m:"Acil servis & mobil yardım",qt_pro_n:"İşletmeler için",qt_pro_m:"Müşteri kazan, parça sat",
+    how_kick:"Nasıl çalışır",how_h:"3 adımda en iyi teklif",how_s1_t:"İhtiyacını anlat",how_s1_m:"Aracın neye ihtiyacı var? Bir kez gir – foto, video veya hızlı teşhisle.",how_s2_t:"Teklifleri karşılaştır",how_s2_m:"Onaylı işletmeler gerçek fiyatlarla yanıt verir. Rahatça karşılaştırırsın.",how_s3_t:"Randevu al & değerlendir",how_s3_m:"En iyi teklifi seç, doğrudan randevu al ve sonra değerlendir.",
     sec_topws_h:"Köln'deki en iyi işletmeler",sec_topws_sub:"puana göre",sec_topws_all:"Tüm işletmeler →",
     sec_parts_h:"Parça pazarında yeni",sec_parts_sub:"doğrudan işletmeden",sec_parts_all:"Tüm parçalar →",
     live_empty_ws:"İşletmeler yükleniyor – ya da hemen aramaya başla.",live_empty_parts:"Henüz parça yüklenmedi – pazara göz at.",live_cta_ws:"Servis aramasına git →",live_cta_parts:"Parça pazarına git →",
@@ -927,24 +929,24 @@ const I18N = {
     faq_q2:"Bir talep nasıl çalışır?",faq_a2:"Bir talep oluşturursun – doğrudan bir işletmeye ya da uygun tüm işletmelere açık olarak. İşletmeler teklifle yanıt verir, karşılaştırır ve en uygun olanı seçersin.",
     faq_q3:"Onarımdan kim sorumlu?",faq_a3:"Carfixo aracıdır. Onarım, fatura ve garanti işi yapan servise aittir – doğrudan servise gitmiş gibi.",
     faq_q4:"İşletmeler denetleniyor mu?",faq_a4:"Evet. İşletmeler ancak ekibimiz tarafından doğrulandıktan sonra aramada görünür. Puanlar yalnızca işi tamamlanmış müşterilerden gelir.",
-    faq_q5:"Yapay zekâ teşhis nedir?",faq_a5:"Bağlayıcı olmayan bir ön değerlendirme: belirtileri, uyarı ışıklarını anlatır veya fotoğraf yüklersin ve fiyat aralığıyla bir ilk fikir alırsın. Servis kontrolünün yerini tutmaz.",
+    faq_q5:"Hızlı teşhis nedir?",faq_a5:"Bağlayıcı olmayan bir ön değerlendirme: belirtileri, uyarı ışıklarını anlatır veya fotoğraf yüklersin ve fiyat aralığıyla bir ilk fikir alırsın. Servis kontrolünün yerini tutmaz.",
     faq_q6:"Carfixo hangi şehirlerde mevcut?",faq_a6:"Carfixo, Köln ve çevresinde başlıyor. Diğer şehirler geliyor – işletme olarak şimdiden kaydolabilirsin.",
-    foot_search:"Servis arama",foot_parts:"Parça pazarı",foot_pro:"İşletmeler için",foot_legal:"Gizlilik & Künye",foot_notfall:"Acil",foot_app:"Uygulamayı aç",
-    card_cond_neu:"Sıfır",card_cond_gebraucht:"İkinci el",card_cond_general:"Yenilenmiş",card_install:"Montaj mümkün",card_shipping:"Kargo",card_price_req:"Fiyat sorunuz",card_pickup:"Al-götür",card_emergency:"Acil servis",card_rating_new:"Yeni",
+    foot_search:"Servis arama",foot_parts:"Parça pazarı",foot_pro:"İşletmeler için",foot_legal:"Gizlilik & Künye",foot_agb:"Kullanım koşulları",foot_cancel:"Sözleşmeleri burada feshet",foot_notfall:"Acil",foot_app:"Uygulamayı aç",
+    card_cond_neu:"Sıfır",card_cond_gebraucht:"İkinci el",card_cond_general:"Yenilenmiş",card_install:"Montaj mümkün",card_shipping:"Kargo",card_price_req:"Fiyat sorunuz",card_pickup:"Al-götür",card_emergency:"Acil servis",card_rating_new:"Yeni",card_demo:"Örnek işletme",
     doc_title:"Carfixo – Servis, tuning, temizlik & parça karşılaştır",doc_desc:"Carfixo sürücüleri onaylı servisler, tuning işletmeleri, detayçılar ve muayene yerleriyle buluşturur. Teklifleri karşılaştır, parça al, hemen randevu al."
   },
   en:{
     skip_link:"Skip to content",lang_label:"Language",
-    nav_werkstaetten:"Workshops",nav_teile:"Parts",nav_diagnose:"AI Diagnosis",nav_pro:"For Businesses",nav_cta:"Open app",
-    mob_find:"Find a business",mob_diag:"AI diagnosis",
+    nav_werkstaetten:"Workshops",nav_teile:"Parts",nav_diagnose:"Diagnosis",nav_pro:"For Businesses",nav_cta:"Open app",
+    mob_find:"Find a business",mob_diag:"quick diagnosis",
     hero_h1:'What does your <span class="grad">car need?</span>',
     hero_sub:"Repairs, tuning, detailing, inspection or parts – compare real quotes from verified businesses. Free for customers.",
     search_was_label:"What?",search_was_ph:"e.g. oil change, inspection, chip tuning…",search_wo_label:"Where?",search_wo_ph:"ZIP or city – e.g. Cologne",search_go:"Search",
     cat_reparatur:"Repair",cat_inspektion:"Service",cat_reifen:"Tyres & Wheels",cat_tuev:"Inspection",cat_tuning:"Tuning",cat_pflege:"Detailing",cat_lack:"Paint & Wrap",cat_klima:"A/C",cat_karosserie:"Bodywork",cat_teile:"Parts",cat_alle:"All categories →",
     cat_autoglas:"Auto glass",cat_schluessel:"Keys",cat_oldtimer:"Classic",cat_eauto:"EV",
     trust_1:"Vetted & verified businesses",trust_2:"100% free for customers",trust_3:"1 request – multiple quotes",trust_4:"Parts direct from the business",
-    qt_find_n:"Find a business",qt_find_m:"Compare & request",qt_ki_n:"AI diagnosis",qt_ki_m:"First estimate + price range",qt_teile_n:"Buy parts",qt_teile_m:"New & used, with fitting",qt_anfrage_n:"Create a request",qt_anfrage_m:"Businesses come to you",qt_notfall_n:"Emergency help",qt_notfall_m:"Breakdown & mobile help",qt_pro_n:"For businesses",qt_pro_m:"Win customers, sell parts",
-    how_kick:"How it works",how_h:"The best quote in 3 steps",how_s1_t:"Describe your need",how_s1_m:"What does your car need? Enter it once – with photo, video or AI diagnosis.",how_s2_t:"Compare quotes",how_s2_m:"Verified businesses reply with real prices. Compare at your leisure.",how_s3_t:"Book & review",how_s3_m:"Pick the best offer, book directly and leave a review afterwards.",
+    qt_find_n:"Find a business",qt_find_m:"Compare & request",qt_ki_n:"quick diagnosis",qt_ki_m:"First estimate + price range",qt_teile_n:"Buy parts",qt_teile_m:"New & used, with fitting",qt_anfrage_n:"Create a request",qt_anfrage_m:"Businesses come to you",qt_notfall_n:"Emergency help",qt_notfall_m:"Breakdown & mobile help",qt_pro_n:"For businesses",qt_pro_m:"Win customers, sell parts",
+    how_kick:"How it works",how_h:"The best quote in 3 steps",how_s1_t:"Describe your need",how_s1_m:"What does your car need? Enter it once – with photo, video or quick diagnosis.",how_s2_t:"Compare quotes",how_s2_m:"Verified businesses reply with real prices. Compare at your leisure.",how_s3_t:"Book & review",how_s3_m:"Pick the best offer, book directly and leave a review afterwards.",
     sec_topws_h:"Top businesses in Cologne",sec_topws_sub:"by rating",sec_topws_all:"All businesses →",
     sec_parts_h:"New in the parts marketplace",sec_parts_sub:"direct from the business",sec_parts_all:"All parts →",
     live_empty_ws:"Loading businesses – or start your search right away.",live_empty_parts:"No parts loaded yet – browse the marketplace.",live_cta_ws:"Go to workshop search →",live_cta_parts:"Go to parts marketplace →",
@@ -962,10 +964,10 @@ const I18N = {
     faq_q2:"How does a request work?",faq_a2:"You post a request – directly to one business or publicly to all suitable ones. Businesses reply with quotes; you compare and book the best fit.",
     faq_q3:"Who is liable for the repair?",faq_a3:"Carfixo is an intermediary. The repair, invoice and warranty are the responsibility of the performing workshop – just like a direct visit.",
     faq_q4:"Are the businesses vetted?",faq_a4:"Yes. Businesses only appear in search after verification by our team. Reviews come solely from customers with completed jobs.",
-    faq_q5:"What is the AI diagnosis?",faq_a5:"A non-binding first estimate: describe symptoms or warning lights, or upload a photo, and get initial guidance plus a price range. It does not replace a workshop inspection.",
+    faq_q5:"What is the quick diagnosis?",faq_a5:"A non-binding first estimate: describe symptoms or warning lights, or upload a photo, and get initial guidance plus a price range. It does not replace a workshop inspection.",
     faq_q6:"Which cities is Carfixo available in?",faq_a6:"Carfixo is launching in Cologne and its surroundings. More cities are coming – businesses can already register now.",
-    foot_search:"Workshop search",foot_parts:"Parts marketplace",foot_pro:"For businesses",foot_legal:"Privacy & imprint",foot_notfall:"Emergency",foot_app:"Open app",
-    card_cond_neu:"New",card_cond_gebraucht:"Used",card_cond_general:"Reconditioned",card_install:"Fitting available",card_shipping:"Shipping",card_price_req:"Price on request",card_pickup:"Pickup",card_emergency:"Breakdown",card_rating_new:"New",
+    foot_search:"Workshop search",foot_parts:"Parts marketplace",foot_pro:"For businesses",foot_legal:"Privacy & imprint",foot_agb:"Terms",foot_cancel:"Cancel contracts here",foot_notfall:"Emergency",foot_app:"Open app",
+    card_cond_neu:"New",card_cond_gebraucht:"Used",card_cond_general:"Reconditioned",card_install:"Fitting available",card_shipping:"Shipping",card_price_req:"Price on request",card_pickup:"Pickup",card_emergency:"Breakdown",card_rating_new:"New",card_demo:"Example business",
     doc_title:"Carfixo – Compare workshops, tuning, detailing & parts",doc_desc:"Carfixo connects drivers with verified workshops, tuning businesses, detailers and test centres. Compare quotes, buy parts, book directly."
   }
 };
@@ -1115,7 +1117,7 @@ function wsCard(w) {
           <div class="cT">${esc(w.name)}</div>
           <div class="cM"><span class="stars">${stars(w.rating_avg)}</span> ${w.rating_avg > 0 ? Number(w.rating_avg).toLocaleString("de-DE") : t("card_rating_new")} (${w.rating_count || 0}) · ${esc(w.district || w.city || "Köln")}</div>
         </div>
-        <span class="badge b-green">✓</span>
+        ${w.is_demo ? `<span class="badge b-grey">${esc(t("card_demo"))}</span>` : '<span class="badge b-green">✓</span>'}
       </div>
       <div class="cPills">
         ${(w.categories || []).slice(0, 3).map(c => `<span class="pill">${ico(c)} ${esc(catName(c))}</span>`).join("")}
@@ -1180,7 +1182,12 @@ function renderParts(){
 
 (async () => {
   try {
-    const ws = await sbGet("workshops?is_verified=eq.true&select=id,name,district,city,rating_avg,rating_count,categories,logo_url,price_level,pickup_service,emergency_service&order=rating_avg.desc,rating_count.desc&limit=60");
+    const felder = "id,name,district,city,rating_avg,rating_count,categories,logo_url,price_level,pickup_service,emergency_service";
+    const rest = "&order=rating_avg.desc,rating_count.desc&limit=60";
+    // is_demo kommt erst mit der Migration 2026-10-18. Bis dahin lehnt die
+    // Datenbank die Spalte ab (400) – dann ohne sie laden statt leer bleiben.
+    const ws = await sbGet(`workshops?is_verified=eq.true&select=${felder},is_demo${rest}`)
+      .catch(() => sbGet(`workshops?is_verified=eq.true&select=${felder}${rest}`));
     wsData = Array.isArray(ws) ? ws : [];
   } catch (e) { wsData = []; }
   renderWs();

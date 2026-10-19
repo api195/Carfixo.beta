@@ -18,9 +18,9 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove("show"), 3000);
 }
 
-const VIEWS = { dashboard: vDashboard, workshops: vWorkshops, users: vUsers, requests: vRequests, payments: vPayments, reports: vReports };
+const VIEWS = { dashboard: vDashboard, workshops: vWorkshops, users: vUsers, requests: vRequests, payments: vPayments, reports: vReports, kuendigungen: vCancellations };
 function nav(active) {
-  $("topNav").innerHTML = [["dashboard", "Übersicht"], ["workshops", "Werkstätten"], ["users", "Nutzer"], ["requests", "Anfragen"], ["payments", "Zahlungen"], ["reports", "Meldungen"]]
+  $("topNav").innerHTML = [["dashboard", "Übersicht"], ["workshops", "Werkstätten"], ["users", "Nutzer"], ["requests", "Anfragen"], ["payments", "Zahlungen"], ["reports", "Meldungen"], ["kuendigungen", "Kündigungen"]]
     .map(([k, l]) => `<a href="#/${k}" class="${active === k ? "on" : ""}">${l}</a>`).join("") +
     `<a href="app.html" style="color:var(--blue2)">Zur App</a><a href="#" id="outLink">Abmelden</a>`;
   $("outLink").onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
@@ -206,6 +206,8 @@ async function vReports() {
           </select>
           <button class="btn ghost sm" onclick="noteReport('${r.id}')">Notiz</button>
           ${r.workshop_id ? `<a class="btn ghost sm" href="app.html#/workshop/${r.workshop_id}">Betrieb ansehen</a>` : ""}
+          ${r.target_type === "review" && r.target_id ? `<button class="btn red sm" onclick="removeTarget('review','${r.id}','${r.target_id}')">Bewertung entfernen</button>` : ""}
+          ${r.target_type === "part" && r.target_id ? `<button class="btn red sm" onclick="removeTarget('part','${r.id}','${r.target_id}')">Teil ausblenden</button>` : ""}
         </div>
       </div>`).join("");
 }
@@ -216,6 +218,20 @@ async function setReportStatus(id, status) {
   if (error) return toast(error.message);
   toast("Status: " + status);
 }
+// Entfernen nur mit dokumentierter Begründung – die betroffene Person
+// muss sie nach Art. 17 DSA erfahren (Notiz = Grundlage der Mitteilung).
+async function removeTarget(kind, reportId, targetId) {
+  const grund = prompt(kind === "review" ? "Warum wird die Bewertung entfernt? (wird dokumentiert)" : "Warum wird das Teil ausgeblendet? (wird dokumentiert)");
+  if (!grund) return;
+  const { error } = kind === "review"
+    ? await sb.from("reviews").delete().eq("id", targetId)
+    : await sb.from("parts").update({ active: false }).eq("id", targetId);
+  if (error) return toast(error.message);
+  await sb.from("reports").update({ status: "geloest", resolved_at: new Date().toISOString(),
+    admin_note: (kind === "review" ? "Bewertung entfernt: " : "Teil ausgeblendet: ") + grund }).eq("id", reportId);
+  toast(kind === "review" ? "Bewertung entfernt. Betroffene Person mit Begründung informieren." : "Teil ausgeblendet. Betrieb mit Begründung informieren.");
+  vReports();
+}
 async function noteReport(id) {
   const note = prompt("Entscheidung / Notiz dokumentieren:");
   if (note == null) return;
@@ -223,6 +239,45 @@ async function noteReport(id) {
   if (error) return toast(error.message);
   toast("Notiz gespeichert.");
   vReports();
+}
+
+// ---------- Kündigungen (§ 312k BGB) ----------
+// Eingang über "Verträge hier kündigen". Die Bestätigung in Textform
+// verschickt notify-dispatch automatisch; hier wird nur die Umsetzung erfasst.
+const KD_VERTRAG = { kundenkonto: "Kundenkonto", betriebskonto: "Betriebskonto", premium_kunde: "Premium Kunde", premium_betrieb: "Premium Betrieb" };
+const KD_STATUS = { eingegangen: "b-red", umgesetzt: "b-green", abgelehnt: "b-grey" };
+async function vCancellations() {
+  main.innerHTML = `<div class="pageHead"><div><h1>Kündigungen</h1><div class="sub">Eingegangen über „Verträge hier kündigen“. Unverzüglich umsetzen – kostenlose Konten spätestens nach 2 Werktagen.</div></div></div>
+  <div id="kdList"><div class="sk" style="height:110px"></div></div>`;
+  const { data, error } = await sb.from("contract_cancellations").select("*").order("received_at", { ascending: false }).limit(200);
+  if (error) { $("kdList").innerHTML = `<div class="warn">${esc(error.message)}</div>`; return; }
+  $("kdList").innerHTML = (data || []).length === 0
+    ? '<div class="empty"><div class="e"></div>Keine Kündigungen.</div>'
+    : data.map(k => `
+      <div class="card" style="margin-bottom:12px">
+        <div class="cardHead">
+          <div style="flex:1"><div class="tt">${esc(k.full_name)} <span class="mm">· ${esc(k.email)}</span></div>
+          <div class="mm">${esc(KD_VERTRAG[k.contract] || k.contract)}${k.contract_ref ? " · " + esc(k.contract_ref) : ""}
+            · ${k.kind === "ausserordentlich" ? "außerordentlich" : "ordentlich"}
+            · ${k.effective === "datum" && k.effective_date ? "zum " + fmtDate(k.effective_date) : "nächstmöglich"}</div>
+          <div class="mm">Eingang ${new Date(k.received_at).toLocaleString("de-DE")}
+            · Bestätigung ${k.receipt_sent_at ? "versendet ✓" : "<b style=\"color:var(--red)\">nicht versendet – manuell bestätigen</b>"}
+            ${k.processed_at ? " · erledigt " + fmtDate(k.processed_at) : ""}</div>
+          ${k.reason ? `<div class="mm">Grund: ${esc(k.reason)}</div>` : ""}</div>
+          <span class="badge ${KD_STATUS[k.status] || "b-grey"}">${esc(k.status)}</span></div>
+        <div class="foot">
+          ${k.status === "eingegangen" ? `<button class="btn green sm" onclick="setCancellation('${k.id}','umgesetzt')">✓ Umgesetzt</button>
+          <button class="btn ghost sm" onclick="setCancellation('${k.id}','abgelehnt')">Ablehnen</button>` : ""}
+          ${k.user_id ? `<a class="btn ghost sm" href="#/users">Nutzer ansehen</a>` : ""}
+        </div>
+      </div>`).join("");
+}
+async function setCancellation(id, status) {
+  if (status === "abgelehnt" && !confirm("Ablehnen nur, wenn die Kündigung keinem Vertrag zuzuordnen ist. Dem Absender per E-Mail Bescheid geben. Fortfahren?")) return;
+  const { error } = await sb.from("contract_cancellations").update({ status, processed_at: new Date().toISOString() }).eq("id", id);
+  if (error) return toast(error.message);
+  toast(status === "umgesetzt" ? "Als umgesetzt markiert." : "Abgelehnt.");
+  vCancellations();
 }
 
 // ---------- Anfragen-Monitor ----------
@@ -293,8 +348,55 @@ async function boot() {
     await sb.auth.signOut();
     return vLogin("Dieses Konto hat keine Admin-Rechte.");
   }
+  // Die Datenbank erkennt Admin-Rechte nur mit zweitem Faktor (aal2) an.
+  const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.currentLevel !== "aal2") return aal?.nextLevel === "aal2" ? vMfaCode() : vMfaEnroll();
+  mfaOk = true;
   $("avatarBtn").classList.remove("hidden");
   route();
 }
-window.addEventListener("hashchange", () => { if (myProfile?.role === "admin") route(); });
+
+// ---------- Zwei-Faktor (TOTP) ----------
+let mfaOk = false;
+function mfaCard(inner) {
+  $("topNav").innerHTML = `<a href="#" id="outLink">Abmelden</a>`;
+  $("outLink").onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
+  main.innerHTML = `<div class="authWrap"><div class="authCard">${inner}<div class="err" id="mErr"></div></div></div>`;
+}
+function mfaFehler(msg) { const e = $("mErr"); e.textContent = msg; e.style.display = "block"; }
+async function mfaPruefen(factorId) {
+  const code = $("mCode").value.replace(/\s/g, "");
+  if (!/^\d{6}$/.test(code)) return mfaFehler("Bitte den 6-stelligen Code aus der App eingeben.");
+  const { error } = await sb.auth.mfa.challengeAndVerify({ factorId, code });
+  if (error) return mfaFehler("Code falsch oder abgelaufen. Bitte den aktuellen Code eingeben.");
+  boot();
+}
+async function vMfaCode() {
+  const { data } = await sb.auth.mfa.listFactors();
+  const f = (data?.totp || []).find(x => x.status === "verified");
+  if (!f) return vMfaEnroll();
+  mfaCard(`<h1>Bestätigungscode</h1>
+    <p class="mm" style="margin-top:8px">Gib den 6-stelligen Code aus deiner Authenticator-App ein.</p>
+    <input id="mCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" style="margin-top:14px;font-size:22px;letter-spacing:6px;text-align:center">
+    <button class="btn wide" style="margin-top:14px" id="mGo">Bestätigen</button>`);
+  $("mGo").onclick = () => mfaPruefen(f.id);
+  $("mCode").onkeydown = (e) => { if (e.key === "Enter") mfaPruefen(f.id); };
+  $("mCode").focus();
+}
+async function vMfaEnroll() {
+  // Halb fertige Einrichtungen aufräumen, sonst lehnt Supabase eine neue ab.
+  const { data: lf } = await sb.auth.mfa.listFactors();
+  for (const f of (lf?.all || []).filter(x => x.status === "unverified")) await sb.auth.mfa.unenroll({ factorId: f.id });
+  const { data, error } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: "Carfixo Admin" });
+  if (error) return mfaCard(`<h1>Zwei-Faktor</h1><div class="warn" style="margin-top:12px">${esc(error.message)}</div>`);
+  mfaCard(`<h1>Zwei-Faktor einrichten</h1>
+    <p class="mm" style="margin-top:8px">Der Admin-Bereich ist nur mit zweitem Faktor zugänglich. Scanne den QR-Code mit einer Authenticator-App (z. B. Google Authenticator, 1Password, Authy) und gib den angezeigten Code ein.</p>
+    <img src="${data.totp.qr_code}" alt="QR-Code für die Authenticator-App" style="display:block;width:200px;height:200px;margin:16px auto;background:#fff;border-radius:12px;padding:8px">
+    <p class="mm" style="text-align:center;word-break:break-all">Manuell: <code>${esc(data.totp.secret)}</code></p>
+    <input id="mCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" style="margin-top:14px;font-size:22px;letter-spacing:6px;text-align:center">
+    <button class="btn wide" style="margin-top:14px" id="mGo">Aktivieren</button>`);
+  $("mGo").onclick = () => mfaPruefen(data.id);
+  $("mCode").onkeydown = (e) => { if (e.key === "Enter") mfaPruefen(data.id); };
+}
+window.addEventListener("hashchange", () => { if (myProfile?.role === "admin" && mfaOk) route(); });
 boot();

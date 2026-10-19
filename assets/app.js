@@ -45,22 +45,167 @@ const routes = {
   "ws/dashboard": vWsDashboard, "ws/leads": vWsLeads, "ws/lead": vWsLead,
   "ws/jobs": vWsJobs, "ws/calendar": vWsCalendar, "ws/profile": vWsProfile,
   "ws/parts": vWsParts, "ws/stats": vWsStats, "ws/archive": vWsArchive,
+  "kuendigen": vKuendigen,
 };
 const CUSTOMER_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"], ["requests", "megaphone", "Aufträge"], ["vehicles", "car", "Fahrzeuge"]];
 const WS_NAV = [["ws/dashboard", "gauge", "Dashboard"], ["ws/leads", "megaphone", "Anfragen"], ["ws/jobs", "box", "Aufträge"], ["ws/parts", "puzzle", "Teile"], ["ws/calendar", "calendar", "Kalender"], ["ws/profile", "shop", "Profil"]];
-const ANON_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "KI-Diagnose"], ["teile", "puzzle", "Teile"], ["notfall", "alert", "Notfall"]];
+const ANON_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"], ["notfall", "alert", "Notfall"]];
 
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, "");
   const [pathPart, queryPart] = h.split("?");
   const segs = pathPart.split("/").filter(Boolean);
   const query = {};
-  (queryPart || "").split("&").forEach(kv => { const [k, v] = kv.split("="); if (k) query[k] = decodeURIComponent(v || ""); });
+  // decodeURIComponent wirft bei kaputten %-Folgen ("?q=50%"). Ungefangen
+  // bliebe die App dann dauerhaft auf "Lade Carfixo…" stehen.
+  const dec = (s) => { try { return decodeURIComponent(s); } catch (e) { return s; } };
+  (queryPart || "").split("&").forEach(kv => { const [k, v] = kv.split("="); if (k) query[k] = dec(v || ""); });
   let name = segs[0] || "", param = segs[1] || null;
   if (name === "ws" && segs[1]) { name = "ws/" + segs[1]; param = segs[2] || null; }
   return { name, param, query };
 }
 function go(path) { location.hash = "#/" + path; }
+
+// ============================================================
+// KÜNDIGUNG (§ 312k BGB)
+// Die Schaltfläche "Verträge hier kündigen" muss ständig verfügbar und
+// leicht erreichbar sein – also ohne Anmeldung. Wer eingeloggt ist, bekommt
+// Name und E-Mail vorausgefüllt. Angenommen wird über submit_cancellation()
+// (prüft, bremst Missbrauch, liefert den Zugangszeitpunkt). Die Bestätigung
+// in Textform verschickt notify-dispatch an die angegebene Adresse.
+// ============================================================
+const KUENDIGUNG_VERTRAG = {
+  kundenkonto: "Nutzungsvertrag (Kundenkonto)",
+  betriebskonto: "Plattformvertrag (Betriebskonto)",
+  premium_kunde: "Premium für Kunden",
+  premium_betrieb: "Premium für Betriebe",
+};
+const KUENDIGUNG_KONTAKT = "info@carfixo.de";
+
+function vKuendigen() {
+  const istBetrieb = myProfile?.role === "workshop_owner" || myProfile?.role === "workshop_staff";
+  const vorwahl = istBetrieb ? "betriebskonto" : "kundenkonto";
+  main.innerHTML = `
+  <div class="pageHead"><div><h1>Verträge hier kündigen</h1>
+    <div class="sub">Hier kannst du jeden Vertrag mit Carfixo kündigen – ohne Anmeldung. Du bekommst sofort eine Bestätigung.</div></div></div>
+  <div class="card" style="max-width:640px">
+    <div class="label">Dein Name</div>
+    <input id="kdName" autocomplete="name" value="${esc(myProfile?.full_name || "")}" aria-label="Dein Name">
+    <div class="label">E-Mail-Adresse deines Kontos</div>
+    <input id="kdMail" type="email" autocomplete="email" value="${esc(me?.email || "")}" aria-label="E-Mail-Adresse">
+    <p class="mm" style="font-size:12px;margin-top:4px">An diese Adresse schicken wir die Bestätigung. Daran erkennen wir auch, welches Konto gemeint ist.</p>
+
+    <div class="label">Welchen Vertrag kündigst du?</div>
+    <select id="kdVertrag" aria-label="Vertrag">
+      ${Object.entries(KUENDIGUNG_VERTRAG).map(([k, v]) => `<option value="${k}" ${k === vorwahl ? "selected" : ""}>${v}</option>`).join("")}
+    </select>
+    <div class="label">Angabe zum Vertrag <span class="mm" style="font-weight:400">(optional)</span></div>
+    <input id="kdRef" placeholder="z. B. Name deines Betriebs" aria-label="Angabe zum Vertrag" value="${esc(istBetrieb ? (myWorkshop?.name || "") : "")}">
+
+    <div class="label">Art der Kündigung</div>
+    <label class="inline"><input type="radio" name="kdArt" value="ordentlich" checked> Ordentliche Kündigung</label>
+    <label class="inline"><input type="radio" name="kdArt" value="ausserordentlich"> Außerordentliche (fristlose) Kündigung</label>
+    <div id="kdGrundBox" class="hidden">
+      <div class="label">Grund der außerordentlichen Kündigung</div>
+      <textarea id="kdGrund" rows="3" aria-label="Kündigungsgrund" maxlength="2000"></textarea>
+    </div>
+
+    <div class="label">Zu wann soll der Vertrag enden?</div>
+    <label class="inline"><input type="radio" name="kdWann" value="naechstmoeglich" checked> Zum nächstmöglichen Zeitpunkt</label>
+    <label class="inline"><input type="radio" name="kdWann" value="datum"> Zu einem bestimmten Datum</label>
+    <input id="kdDatum" type="date" class="hidden" aria-label="Gewünschtes Enddatum" min="${new Date().toISOString().slice(0, 10)}">
+
+    <div class="err" id="kdErr"></div>
+    <button class="btn wide" style="margin-top:18px" id="kdGo">Jetzt kündigen</button>
+    <p class="mm" style="font-size:11.5px;margin-top:10px">Mit „Jetzt kündigen“ erklärst du die Kündigung verbindlich.
+      Kostenlose Leistungen enden mit der Bearbeitung, spätestens nach zwei Werktagen.</p>
+  </div>`;
+
+  const art = () => document.querySelector('input[name="kdArt"]:checked').value;
+  const wann = () => document.querySelector('input[name="kdWann"]:checked').value;
+  document.querySelectorAll('input[name="kdArt"]').forEach(r => r.onchange = () => $("kdGrundBox").classList.toggle("hidden", art() !== "ausserordentlich"));
+  document.querySelectorAll('input[name="kdWann"]').forEach(r => r.onchange = () => $("kdDatum").classList.toggle("hidden", wann() !== "datum"));
+
+  $("kdGo").onclick = async () => {
+    const err = $("kdErr"); err.style.display = "none";
+    const name = $("kdName").value.trim(), mail = $("kdMail").value.trim();
+    if (name.length < 2) return showErr(err, "Bitte gib deinen Namen an.");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) return showErr(err, "Bitte gib eine gültige E-Mail-Adresse an.");
+    if (art() === "ausserordentlich" && !$("kdGrund").value.trim()) return showErr(err, "Bitte nenne den Grund der außerordentlichen Kündigung.");
+    if (wann() === "datum" && !$("kdDatum").value) return showErr(err, "Bitte wähle das gewünschte Enddatum.");
+
+    const eingabe = {
+      p_full_name: name, p_email: mail, p_contract: $("kdVertrag").value, p_contract_ref: $("kdRef").value.trim() || null,
+      p_kind: art(), p_reason: art() === "ausserordentlich" ? $("kdGrund").value.trim() : null,
+      p_effective: wann(), p_effective_date: wann() === "datum" ? $("kdDatum").value : null,
+    };
+    $("kdGo").disabled = true; $("kdGo").textContent = "Wird übermittelt…";
+    const { data, error } = await sb.rpc("submit_cancellation", eingabe);
+    $("kdGo").disabled = false; $("kdGo").textContent = "Jetzt kündigen";
+    if (error) {
+      // Fehlt die Funktion (Migration noch nicht eingespielt) oder ist das
+      // Netz weg, darf die Kündigung nicht einfach verloren gehen.
+      const technisch = /function|schema cache|fetch|network|load failed/i.test(error.message || "");
+      return showErr(err, technisch
+        ? `Die Kündigung konnte gerade nicht übermittelt werden. Bitte versuche es gleich noch einmal oder kündige per E-Mail an ${KUENDIGUNG_KONTAKT}.`
+        : error.message);
+    }
+    kuendigungBestaetigt({ ...eingabe, id: data.id, received_at: data.received_at });
+  };
+}
+
+// Bestätigungsseite: § 312k Abs. 3 verlangt, dass man die Erklärung mit Datum
+// und Uhrzeit dauerhaft speichern kann – daher Herunterladen und Drucken.
+function kuendigungBestaetigt(k) {
+  const zugang = new Date(k.received_at).toLocaleString("de-DE", { timeZone: "Europe/Berlin", dateStyle: "long", timeStyle: "medium" });
+  const ende = k.p_effective === "datum"
+    ? `zum ${new Date(k.p_effective_date + "T12:00:00").toLocaleDateString("de-DE", { dateStyle: "long" })} – frühestens zum nächstmöglichen Zeitpunkt`
+    : "zum nächstmöglichen Zeitpunkt";
+  const zeilen = [
+    ["Name", k.p_full_name], ["E-Mail", k.p_email],
+    ["Vertrag", KUENDIGUNG_VERTRAG[k.p_contract]],
+    ...(k.p_contract_ref ? [["Angabe zum Vertrag", k.p_contract_ref]] : []),
+    ["Art der Kündigung", k.p_kind === "ausserordentlich" ? "außerordentlich (fristlos)" : "ordentlich"],
+    ...(k.p_reason ? [["Kündigungsgrund", k.p_reason]] : []),
+    ["Beendigung", ende], ["Eingegangen am", zugang + " Uhr"], ["Vorgangsnummer", k.id],
+  ];
+  main.innerHTML = `
+  <div class="pageHead"><div><h1>Deine Kündigung ist eingegangen</h1>
+    <div class="sub">Eine Bestätigung haben wir gerade an <b>${esc(k.p_email)}</b> geschickt.</div></div></div>
+  <div class="card" style="max-width:640px" id="kdBeleg">
+    ${zeilen.map(([a, b]) => `<div class="offerLine"><span>${esc(a)}</span><span style="text-align:right">${esc(b)}</span></div>`).join("")}
+    <p class="mm" style="font-size:12px;margin-top:12px">Erklärt durch Betätigen der Schaltfläche „Jetzt kündigen“ auf carfixo.de.</p>
+    <div class="btnRow" style="margin-top:14px">
+      <button class="btn ghost sm" id="kdSave">Bestätigung speichern</button>
+      <button class="btn ghost sm" onclick="window.print()">Drucken</button>
+    </div>
+  </div>
+  <p class="mm" style="margin-top:12px;font-size:12px">Keine E-Mail bekommen? Sieh im Spam-Ordner nach oder schreib uns an ${KUENDIGUNG_KONTAKT} – nenne dabei die Vorgangsnummer.</p>`;
+  $("kdSave").onclick = () => {
+    const text = "Carfixo – Eingangsbestätigung Kündigung\n\n"
+      + zeilen.map(([a, b]) => `${a}: ${b}`).join("\n")
+      + "\n\nErklärt durch Betätigen der Schaltfläche „Jetzt kündigen“ auf carfixo.de.\n";
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+    a.download = `carfixo-kuendigung-${String(k.id).slice(0, 8)}.txt`;
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+}
+
+// Unbekannte Adresse: sagen, was passiert ist, statt still auf die Suche
+// umzuleiten – sonst hält man einen veralteten oder vertippten Link für
+// einen Fehler der Suche.
+function vNotFound() {
+  main.innerHTML = `<div class="empty" style="padding:48px 20px">
+    <div class="e">${ico("search", 40)}</div>
+    <b style="font-size:18px">Diese Seite gibt es nicht</b>
+    <p class="mm" style="margin-top:8px">Vielleicht ist der Link veraltet oder vertippt.</p>
+    <div class="btnRow" style="justify-content:center;margin-top:16px">
+      <a class="btn" href="#/search">Zur Werkstatt-Suche</a>
+      <a class="btn ghost" href="index.html">Zur Startseite</a>
+    </div>
+  </div>`;
+}
 
 async function route() {
   cleanRT();
@@ -71,8 +216,7 @@ async function route() {
     if (myProfile?.role === "workshop_owner" || myProfile?.role === "workshop_staff") return go("ws/dashboard");
     return go("search");
   }
-  const view = routes[name];
-  if (!view) return go("search");
+  const view = routes[name] || vNotFound;
   renderNav(name);
   try { await view(param, query); mountFilterSheet(); } catch (e) {
     console.error(e);
@@ -520,8 +664,8 @@ async function vSearch(_p, query) {
     <div class="cardHead">
       <div class="ico icoPurple" style="width:48px;height:48px;font-size:22px">${ico("robot", 22)}</div>
       <div style="flex:1"><div class="tt">Nicht sicher, was dein Auto hat?</div>
-      <div class="mm">Beschreibe das Problem, wähle Warnleuchten oder lade ein Foto hoch – die KI-Diagnose gibt dir eine unverbindliche Ersteinschätzung mit Preisorientierung.</div></div>
-      <a class="btn sm" href="#/diagnose">KI-Diagnose starten</a>
+      <div class="mm">Beschreibe das Problem, wähle Warnleuchten oder lade ein Foto hoch – die Diagnose gibt dir eine unverbindliche Ersteinschätzung mit Preisorientierung.</div></div>
+      <a class="btn sm" href="#/diagnose">Diagnose starten</a>
     </div>
   </div>
 
@@ -822,6 +966,16 @@ function renderActiveFilters() {
     searchState.shown = 12; vSearch();
   });
 }
+// Vertrauens-Abzeichen eines Betriebs. Beispielbetriebe (is_demo) zeigen
+// bewusst weder "verifiziert" noch "Gesponsert" noch "Meisterbetrieb":
+// Ein erfundener Betrieb mit Prüfsiegel wäre irreführend.
+function trustBadges(ws, style = "") {
+  const b = (cls, txt) => `<span class="badge ${cls}" style="${style}">${txt}</span>`;
+  if (ws.is_demo) return b("b-blue", "Beispielbetrieb");
+  return (ws.is_premium ? b("b-gold", "Gesponsert") : "")
+    + (ws.is_verified ? b("b-green", "✓ verifiziert") : "")
+    + (ws.master_certified ? b("b-gold", "Meisterbetrieb") : "");
+}
 function wsCardHtml(ws) {
   const d = ws._dist;
   const open = isOpenNow(ws.opening_hours);
@@ -830,7 +984,7 @@ function wsCardHtml(ws) {
     <div class="wsCard">
       <div class="wsAv" style="${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent` : ""}">${esc(initials(ws.name))}</div>
       <div style="flex:1;min-width:0">
-        <div class="tt">${esc(ws.name)} ${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:2px">Gesponsert</span>' : ""}${ws.is_verified ? '<span class="badge b-green" style="vertical-align:2px">✓ verifiziert</span>' : ""}${ws.master_certified ? '<span class="badge b-gold" style="vertical-align:2px">Meisterbetrieb</span>' : ""}
+        <div class="tt">${esc(ws.name)} ${trustBadges(ws, "vertical-align:2px")}
           ${open === true ? '<span class="badge b-green" style="vertical-align:2px">Geöffnet</span>' : open === false ? '<span class="badge b-grey" style="vertical-align:2px">Geschlossen</span>' : ""}</div>
         <div class="ratingLine">${stars(ws.rating_avg)}<span class="cnt">${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${ws.rating_count || 0} Bewertungen</span></div>
         <div class="mm">${esc(ws.district || ws.city || "")}${d != null ? ` · ${d.toFixed(1).replace(".", ",")} km` : ""}${ws.service_mode !== "stationary" ? " · mobil" : ""}${ws.pickup_service ? " · Hol/Bring" : ""}${ws.replacement_car ? " · Ersatzwagen" : ""}${ws.price_level ? " · " + priceLevelTxt(ws.price_level) : ""}</div>
@@ -878,16 +1032,21 @@ async function vWorkshopProfile(id) {
   <div class="pageHead" style="${ws.cover_url ? "position:relative;padding:0 18px" : ""}">
     <div class="wsAv" style="width:64px;height:64px;font-size:23px;${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent;` : ""}${ws.cover_url ? "border:3px solid var(--bg);" : ""}">${esc(initials(ws.name))}</div>
     <div style="flex:1">
-      <h1>${esc(ws.name)} ${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:6px">Gesponsert</span>' : ""} ${ws.is_verified ? '<span class="badge b-green" style="vertical-align:6px">✓ Verifiziert durch Carfixo</span>' : ""}</h1>
+      <h1>${esc(ws.name)} ${ws.is_demo ? '<span class="badge b-blue" style="vertical-align:6px">Beispielbetrieb</span>'
+        : `${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:6px">Gesponsert</span>' : ""} ${ws.is_verified ? '<span class="badge b-green" style="vertical-align:6px">✓ Verifiziert durch Carfixo</span>' : ""}`}</h1>
       <div class="ratingLine" style="margin-top:4px">${stars(ws.rating_avg)}<span class="cnt">${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${ws.rating_count || 0} Bewertungen · ${esc(ws.district || ws.city || "Köln")}</span></div>
       ${openStatusLine(ws.opening_hours)}
     </div>
     <div class="right">
       <button class="btn ghost sm" id="wsFav">Merken</button>
       <button class="btn ghost sm" onclick="openReportModal('workshop','${ws.id}','${ws.id}',${jsArg(ws.name)})" title="Betrieb melden" aria-label="Betrieb melden">${ico("flag")}</button>
-      <button class="btn" id="wsAsk">Anfrage stellen</button>
+      <button class="btn" id="wsAsk" ${ws.is_demo ? "disabled" : ""}>Anfrage stellen</button>
     </div>
   </div>
+  ${ws.is_demo ? `<div class="note" style="margin-bottom:14px"><b>Das ist ein Beispielbetrieb.</b>
+    Er zeigt, wie ein Werkstattprofil auf Carfixo aussieht. Anfragen und Bestellungen sind hier nicht möglich –
+    nutze die <a href="#/search" style="color:var(--blue2)">Suche</a> oder stelle eine
+    <a href="#/new-request" style="color:var(--blue2)">Ausschreibung</a> an alle passenden Betriebe.</div>` : ""}
   <div class="searchGrid" style="grid-template-columns:1fr 340px">
     <div>
       <div class="card" style="margin-bottom:14px">
@@ -895,7 +1054,7 @@ async function vWorkshopProfile(id) {
         <p class="mm" style="margin-top:8px;font-size:13px">${esc(ws.description || "Keine Beschreibung hinterlegt.")}</p>
         ${ws.founded_year ? `<p class="mm" style="margin-top:6px">Gegründet ${ws.founded_year}</p>` : ""}
         <div class="foot" style="border:none;padding-top:8px">
-          ${ws.master_certified ? '<span class="badge b-gold">Meisterbetrieb</span>' : ""}
+          ${ws.master_certified && !ws.is_demo ? '<span class="badge b-gold">Meisterbetrieb</span>' : ""}
           ${ws.service_mode !== "stationary" ? '<span class="badge b-blue">Mobiler Service</span>' : ""}
           ${ws.pickup_service ? '<span class="badge b-blue">Hol- & Bringservice</span>' : ""}
           ${ws.replacement_car ? '<span class="badge b-blue">Ersatzwagen</span>' : ""}
@@ -924,7 +1083,8 @@ async function vWorkshopProfile(id) {
           ? `<div class="empty" style="padding:22px"><div class="e">${ico("star", 40)}</div>Noch keine Bewertungen.</div>`
           : reviews.map(r => `
             <div style="padding:13px 0;border-bottom:1px solid var(--line)">
-              <div class="ratingLine">${stars(r.rating)}<span class="cnt">${fmtDate(r.created_at)}</span></div>
+              <div class="ratingLine">${stars(r.rating)}<span class="cnt">${fmtDate(r.created_at)}</span>
+                <button class="btn ghost sm" style="float:right;padding:4px 8px;letter-spacing:0" onclick="openReportModal('review','${r.id}','${ws.id}','Bewertung melden')" title="Bewertung melden" aria-label="Bewertung melden">${ico("flag")}</button></div>
               ${r.comment ? `<p class="mm" style="margin-top:5px;font-size:13px">${esc(r.comment)}</p>` : ""}
               ${(r.images || []).length ? `<div class="thumbs rvThumbs" style="margin-top:8px">${r.images.map(u => `<img src="${esc(u)}" loading="lazy" data-full="${esc(u)}" style="width:74px;height:74px;cursor:zoom-in" alt="Bewertungsfoto">`).join("")}</div>` : ""}
             </div>`).join("")}</div>
@@ -996,8 +1156,15 @@ async function vNewRequest(_p, query) {
   nrServices = query.service ? [query.service] : [];
   nrFiles = []; nrTargetWs = null;
   if (query.ws) {
-    const { data: ws } = await sb.from("workshops").select("id,name,categories").eq("id", query.ws).maybeSingle();
-    nrTargetWs = ws;
+    // select("*") statt fester Spaltenliste: is_demo kommt erst mit der
+    // Migration 2026-10-18. Eine explizit genannte, fehlende Spalte ließe die
+    // Abfrage scheitern und Direktanfragen bis dahin komplett ausfallen.
+    const { data: ws } = await sb.from("workshops").select("*").eq("id", query.ws).maybeSingle();
+    if (ws?.is_demo) {
+      toast("Das ist ein Beispielbetrieb – deine Anfrage geht stattdessen an alle passenden Betriebe.");
+    } else {
+      nrTargetWs = ws;
+    }
     if (ws && ws.categories?.length && !query.cat) nrCat = ws.categories[0];
   }
   const { data: cars } = await sb.from("vehicles").select("*").eq("owner_id", me.id).order("created_at");
@@ -1451,6 +1618,11 @@ async function loadBookingBox(r) {
   const pay = PAY_LABELS[bk.payment_status] || PAY_LABELS.none;
   const w = bk.offers?.workshops || {};
   const active = !["completed", "cancelled"].includes(bk.status);
+  // Abschließen (und damit Bewerten) erst, wenn der Betrieb fertig gemeldet
+  // hat oder der Termin vorbei ist – sonst ließe sich ein Betrieb bewerten,
+  // bevor er überhaupt gearbeitet hat. Dieselbe Regel prüft die Datenbank.
+  const canComplete = bk.status === "ready_for_pickup"
+    || (!!bk.scheduled_at && new Date(bk.scheduled_at) < new Date());
   const [{ data: rev }, { data: approvals }] = await Promise.all([
     sb.from("reviews").select("id,rating").eq("booking_id", bk.id).maybeSingle(),
     sb.from("approvals").select("*").eq("booking_id", bk.id).order("created_at", { ascending: false }),
@@ -1469,9 +1641,10 @@ async function loadBookingBox(r) {
     ${(approvals || []).map(a => approvalCardHtml(a, r.id)).join("")}
     ${bk.status === "completed" && !rev ? `<button class="btn wide" style="margin-top:14px" onclick="openReviewModal('${bk.id}','${w.id}',${jsArg(w.name)},'${r.id}')">Jetzt bewerten</button>` : ""}
     ${bk.status === "completed" && rev ? `<div class="okBox" style="margin-bottom:0;margin-top:14px">Deine Bewertung: <span style="color:var(--gold)">${stars(rev.rating)}</span> – danke!</div>` : ""}
+    ${active && !canComplete ? `<p class="mm" style="margin-top:12px;font-size:12px">Abschließen und bewerten kannst du, sobald die Werkstatt den Auftrag als fertig meldet oder der Termin vorbei ist.</p>` : ""}
     ${active ? `
     <div class="btnRow">
-      <button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>
+      ${canComplete ? `<button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>` : ""}
       <button class="btn ghost sm" onclick="openReschedule('${bk.id}','${r.id}')">Termin verschieben</button>
       <button class="btn red sm" onclick="openCancel('${bk.id}','${r.id}')">Stornieren</button>
     </div>` : ""}
@@ -2000,7 +2173,7 @@ async function vPartsMarket(_p, query) {
   if (me && !myWorkshop) loadMyPartOrders();
   if (!allParts) {
     const { data, error } = await sb.from("parts")
-      .select("*, workshops(id,name,district,city,phone,lat,lng)")
+      .select("*, workshops(*)")
       .eq("active", true).order("created_at", { ascending: false }).limit(500);
     if (!$("ptList")) return; // Nutzer hat die Seite inzwischen verlassen
     if (error) { $("ptList").innerHTML = `<div class="warn" style="grid-column:1/-1">${esc(error.message)}</div>`; return; }
@@ -2045,7 +2218,7 @@ function partCardHtml(p) {
         <div class="mm">${ico(p.category)} ${esc(c[1])} · <span class="badge ${p.condition === "neu" ? "b-green" : "b-grey"}">${esc(PART_CONDITIONS[p.condition] || p.condition)}</span> · <span class="badge ${av.cls}">${av.txt}</span></div>
         <div class="mm">${p.install_service ? "Einbau möglich · " : ""}${p.shipping ? "Versand · " : ""}${p.fits ? "Passend für: " + esc(p.fits) : ""}</div>
         <div style="font-weight:800;font-size:16px;margin-top:6px">${p.price != null ? fmtEur(p.price) : "Preis auf Anfrage"}${p.price_note ? ` <span class="mm">${esc(p.price_note)}</span>` : ""}</div>
-        <div class="mm" style="margin-top:2px">${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}${p._dist != null ? " · " + p._dist.toFixed(1).replace(".", ",") + " km" : ""}</div>
+        <div class="mm" style="margin-top:2px">${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}${p._dist != null ? " · " + p._dist.toFixed(1).replace(".", ",") + " km" : ""}${p.workshops?.is_demo ? ' <span class="badge b-blue">Beispiel</span>' : ""}</div>
       </div>
     </div></div>`;
 }
@@ -2078,10 +2251,12 @@ function openPartDetail(id) {
       <div class="offerLine"><span>Versand</span><span>${p.shipping ? "✓ möglich" : "– nur Abholung"}</span></div>
       <div class="offerLine"><span>Anbieter</span><span>${esc(p.workshops?.name || "")}${p.workshops?.district ? " · " + esc(p.workshops.district) : ""}</span></div>
     </div>
+    ${p.workshops?.is_demo ? `<div class="note" style="margin-top:12px">Das ist ein <b>Beispielangebot</b> eines Beispielbetriebs – es zeigt, wie Teile auf Carfixo aussehen. Kauf und Anfrage sind hier nicht möglich.</div>` : ""}
     <div class="btnRow">
-      <button class="btn green" id="ptBuy" ${av.sold ? "disabled" : ""}>${av.sold ? "Vergriffen" : "Direkt kaufen"}</button>
-      <button class="btn ghost" id="ptAsk">Frage stellen</button>
+      <button class="btn green" id="ptBuy" ${av.sold || p.workshops?.is_demo ? "disabled" : ""}>${av.sold ? "Vergriffen" : "Direkt kaufen"}</button>
+      <button class="btn ghost" id="ptAsk" ${p.workshops?.is_demo ? "disabled" : ""}>Frage stellen</button>
       <a class="btn ghost" href="#/workshop/${p.workshop_id}" onclick="closeModal()">Zum Betrieb</a>
+      <button class="btn ghost sm" onclick="openReportModal('part','${p.id}','${p.workshop_id}','Teil melden')" title="Teil melden" aria-label="Teil melden">${ico("flag")}</button>
     </div>
     <p class="mm" style="margin-top:10px;font-size:11px">Kauf und Abwicklung erfolgen direkt mit dem Betrieb – Verfügbarkeit, Versand/Abholung und Bezahlung werden vor dem Kauf mit dem Betrieb abgestimmt. Carfixo vermittelt.</p>`);
   document.querySelectorAll("#ptGallery img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));
@@ -3505,7 +3680,7 @@ async function vDiagnose() {
   window._dgCars = cars;
   main.innerHTML = `
   <div class="pageHead"><div>
-    <h1>KI-Diagnose</h1>
+    <h1>Diagnose</h1>
     <div class="sub">Beschreibe das Problem deines Autos – du bekommst eine <b>unverbindliche Ersteinschätzung</b> mit möglichen Ursachen, Preisorientierung und passenden Werkstätten. Ersetzt keine Prüfung durch eine Fachwerkstatt.</div>
   </div></div>
   <div class="grid2" style="align-items:start">
@@ -3662,7 +3837,7 @@ function runDiagnose() {
 async function loadDiagnoseParts(top) {
   const box = $("dgParts"); if (!box) return;
   if (!allParts) {
-    const { data } = await sb.from("parts").select("*, workshops(id,name,district,city,phone,lat,lng)")
+    const { data } = await sb.from("parts").select("*, workshops(*)")
       .eq("active", true).order("created_at", { ascending: false }).limit(500);
     allParts = data || [];
   }
@@ -4168,7 +4343,7 @@ function openReportModal(targetType, targetId, workshopId, label) {
 const TOURS = {
   customer: [
     ["", "Fahrzeug anlegen", "Lege zuerst dein Fahrzeug in der Garage an – Marke, Modell, Baureihe. Jede Anfrage gehört zu genau einem Fahrzeug.", "vehicles"],
-    ["", "KI-Diagnose oder Suche", "Nicht sicher, was dein Auto hat? Nutze die KI-Diagnose. Oder finde Werkstätten direkt über die Suche mit Umkreis und Filtern.", "diagnose"],
+    ["", "Diagnose oder Suche", "Nicht sicher, was dein Auto hat? Nutze die Diagnose. Oder finde Werkstätten direkt über die Suche mit Umkreis und Filtern.", "diagnose"],
     ["", "Anfrage erstellen", "Erstelle eine Ausschreibung für alle passenden Betriebe – oder stelle eine Direktanfrage an eine Wunsch-Werkstatt.", "new-request"],
     ["", "Angebote vergleichen", "Betriebe senden dir Angebote mit Einzelpositionen. Vergleiche Preis, Bewertung und Termin – und stelle Rückfragen im Chat.", "requests"],
     ["", "Termin buchen", "Nimm das beste Angebot an – als kostenlose Testbuchung. Der Termin wird mit der Werkstatt bestätigt.", null],
