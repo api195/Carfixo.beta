@@ -49,7 +49,7 @@ const routes = {
 };
 const CUSTOMER_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"], ["requests", "megaphone", "Aufträge"], ["vehicles", "car", "Fahrzeuge"]];
 const WS_NAV = [["ws/dashboard", "gauge", "Dashboard"], ["ws/leads", "megaphone", "Anfragen"], ["ws/jobs", "box", "Aufträge"], ["ws/parts", "puzzle", "Teile"], ["ws/calendar", "calendar", "Kalender"], ["ws/profile", "shop", "Profil"]];
-const ANON_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "KI-Diagnose"], ["teile", "puzzle", "Teile"], ["notfall", "alert", "Notfall"]];
+const ANON_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"], ["notfall", "alert", "Notfall"]];
 
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, "");
@@ -664,8 +664,8 @@ async function vSearch(_p, query) {
     <div class="cardHead">
       <div class="ico icoPurple" style="width:48px;height:48px;font-size:22px">${ico("robot", 22)}</div>
       <div style="flex:1"><div class="tt">Nicht sicher, was dein Auto hat?</div>
-      <div class="mm">Beschreibe das Problem, wähle Warnleuchten oder lade ein Foto hoch – die KI-Diagnose gibt dir eine unverbindliche Ersteinschätzung mit Preisorientierung.</div></div>
-      <a class="btn sm" href="#/diagnose">KI-Diagnose starten</a>
+      <div class="mm">Beschreibe das Problem, wähle Warnleuchten oder lade ein Foto hoch – die Diagnose gibt dir eine unverbindliche Ersteinschätzung mit Preisorientierung.</div></div>
+      <a class="btn sm" href="#/diagnose">Diagnose starten</a>
     </div>
   </div>
 
@@ -3680,7 +3680,7 @@ async function vDiagnose() {
   window._dgCars = cars;
   main.innerHTML = `
   <div class="pageHead"><div>
-    <h1>KI-Diagnose</h1>
+    <h1>Diagnose</h1>
     <div class="sub">Beschreibe das Problem deines Autos – du bekommst eine <b>unverbindliche Ersteinschätzung</b> mit möglichen Ursachen, Preisorientierung und passenden Werkstätten. Ersetzt keine Prüfung durch eine Fachwerkstatt.</div>
   </div></div>
   <div class="grid2" style="align-items:start">
@@ -4343,7 +4343,7 @@ function openReportModal(targetType, targetId, workshopId, label) {
 const TOURS = {
   customer: [
     ["", "Fahrzeug anlegen", "Lege zuerst dein Fahrzeug in der Garage an – Marke, Modell, Baureihe. Jede Anfrage gehört zu genau einem Fahrzeug.", "vehicles"],
-    ["", "KI-Diagnose oder Suche", "Nicht sicher, was dein Auto hat? Nutze die KI-Diagnose. Oder finde Werkstätten direkt über die Suche mit Umkreis und Filtern.", "diagnose"],
+    ["", "Diagnose oder Suche", "Nicht sicher, was dein Auto hat? Nutze die Diagnose. Oder finde Werkstätten direkt über die Suche mit Umkreis und Filtern.", "diagnose"],
     ["", "Anfrage erstellen", "Erstelle eine Ausschreibung für alle passenden Betriebe – oder stelle eine Direktanfrage an eine Wunsch-Werkstatt.", "new-request"],
     ["", "Angebote vergleichen", "Betriebe senden dir Angebote mit Einzelpositionen. Vergleiche Preis, Bewertung und Termin – und stelle Rückfragen im Chat.", "requests"],
     ["", "Termin buchen", "Nimm das beste Angebot an – als kostenlose Testbuchung. Der Termin wird mit der Werkstatt bestätigt.", null],

@@ -30,7 +30,7 @@ ausfällt – das spart jedem Besucher 158 KB (siehe „Karten").
 - Werkstatt-Suche mit Filtern (Kategorie, Leistung, Marke, Stadtteil, Bewertung, mobil), Karte + Liste
 - Vollständige Werkstattprofile mit Bewertungen und Öffnungszeiten
 - Direktanfrage an einen Betrieb **oder** öffentliche Ausschreibung an alle passenden Betriebe
-- KI-Analyse (Beta, regelbasiert) mit Foto-Upload
+- Diagnose (regelbasiert, bewusst nicht „KI“ genannt) mit Foto-Upload
 - Angebotsvergleich (Einzelpositionen, „Bester Preis"), verbindliche Annahme
 - Chat mit dem Betrieb, Auftragsabschluss, Bewertung (1–5 ★)
 - Premium: Erinnerungen für TÜV/Service/Reifenwechsel (in der Beta kostenlos aktivierbar)

@@ -76,7 +76,7 @@ function check(name, ok, info = "") {
   check("Token nicht mehr in der URL", !u.includes("access_token"));
 
   // 8) Weitere Kernrouten rendern ohne Absturz
-  for (const [hash, expect] of [["#/teile", "Teile-Marktplatz"], ["#/diagnose", "KI-Diagnose"], ["#/notfall", "Notfallmodus"]]) {
+  for (const [hash, expect] of [["#/teile", "Teile-Marktplatz"], ["#/diagnose", "Diagnose"], ["#/notfall", "Notfallmodus"]]) {
     await goto(hash);
     check(`Route ${hash} rendert`,
       (await page.locator("h1").first().innerText()).includes(expect));
