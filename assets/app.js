@@ -45,6 +45,7 @@ const routes = {
   "ws/dashboard": vWsDashboard, "ws/leads": vWsLeads, "ws/lead": vWsLead,
   "ws/jobs": vWsJobs, "ws/calendar": vWsCalendar, "ws/profile": vWsProfile,
   "ws/parts": vWsParts, "ws/stats": vWsStats, "ws/archive": vWsArchive,
+  "kuendigen": vKuendigen,
 };
 const CUSTOMER_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"], ["requests", "megaphone", "Aufträge"], ["vehicles", "car", "Fahrzeuge"]];
 const WS_NAV = [["ws/dashboard", "gauge", "Dashboard"], ["ws/leads", "megaphone", "Anfragen"], ["ws/jobs", "box", "Aufträge"], ["ws/parts", "puzzle", "Teile"], ["ws/calendar", "calendar", "Kalender"], ["ws/profile", "shop", "Profil"]];
@@ -64,6 +65,132 @@ function parseHash() {
   return { name, param, query };
 }
 function go(path) { location.hash = "#/" + path; }
+
+// ============================================================
+// KÜNDIGUNG (§ 312k BGB)
+// Die Schaltfläche "Verträge hier kündigen" muss ständig verfügbar und
+// leicht erreichbar sein – also ohne Anmeldung. Wer eingeloggt ist, bekommt
+// Name und E-Mail vorausgefüllt. Angenommen wird über submit_cancellation()
+// (prüft, bremst Missbrauch, liefert den Zugangszeitpunkt). Die Bestätigung
+// in Textform verschickt notify-dispatch an die angegebene Adresse.
+// ============================================================
+const KUENDIGUNG_VERTRAG = {
+  kundenkonto: "Nutzungsvertrag (Kundenkonto)",
+  betriebskonto: "Plattformvertrag (Betriebskonto)",
+  premium_kunde: "Premium für Kunden",
+  premium_betrieb: "Premium für Betriebe",
+};
+const KUENDIGUNG_KONTAKT = "info@carfixo.de";
+
+function vKuendigen() {
+  const istBetrieb = myProfile?.role === "workshop_owner" || myProfile?.role === "workshop_staff";
+  const vorwahl = istBetrieb ? "betriebskonto" : "kundenkonto";
+  main.innerHTML = `
+  <div class="pageHead"><div><h1>Verträge hier kündigen</h1>
+    <div class="sub">Hier kannst du jeden Vertrag mit Carfixo kündigen – ohne Anmeldung. Du bekommst sofort eine Bestätigung.</div></div></div>
+  <div class="card" style="max-width:640px">
+    <div class="label">Dein Name</div>
+    <input id="kdName" autocomplete="name" value="${esc(myProfile?.full_name || "")}" aria-label="Dein Name">
+    <div class="label">E-Mail-Adresse deines Kontos</div>
+    <input id="kdMail" type="email" autocomplete="email" value="${esc(me?.email || "")}" aria-label="E-Mail-Adresse">
+    <p class="mm" style="font-size:12px;margin-top:4px">An diese Adresse schicken wir die Bestätigung. Daran erkennen wir auch, welches Konto gemeint ist.</p>
+
+    <div class="label">Welchen Vertrag kündigst du?</div>
+    <select id="kdVertrag" aria-label="Vertrag">
+      ${Object.entries(KUENDIGUNG_VERTRAG).map(([k, v]) => `<option value="${k}" ${k === vorwahl ? "selected" : ""}>${v}</option>`).join("")}
+    </select>
+    <div class="label">Angabe zum Vertrag <span class="mm" style="font-weight:400">(optional)</span></div>
+    <input id="kdRef" placeholder="z. B. Name deines Betriebs" aria-label="Angabe zum Vertrag" value="${esc(istBetrieb ? (myWorkshop?.name || "") : "")}">
+
+    <div class="label">Art der Kündigung</div>
+    <label class="inline"><input type="radio" name="kdArt" value="ordentlich" checked> Ordentliche Kündigung</label>
+    <label class="inline"><input type="radio" name="kdArt" value="ausserordentlich"> Außerordentliche (fristlose) Kündigung</label>
+    <div id="kdGrundBox" class="hidden">
+      <div class="label">Grund der außerordentlichen Kündigung</div>
+      <textarea id="kdGrund" rows="3" aria-label="Kündigungsgrund" maxlength="2000"></textarea>
+    </div>
+
+    <div class="label">Zu wann soll der Vertrag enden?</div>
+    <label class="inline"><input type="radio" name="kdWann" value="naechstmoeglich" checked> Zum nächstmöglichen Zeitpunkt</label>
+    <label class="inline"><input type="radio" name="kdWann" value="datum"> Zu einem bestimmten Datum</label>
+    <input id="kdDatum" type="date" class="hidden" aria-label="Gewünschtes Enddatum" min="${new Date().toISOString().slice(0, 10)}">
+
+    <div class="err" id="kdErr"></div>
+    <button class="btn wide" style="margin-top:18px" id="kdGo">Jetzt kündigen</button>
+    <p class="mm" style="font-size:11.5px;margin-top:10px">Mit „Jetzt kündigen“ erklärst du die Kündigung verbindlich.
+      Kostenlose Leistungen enden mit der Bearbeitung, spätestens nach zwei Werktagen.</p>
+  </div>`;
+
+  const art = () => document.querySelector('input[name="kdArt"]:checked').value;
+  const wann = () => document.querySelector('input[name="kdWann"]:checked').value;
+  document.querySelectorAll('input[name="kdArt"]').forEach(r => r.onchange = () => $("kdGrundBox").classList.toggle("hidden", art() !== "ausserordentlich"));
+  document.querySelectorAll('input[name="kdWann"]').forEach(r => r.onchange = () => $("kdDatum").classList.toggle("hidden", wann() !== "datum"));
+
+  $("kdGo").onclick = async () => {
+    const err = $("kdErr"); err.style.display = "none";
+    const name = $("kdName").value.trim(), mail = $("kdMail").value.trim();
+    if (name.length < 2) return showErr(err, "Bitte gib deinen Namen an.");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) return showErr(err, "Bitte gib eine gültige E-Mail-Adresse an.");
+    if (art() === "ausserordentlich" && !$("kdGrund").value.trim()) return showErr(err, "Bitte nenne den Grund der außerordentlichen Kündigung.");
+    if (wann() === "datum" && !$("kdDatum").value) return showErr(err, "Bitte wähle das gewünschte Enddatum.");
+
+    const eingabe = {
+      p_full_name: name, p_email: mail, p_contract: $("kdVertrag").value, p_contract_ref: $("kdRef").value.trim() || null,
+      p_kind: art(), p_reason: art() === "ausserordentlich" ? $("kdGrund").value.trim() : null,
+      p_effective: wann(), p_effective_date: wann() === "datum" ? $("kdDatum").value : null,
+    };
+    $("kdGo").disabled = true; $("kdGo").textContent = "Wird übermittelt…";
+    const { data, error } = await sb.rpc("submit_cancellation", eingabe);
+    $("kdGo").disabled = false; $("kdGo").textContent = "Jetzt kündigen";
+    if (error) {
+      // Fehlt die Funktion (Migration noch nicht eingespielt) oder ist das
+      // Netz weg, darf die Kündigung nicht einfach verloren gehen.
+      const technisch = /function|schema cache|fetch|network|load failed/i.test(error.message || "");
+      return showErr(err, technisch
+        ? `Die Kündigung konnte gerade nicht übermittelt werden. Bitte versuche es gleich noch einmal oder kündige per E-Mail an ${KUENDIGUNG_KONTAKT}.`
+        : error.message);
+    }
+    kuendigungBestaetigt({ ...eingabe, id: data.id, received_at: data.received_at });
+  };
+}
+
+// Bestätigungsseite: § 312k Abs. 3 verlangt, dass man die Erklärung mit Datum
+// und Uhrzeit dauerhaft speichern kann – daher Herunterladen und Drucken.
+function kuendigungBestaetigt(k) {
+  const zugang = new Date(k.received_at).toLocaleString("de-DE", { timeZone: "Europe/Berlin", dateStyle: "long", timeStyle: "medium" });
+  const ende = k.p_effective === "datum"
+    ? `zum ${new Date(k.p_effective_date + "T12:00:00").toLocaleDateString("de-DE", { dateStyle: "long" })} – frühestens zum nächstmöglichen Zeitpunkt`
+    : "zum nächstmöglichen Zeitpunkt";
+  const zeilen = [
+    ["Name", k.p_full_name], ["E-Mail", k.p_email],
+    ["Vertrag", KUENDIGUNG_VERTRAG[k.p_contract]],
+    ...(k.p_contract_ref ? [["Angabe zum Vertrag", k.p_contract_ref]] : []),
+    ["Art der Kündigung", k.p_kind === "ausserordentlich" ? "außerordentlich (fristlos)" : "ordentlich"],
+    ...(k.p_reason ? [["Kündigungsgrund", k.p_reason]] : []),
+    ["Beendigung", ende], ["Eingegangen am", zugang + " Uhr"], ["Vorgangsnummer", k.id],
+  ];
+  main.innerHTML = `
+  <div class="pageHead"><div><h1>Deine Kündigung ist eingegangen</h1>
+    <div class="sub">Eine Bestätigung haben wir gerade an <b>${esc(k.p_email)}</b> geschickt.</div></div></div>
+  <div class="card" style="max-width:640px" id="kdBeleg">
+    ${zeilen.map(([a, b]) => `<div class="offerLine"><span>${esc(a)}</span><span style="text-align:right">${esc(b)}</span></div>`).join("")}
+    <p class="mm" style="font-size:12px;margin-top:12px">Erklärt durch Betätigen der Schaltfläche „Jetzt kündigen“ auf carfixo.de.</p>
+    <div class="btnRow" style="margin-top:14px">
+      <button class="btn ghost sm" id="kdSave">Bestätigung speichern</button>
+      <button class="btn ghost sm" onclick="window.print()">Drucken</button>
+    </div>
+  </div>
+  <p class="mm" style="margin-top:12px;font-size:12px">Keine E-Mail bekommen? Sieh im Spam-Ordner nach oder schreib uns an ${KUENDIGUNG_KONTAKT} – nenne dabei die Vorgangsnummer.</p>`;
+  $("kdSave").onclick = () => {
+    const text = "Carfixo – Eingangsbestätigung Kündigung\n\n"
+      + zeilen.map(([a, b]) => `${a}: ${b}`).join("\n")
+      + "\n\nErklärt durch Betätigen der Schaltfläche „Jetzt kündigen“ auf carfixo.de.\n";
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+    a.download = `carfixo-kuendigung-${String(k.id).slice(0, 8)}.txt`;
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+}
 
 // Unbekannte Adresse: sagen, was passiert ist, statt still auf die Suche
 // umzuleiten – sonst hält man einen veralteten oder vertippten Link für
@@ -956,7 +1083,8 @@ async function vWorkshopProfile(id) {
           ? `<div class="empty" style="padding:22px"><div class="e">${ico("star", 40)}</div>Noch keine Bewertungen.</div>`
           : reviews.map(r => `
             <div style="padding:13px 0;border-bottom:1px solid var(--line)">
-              <div class="ratingLine">${stars(r.rating)}<span class="cnt">${fmtDate(r.created_at)}</span></div>
+              <div class="ratingLine">${stars(r.rating)}<span class="cnt">${fmtDate(r.created_at)}</span>
+                <button class="btn ghost sm" style="float:right;padding:4px 8px;letter-spacing:0" onclick="openReportModal('review','${r.id}','${ws.id}','Bewertung melden')" title="Bewertung melden" aria-label="Bewertung melden">${ico("flag")}</button></div>
               ${r.comment ? `<p class="mm" style="margin-top:5px;font-size:13px">${esc(r.comment)}</p>` : ""}
               ${(r.images || []).length ? `<div class="thumbs rvThumbs" style="margin-top:8px">${r.images.map(u => `<img src="${esc(u)}" loading="lazy" data-full="${esc(u)}" style="width:74px;height:74px;cursor:zoom-in" alt="Bewertungsfoto">`).join("")}</div>` : ""}
             </div>`).join("")}</div>
@@ -2128,6 +2256,7 @@ function openPartDetail(id) {
       <button class="btn green" id="ptBuy" ${av.sold || p.workshops?.is_demo ? "disabled" : ""}>${av.sold ? "Vergriffen" : "Direkt kaufen"}</button>
       <button class="btn ghost" id="ptAsk" ${p.workshops?.is_demo ? "disabled" : ""}>Frage stellen</button>
       <a class="btn ghost" href="#/workshop/${p.workshop_id}" onclick="closeModal()">Zum Betrieb</a>
+      <button class="btn ghost sm" onclick="openReportModal('part','${p.id}','${p.workshop_id}','Teil melden')" title="Teil melden" aria-label="Teil melden">${ico("flag")}</button>
     </div>
     <p class="mm" style="margin-top:10px;font-size:11px">Kauf und Abwicklung erfolgen direkt mit dem Betrieb – Verfügbarkeit, Versand/Abholung und Bezahlung werden vor dem Kauf mit dem Betrieb abgestimmt. Carfixo vermittelt.</p>`);
   document.querySelectorAll("#ptGallery img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));

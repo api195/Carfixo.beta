@@ -199,8 +199,17 @@ Diese Schritte lassen sich nicht im Code erledigen:
   und Bewertungen fälschen, gesperrte Nutzer sich selbst entsperren, Kunden den
   Buchungspreis ändern und Buchungen als bezahlt markieren. Vorher die App-Abläufe
   gegenprüfen (siehe Dateikopf).
+- **Danach `db/2026-10-19_kuendigung_2fa_csp.sql` einspielen** (Reihenfolge wichtig).
+  Bringt den Kündigungsbutton (`contract_cancellations`, `submit_cancellation`),
+  CSP-Meldungen in der Datenbank (`csp_reports`), Meldungen für Teile und die
+  **Zwei-Faktor-Pflicht für Admins**: `is_admin()` gilt nur noch mit zweitem Faktor.
+  Direkt danach `admin.html` öffnen, anmelden und den QR-Code mit einer
+  Authenticator-App scannen – vorher sieht der Admin-Bereich keine Daten.
+  Rückweg steht im Dateikopf.
 - **Beispielbetriebe ausblenden** (siehe „Testkonten").
-- **Rechtstexte** in `legal.html` durch geprüfte Fassungen ersetzen.
+- **Rechtstexte** in `legal.html` ausfüllen (gelbe Platzhalter), interne Hinweise
+  (gelber Rand) entfernen und anwaltlich prüfen lassen. Der Kündigungsbutton
+  „Verträge hier kündigen“ (`app.html#/kuendigen`) ist fertig und in jeder Fußzeile.
 - **CSP scharfschalten**, sobald die Report-Only-Logs mehrere Tage ruhig sind
   (siehe „Content-Security-Policy" oben).
 - **Auth-E-Mails (Registrierung, Passwort zurücksetzen):** laufen **nicht** über

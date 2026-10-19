@@ -1,15 +1,37 @@
 -- ============================================================
 -- Carfixo – Vertrauensfelder schützen, Beispielbetriebe kennzeichnen
 --
--- STAND: VORBEREITET, NOCH NICHT ANGEWENDET (2026-10-18).
+-- STAND: GEPRÜFT, WARTET AUFS EINSPIELEN (2026-10-19).
 -- Einspielen: Supabase → SQL Editor → diese Datei komplett ausführen.
--- Sie ist wiederholbar (if not exists / create or replace / drop if exists).
+-- Sie ist wiederholbar (if not exists / create or replace).
 -- Bis dahin sind die unten beschriebenen Lücken offen. Vor dem Launch Pflicht.
 --
--- Teil 2 (Buchungen, Teilebestellungen, Anfragen) greift in laufende
--- Abläufe ein. Vor dem Einspielen jeden App-Ablauf (stornieren, Termin
--- vorschlagen/annehmen, abschließen, Testzahlung, Status setzen) einmal
--- in einer zurückgerollten Transaktion gegenprüfen.
+-- Warum nicht automatisch: Das Supabase-Werkzeug lässt ALTER/DROP/DELETE nur
+-- nach einer Bestätigung durch den Inhaber laufen, die in der Arbeitsumgebung
+-- nicht angezeigt werden kann. Deshalb über den SQL Editor.
+--
+-- Geprüft am 2026-10-19 gegen die echte Datenbank, jeweils in einer
+-- Transaktion, die am Ende zurückgerollt wurde (nichts verändert):
+--   Buchungen, Kunde: Testzahlung, Termin vorschlagen, stornieren -> gehen.
+--     Vorzeitig abschließen, Preis ändern, "bezahlt" setzen, Arbeitsschritt
+--     setzen, sich selbst einen Betriebs-Vorschlag eintragen -> blockiert.
+--     Abschließen nach "abholbereit", bewerten -> gehen. Abgeschlossene
+--     Buchung stornieren -> blockiert.
+--   Buchungen, Betrieb: Kundenvorschlag annehmen, Status, Belege, Garantie,
+--     No-Show -> gehen. Preis ändern -> blockiert.
+--   Betriebe: Profil speichern, Premium umschalten -> gehen. Selbst
+--     verifizieren, Bewertung fälschen -> blockiert. Neuer Betrieb startet
+--     unverifiziert ohne Bewertungen. Admin verifiziert -> geht.
+--   Bewertungs-Aggregat: Kunde bewertet, refresh_workshop_rating schreibt
+--     trotz Regel korrekt (4,8/12 -> 2,0/1 aus den echten Bewertungen).
+--   Profile: Name/Telefon ändern -> geht. Sperre aufheben, E-Mail ändern ->
+--     blockiert. Admin sperrt -> geht.
+--   Anfragen: Titel ändern -> geht. Art/Ziel-Betrieb umbiegen -> blockiert.
+--   Teilebestellungen: Käufer storniert -> geht. Käufer setzt "erledigt" oder
+--     Preis -> blockiert. Betrieb bestätigt -> geht, Preis -> blockiert.
+--     Bestellen mit gefälschtem Preis/Titel/Betrieb -> Werte aus dem Teil.
+-- Nicht vorab prüfbar (brauchen die neue Spalte is_demo): Kennzeichnung der
+-- Beispielbetriebe und die Sperre von Anfragen/Bestellungen an sie.
 --
 -- 1. SICHERHEITSLÜCKE: workshops_owner_update / workshops_owner_insert
 --    erlauben Inhabern, ihre eigene Zeile beliebig zu schreiben – auch
@@ -85,8 +107,7 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_guard_workshop_trust on public.workshops;
-create trigger trg_guard_workshop_trust
+create or replace trigger trg_guard_workshop_trust
   before insert or update on public.workshops
   for each row execute function public.guard_workshop_trust_fields();
 
@@ -107,13 +128,11 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_requests_no_demo on public.requests;
-create trigger trg_requests_no_demo
+create or replace trigger trg_requests_no_demo
   before insert on public.requests
   for each row execute function public.reject_demo_workshop();
 
-drop trigger if exists trg_part_orders_no_demo on public.part_orders;
-create trigger trg_part_orders_no_demo
+create or replace trigger trg_part_orders_no_demo
   before insert on public.part_orders
   for each row execute function public.reject_demo_workshop();
 
@@ -160,8 +179,7 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_guard_profile_fields on public.profiles;
-create trigger trg_guard_profile_fields
+create or replace trigger trg_guard_profile_fields
   before update on public.profiles
   for each row execute function public.guard_profile_fields();
 
@@ -238,21 +256,33 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_guard_booking_fields on public.bookings;
-create trigger trg_guard_booking_fields
+create or replace trigger trg_guard_booking_fields
   before update on public.bookings
   for each row execute function public.guard_booking_fields();
 
--- 6) Teilebestellungen: Käufer darf nur stornieren
+-- 6) Teilebestellungen: Preis kommt immer aus dem Teil, Käufer darf nur stornieren.
+--    Ohne den INSERT-Zweig konnte ein Käufer beim Bestellen einen eigenen
+--    Preis mitschicken (ein 890-€-Teil für 1 Cent – nachgewiesen).
 create or replace function public.guard_part_order_fields()
 returns trigger
 language plpgsql
 set search_path = public
 as $$
+declare
+  teil record;
 begin
   if current_user not in ('anon', 'authenticated') or public.is_admin() then
     return new;
   end if;
+
+  if tg_op = 'INSERT' then
+    select price, title, workshop_id into teil from public.parts where id = new.part_id;
+    new.price       := teil.price;
+    new.part_title  := teil.title;
+    new.workshop_id := teil.workshop_id;
+    return new;
+  end if;
+
   new.part_id     := old.part_id;
   new.buyer_id    := old.buyer_id;
   new.workshop_id := old.workshop_id;
@@ -267,9 +297,8 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_guard_part_order_fields on public.part_orders;
-create trigger trg_guard_part_order_fields
-  before update on public.part_orders
+create or replace trigger trg_guard_part_order_fields
+  before insert or update on public.part_orders
   for each row execute function public.guard_part_order_fields();
 
 -- 7) Anfragen: Art und Ziel-Betrieb stehen nach dem Anlegen fest.
@@ -291,8 +320,7 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_guard_request_fields on public.requests;
-create trigger trg_guard_request_fields
+create or replace trigger trg_guard_request_fields
   before update on public.requests
   for each row execute function public.guard_request_fields();
 
