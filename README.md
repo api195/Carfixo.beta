@@ -194,28 +194,30 @@ Diese Schritte lassen sich nicht im Code erledigen:
   `assets/config.js`, Server-Key als Vercel-Umgebungsvariable `GOOGLE_MAPS_SERVER_KEY`.
   Beide Schlüssel einschränken und ein Budget mit Warnung setzen. Solange das offen ist,
   läuft Carfixo auf Leaflet + OpenStreetMap weiter – funktioniert, sieht nur anders aus.
-- **Migration `db/2026-10-18_vertrauensfelder_und_beispielbetriebe.sql` einspielen.**
-  Sie schließt nachgewiesene Lücken: Betriebe können sich bislang selbst verifizieren
-  und Bewertungen fälschen, gesperrte Nutzer sich selbst entsperren, Kunden den
-  Buchungspreis ändern und Buchungen als bezahlt markieren. Vorher die App-Abläufe
-  gegenprüfen (siehe Dateikopf).
-- **Danach `db/2026-10-19_kuendigung_2fa_csp.sql` einspielen** (Reihenfolge wichtig).
-  Bringt den Kündigungsbutton (`contract_cancellations`, `submit_cancellation`),
-  CSP-Meldungen in der Datenbank (`csp_reports`), Meldungen für Teile und die
-  **Zwei-Faktor-Pflicht für Admins**: `is_admin()` gilt nur noch mit zweitem Faktor.
-  Direkt danach `admin.html` öffnen, anmelden und den QR-Code mit einer
-  Authenticator-App scannen – vorher sieht der Admin-Bereich keine Daten.
-  Rückweg steht im Dateikopf.
-- **Beispielbetriebe ausblenden** (siehe „Testkonten").
-- **Rechtstexte** in `legal.html` ausfüllen (gelbe Platzhalter), interne Hinweise
-  (gelber Rand) entfernen und anwaltlich prüfen lassen. Der Kündigungsbutton
-  „Verträge hier kündigen“ (`app.html#/kuendigen`) ist fertig und in jeder Fußzeile.
+- **Migrationen eingespielt** (2026-10-19): `2026-10-18_vertrauensfelder_und_beispielbetriebe.sql`
+  und `2026-10-19_kuendigung_2fa_csp.sql`. Admin-Zugang braucht seitdem den zweiten Faktor
+  (eingerichtet für das Admin-Konto).
+- **`db/2026-10-21_stripe.sql` einspielen** (Online-Zahlung). Rückwärtskompatibel: die
+  bestehende App läuft damit unverändert weiter.
+- **Stripe einrichten** (siehe Abschnitt „Online-Zahlung“ unten): Konto anlegen, Connect
+  aktivieren, Secrets `STRIPE_SECRET_KEY` und `STRIPE_WEBHOOK_SECRET` in Supabase hinterlegen,
+  Webhook auf `stripe-webhook` zeigen lassen. Erst im Testmodus, dann live.
+- **Beispielbetriebe ausblenden** (siehe „Testkonten“).
+- **Rechtstexte** in `legal.html` anwaltlich prüfen lassen; die offenen Fragen stehen in
+  `docs/rechtstexte-pruefhinweise.md`. Der Kündigungsbutton „Verträge hier kündigen“
+  (`app.html#/kuendigen`) ist fertig und in jeder Fußzeile.
+- **Datenschutzverträge (Art. 28 DSGVO):** Supabase – im Dashboard unter Organization →
+  Legal Documents anfordern und unterschreiben. Vercel – DPA gilt erst ab Pro-Tarif
+  (Hobby ist zudem nur nicht-kommerziell erlaubt). Resend – gilt mit den AGB, Kopie unter
+  Settings → Documents.
 - **CSP scharfschalten**, sobald die Report-Only-Logs mehrere Tage ruhig sind
-  (siehe „Content-Security-Policy" oben).
+  (siehe „Content-Security-Policy“ oben).
 - **Auth-E-Mails (Registrierung, Passwort zurücksetzen):** laufen **nicht** über
-  `notify-dispatch`, sondern über Supabase Auth. Ohne eigenen SMTP-Server gilt dort ein
-  striktes Limit von wenigen Mails pro Stunde. Vor dem Launch unter
-  **Authentication → Emails → SMTP Settings** den vorhandenen Resend-Zugang eintragen.
+  `notify-dispatch`, sondern über Supabase Auth. Ohne eigenen SMTP-Server sind es nur
+  2 Mails pro Stunde. Unter **Authentication → Emails → SMTP Settings** Resend eintragen
+  (Host `smtp.resend.com`, Port `465`, Benutzer `resend`, Passwort = eigener Resend-API-Key,
+  Absender `no-reply@carfixo.de`), danach unter **Authentication → Rate Limits** das
+  E-Mail-Limit anheben. Resend Free erlaubt 100 Mails pro Tag.
 
 Bereits erledigt (nicht erneut einrichten):
 - Der pg_cron-Job `carfixo-daily-reminders` läuft täglich um 6:00 UTC.
@@ -226,3 +228,24 @@ Bereits erledigt (nicht erneut einrichten):
   Ende-zu-Ende geprüft (Insert → Trigger → Function → Resend): `emailed: true`.
 - **Web-Push** ist vollständig: Service Worker (`sw.js`), Geräte-Anmeldung im Konto,
   Versand über `notify-dispatch`.
+
+## Online-Zahlung (Stripe Connect)
+
+- Modell: **Direct Charges auf Standard-Konten**. Jeder Betrieb verbindet im Profil sein
+  eigenes Stripe-Konto und ist Zahlungsempfänger. Stripe-Gebühren, Erstattungen und
+  Rückbuchungen laufen über sein Konto. Carfixo nimmt kein Geld an und erhebt keine Gebühr.
+- Verbinden dürfen nur **verifizierte** Betriebe (keine Beispielbetriebe).
+- Kunden zahlen **nach der Reparatur** (Status „Abholbereit“ oder „Abgeschlossen“). Betrag:
+  Buchungspreis + freigegebene Zusatzarbeiten (`booking_amount_due`).
+- Edge Functions:
+  - `stripe`: Aktionen `status`, `connect`, `checkout`, `refund`; prüft das Nutzer-Token selbst
+  - `stripe-webhook`: einzige Stelle, die Buchungen als bezahlt oder erstattet markiert; prüft
+    Stripe-Signatur, Konto und Sitzungs-ID
+- Ohne `STRIPE_SECRET_KEY` zeigt die App „Bald verfügbar“, und Kunden zahlen vor Ort.
+- Webhook im Stripe-Dashboard: Endpunkt
+  `https://boozzfiroukraekyijfq.supabase.co/functions/v1/stripe-webhook`, Typ
+  **„Ereignisse in verbundenen Konten“**, Ereignisse `checkout.session.completed`,
+  `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
+  `charge.refunded`, `account.updated`, `account.application.deauthorized`.
+- Tests: `node tests/zahlung.js` (Oberfläche). Datenbank- und Webhook-Logik wurden lokal
+  gegen Postgres 16 bzw. das Stripe-SDK geprüft.

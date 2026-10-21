@@ -300,36 +300,37 @@ async function vRequests() {
     </tr>`).join("");
 }
 
-// ---------- Zahlungen (Testmodus – Stripe folgt zum Launch) ----------
+// ---------- Zahlungen (Stripe Connect: Betriebe sind Zahlungsempfänger) ----------
 const PAY_LABELS = {
-  none: ["Keine Zahlung", "b-grey"], payment_pending: ["Ausstehend", "b-gold"],
+  none: ["Nicht online bezahlt", "b-grey"], payment_pending: ["In Bearbeitung", "b-gold"],
   payment_authorized: ["Autorisiert", "b-blue"], payment_paid: ["Bezahlt", "b-green"],
   payment_failed: ["Fehlgeschlagen", "b-red"], payment_refunded: ["Erstattet", "b-purple"],
   payment_cancelled: ["Storniert", "b-grey"], test_payment_confirmed: ["Testzahlung", "b-green"],
   pending: ["Ausstehend", "b-gold"], paid: ["Bezahlt", "b-green"], refunded: ["Erstattet", "b-purple"],
 };
 async function vPayments() {
-  main.innerHTML = `<div class="pageHead"><div><h1>Zahlungen</h1><div class="sub">Alle Buchungen mit Zahlungsstatus. In der Beta ausschließlich Testzahlungen – Stripe wird zum Launch angebunden.</div></div></div>
+  main.innerHTML = `<div class="pageHead"><div><h1>Zahlungen</h1><div class="sub">Online-Zahlungen laufen über Stripe direkt an die Betriebe. Carfixo nimmt kein Geld an; Erstattungen löst der Betrieb aus.</div></div></div>
   <div class="kpiRow" id="payKpis"></div>
   <div class="tblWrap"><table class="tbl"><thead><tr>
-    <th>Buchung</th><th>Betrag</th><th>MwSt.</th><th>Provision (10 %, später)</th><th>Zahlungsstatus</th><th>Auftragsstatus</th><th>Datum</th>
+    <th>Buchung</th><th>Betrag</th><th>MwSt.</th><th>Online bezahlt</th><th>Zahlungsstatus</th><th>Auftragsstatus</th><th>Datum</th>
   </tr></thead><tbody id="payRows"><tr><td colspan="7"><div class="sk" style="height:60px"></div></td></tr></tbody></table></div>`;
   const { data, error } = await sb.from("bookings").select("*").order("created_at", { ascending: false }).limit(200);
   if (error) { main.innerHTML += `<div class="warn">${esc(error.message)}</div>`; return; }
-  const test = (data || []).filter(b => b.payment_status === "test_payment_confirmed");
+  const online = (data || []).filter(b => ["payment_paid", "payment_refunded"].includes(b.payment_status));
+  const onlineSumme = online.reduce((s, b) => s + Number(b.paid_amount || 0) - Number(b.refunded_amount || 0), 0);
   const gmv = (data || []).filter(b => b.status === "completed").reduce((s, b) => s + Number(b.total_price || 0), 0);
   $("payKpis").innerHTML = `
     <div class="kpi"><b>${(data || []).length}</b><span>Buchungen gesamt</span></div>
-    <div class="kpi"><b>${test.length}</b><span>Testzahlungen</span></div>
-    <div class="kpi"><b>${gmv.toLocaleString("de-DE")} €</b><span>Volumen (abgeschlossen)</span></div>
-    <div class="kpi"><b>${Math.round(gmv * 0.1).toLocaleString("de-DE")} €</b><span>Provision (Platzhalter)</span></div>`;
+    <div class="kpi"><b>${online.length}</b><span>Online-Zahlungen</span></div>
+    <div class="kpi"><b>${onlineSumme.toLocaleString("de-DE")} €</b><span>Online bezahlt (netto nach Erstattung)</span></div>
+    <div class="kpi"><b>${gmv.toLocaleString("de-DE")} €</b><span>Volumen (abgeschlossen)</span></div>`;
   $("payRows").innerHTML = (data || []).map(b => {
     const p = PAY_LABELS[b.payment_status] || PAY_LABELS.none;
     return `<tr>
       <td><b>${esc(b.booking_no || b.id.slice(0, 8))}</b>${b.cancelled_by ? `<div class="mm">storniert (${b.cancelled_by === "customer" ? "Kunde" : "Werkstatt"})</div>` : ""}</td>
       <td>${Number(b.total_price).toLocaleString("de-DE")} €</td>
       <td>${b.vat_amount ? Number(b.vat_amount).toLocaleString("de-DE") + " €" : "–"}</td>
-      <td class="mm">${(Number(b.total_price) * 0.1).toFixed(2).replace(".", ",")} €</td>
+      <td class="mm">${b.paid_amount ? Number(b.paid_amount).toLocaleString("de-DE") + " €" + (Number(b.refunded_amount) > 0 ? ` (−${Number(b.refunded_amount).toLocaleString("de-DE")} €)` : "") : "–"}</td>
       <td><span class="badge ${p[1]}">${p[0]}</span></td>
       <td class="mm">${esc(b.status)}</td>
       <td class="mm">${fmtDate(b.created_at)}</td>
