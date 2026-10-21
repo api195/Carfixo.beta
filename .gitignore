@@ -2,3 +2,6 @@ node_modules/
 package.json
 package-lock.json
 *.tmp.js
+!mobile/package.json
+!mobile/package-lock.json
+mobile/www/

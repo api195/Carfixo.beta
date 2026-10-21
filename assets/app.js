@@ -10,6 +10,21 @@ let rtChannels = [];
 const $ = (id) => document.getElementById(id);
 const main = $("main");
 
+// ---------- iPhone-App (Capacitor) ----------
+// In der App liegen die Seiten im App-Paket (capacitor://localhost). Alles,
+// was auf unseren Server zeigt – /api, Links in E-Mails, Rücksprung von
+// Stripe –, braucht dort die volle Adresse. Im Browser bleibt alles relativ.
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const SITE = "https://carfixo.de";
+const API = NATIVE ? SITE : "";
+const appAdresse = () => NATIVE ? SITE + "/app.html" : location.origin + location.pathname;
+// Fremde Seiten (Stripe, Google Maps, PDFs) öffnet die App in einem Safari-
+// Fenster über der App, statt die App selbst wegzunavigieren.
+function oeffneExtern(url) {
+  if (NATIVE && window.capacitorBrowser) return window.capacitorBrowser.Browser.open({ url });
+  location.href = url;
+}
+
 // ---------- UI-Helfer ----------
 let toastTimer = null;
 function toast(msg) {
@@ -590,7 +605,7 @@ async function vForgot() {
     // Ziel ist app.html ohne Hash – der Recovery-Hash von Supabase wird beim
     // Start erkannt und in die Route #/reset-password überführt.
     const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: location.origin + location.pathname,
+      redirectTo: appAdresse(),
     });
     $("fpGo").disabled = false; $("fpGo").textContent = "Link anfordern";
     // Bewusst immer dieselbe Rückmeldung: sonst liesse sich herausfinden,
@@ -695,7 +710,7 @@ async function doRegister() {
   // (der Site-URL) statt in der App – und muss sich von dort erst durchklicken.
   const { data, error } = await sb.auth.signUp({
     email, password: pass,
-    options: { data: { full_name: name }, emailRedirectTo: location.origin + "/app.html" },
+    options: { data: { full_name: name }, emailRedirectTo: NATIVE ? SITE + "/app.html" : location.origin + "/app.html" },
   });
   $("rGo").disabled = false;
   if (error) return showErr(err, authFehler(error));
@@ -968,7 +983,7 @@ async function geocodeAddress() {
 
   $("locGo").disabled = true; $("locGo").textContent = "…";
   try {
-    const res = await fetch("/api/geocode?q=" + encodeURIComponent(q));
+    const res = await fetch(API + "/api/geocode?q=" + encodeURIComponent(q));
     const data = await res.json().catch(() => null);
     if (!res.ok || !data) throw new Error("upstream");
     if (!data.found) {
@@ -1141,7 +1156,7 @@ async function ladeGoogle(ws) {
   try { const m = JSON.parse(sessionStorage.getItem(merk) || "null"); if (m && Date.now() - m.t < 600000) g = m.g; } catch (_) {}
   if (!g) {
     try {
-      const r = await fetch("/api/google-place?id=" + encodeURIComponent(ws.google_place_id));
+      const r = await fetch(API + "/api/google-place?id=" + encodeURIComponent(ws.google_place_id));
       if (!r.ok) return;
       g = await r.json();
       try { sessionStorage.setItem(merk, JSON.stringify({ t: Date.now(), g })); } catch (_) {}
@@ -1159,7 +1174,7 @@ async function ladeGoogle(ws) {
     <button class="btn ghost sm" id="gFotosZeigen" style="margin-top:10px">${fotos.length} Fotos von Google ansehen</button>`;
   box.hidden = false;
   $("gFotosZeigen").onclick = () => {
-    const src = (f) => "/api/google-place?foto=" + encodeURIComponent(f.name);
+    const src = (f) => API + "/api/google-place?foto=" + encodeURIComponent(f.name);
     const autoren = [...new Set(fotos.flatMap(f => f.autoren.map(a => a.name)).filter(Boolean))].slice(0, 4);
     box.innerHTML = `<div class="tt">Fotos von Google</div>
       <div class="thumbs" id="gFotos" style="margin-top:10px">${fotos.map(f => `<img src="${src(f)}" data-full="${src(f)}" style="width:110px;height:110px;cursor:zoom-in" alt="Foto des Betriebs von Google">`).join("")}</div>
@@ -1759,7 +1774,7 @@ const BEZAHLT = ["payment_paid", "payment_refunded"];
 async function payOnline(bkId, btn) {
   if (btn) { btn.disabled = true; btn.textContent = "Bezahlseite wird geöffnet…"; }
   const r = await stripeCall("checkout", { booking_id: bkId });
-  if (r.url) { location.href = r.url; return; }
+  if (r.url) { oeffneExtern(r.url); return; }
   if (btn) { btn.disabled = false; btn.textContent = "Jetzt online bezahlen"; }
   toast(r.error || "Bezahlen ist gerade nicht möglich.");
 }
@@ -3830,7 +3845,7 @@ async function loadPayCard() {
   if (btn) btn.onclick = async () => {
     btn.disabled = true; btn.textContent = "Stripe wird geöffnet…";
     const r = await stripeCall("connect");
-    if (r.url) { location.href = r.url; return; }
+    if (r.url) { oeffneExtern(r.url); return; }
     btn.disabled = false; btn.textContent = "Mit Stripe verbinden";
     toast(r.error || "Stripe ist gerade nicht erreichbar.");
   };
@@ -3863,7 +3878,7 @@ async function googleSuchen() {
   const { data: { session } } = await sb.auth.getSession();
   let d = {};
   try {
-    const r = await fetch("/api/google-place?suche=" + encodeURIComponent(text), { headers: { Authorization: "Bearer " + (session?.access_token || "") } });
+    const r = await fetch(API + "/api/google-place?suche=" + encodeURIComponent(text), { headers: { Authorization: "Bearer " + (session?.access_token || "") } });
     d = await r.json();
     if (!r.ok) throw new Error(d.error);
   } catch (e) {
@@ -4840,7 +4855,7 @@ const IOS_SCHRITTE = [
 // Dezenter Hinweis unten. Erscheint nur, wenn Installation etwas bringt,
 // und laesst sich dauerhaft wegklicken.
 function renderInstallBanner() {
-  if (document.getElementById("installBanner")) return;
+  if (NATIVE || document.getElementById("installBanner")) return;
   if (localStorage.getItem("cfx_install_hidden")) return;
   const st = installState();
   if (st === "installiert" || st === "nicht_noetig") return;
@@ -4901,6 +4916,9 @@ async function pushRegistration() {
 
 // Aktueller Zustand für die Anzeige im Konto
 async function pushStatus() {
+  // In der iPhone-App gibt es keinen Web-Push; Mitteilungen kommen dort über
+  // Apple (APNs) – bis das angebunden ist, ehrlich sagen, was gilt.
+  if (NATIVE) return "app_bald";
   // Auf dem iPhone fehlt PushManager, solange die App nicht installiert ist.
   // Das ist kein Defekt, sondern eine Vorbedingung – entsprechend benannt.
   if (!pushSupported()) return isIOS() && !isStandalone() ? "installation_noetig" : "nicht_unterstuetzt";
@@ -4971,6 +4989,7 @@ async function renderPushBox() {
     inaktiv: ["Erhalte neue Angebote, Nachrichten und Termine sofort – auch wenn Carfixo geschlossen ist.", "Auf diesem Gerät aktivieren", "b-grey", "Inaktiv"],
     blockiert: ["Benachrichtigungen sind für Carfixo im Browser blockiert. Das lässt sich nur in den Einstellungen deines Browsers wieder erlauben.", null, "b-red", "Blockiert"],
     installation_noetig: ["Apple erlaubt Mitteilungen nur, wenn Carfixo als App installiert ist. Das dauert zehn Sekunden – danach bekommst du neue Angebote sofort aufs Gerät.", "So geht's", "b-gold", "Installation nötig"],
+    app_bald: ["Mitteilungen in der App kommen mit dem nächsten Update. Bis dahin bekommst du alles Wichtige per E-Mail.", null, "b-grey", "Bald verfügbar"],
     nicht_unterstuetzt: ["Dieser Browser unterstützt keine Mitteilungen. Du bekommst weiterhin alles per E-Mail.", null, "b-grey", "Nicht verfügbar"],
   }[st];
   box.innerHTML = `

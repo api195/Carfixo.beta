@@ -1,0 +1,17 @@
+{
+  "appId": "de.carfixo.app",
+  "appName": "Carfixo",
+  "webDir": "www",
+  "backgroundColor": "#05070D",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#05070D"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#05070D",
+      "showSpinner": false
+    }
+  }
+}

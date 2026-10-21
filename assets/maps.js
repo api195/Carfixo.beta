@@ -23,7 +23,10 @@
 "use strict";
 (function () {
   const KEY = String((window.CARFIXO && window.CARFIXO.GOOGLE_MAPS_KEY) || "").trim();
-  const WANT_GOOGLE = KEY.length > 0;
+  // In der iPhone-App nie: der Browser-Key ist auf carfixo.de beschränkt, und
+  // die App läuft unter capacitor://localhost – Google zeigte nur eine Fehlerkarte.
+  const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const WANT_GOOGLE = KEY.length > 0 && !NATIVE;
 
   // Dunkler Kartenstil passend zum Carfixo-Design (#05070D / #0A101E).
   // Wird nur ohne Cloud-Map-ID angewandt – genau so nutzen wir es hier.

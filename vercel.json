@@ -16,6 +16,15 @@
   ],
   "headers": [
     {
+      "source": "/api/(geocode|google-place)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "capacitor://localhost" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Authorization" },
+        { "key": "Access-Control-Max-Age", "value": "86400" }
+      ]
+    },
+    {
       "source": "/assets/vendor/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }

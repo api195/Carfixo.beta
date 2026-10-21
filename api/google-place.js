@@ -38,6 +38,8 @@ const SUPA = (() => {
 })();
 
 module.exports = async function handler(req, res) {
+  // Vorabanfrage der iPhone-App (CORS-Kopfzeilen setzt vercel.json)
+  if (req.method === "OPTIONS") { res.statusCode = 204; return res.end(); }
   if (req.method !== "GET") return json(res, 405, { error: "method" });
   const key = String(process.env.GOOGLE_MAPS_SERVER_KEY || "").trim();
   if (!key || !SUPA) return json(res, 503, { error: "Google-Anbindung ist nicht eingerichtet." });
