@@ -28,7 +28,12 @@ angesehen werden sollte und welche Entscheidungen bewusst getroffen wurden.
    Kündigungsbutton bauen.
 2. **Kein Telefon im Impressum.** Nach EuGH C-649/17 genügt ein schneller elektronischer
    Kontaktweg, wenn E-Mails zügig beantwortet werden. Reicht das hier?
-3. **Auftragsverarbeitungsverträge.** Supabase: DPA muss im Dashboard angefordert und
+3. **Auftragsverarbeitungsverträge – derzeit NICHT vollständig erfüllt.** Die
+   Datenschutzerklärung sagt, mit jedem Auftragsverarbeiter bestehe ein Vertrag nach
+   Art. 28 DSGVO. Stand 21.10.2026 stimmt das nur für Resend. Supabase: DPA noch nicht
+   unterschrieben. Vercel: bleibt vorerst auf Hobby, dafür gibt es keinen DPA. Vor dem
+   Start mit echten Nutzern beides erledigen, sonst ist die Aussage falsch.
+   Ursprünglicher Hinweis: Supabase: DPA muss im Dashboard angefordert und
    unterschrieben werden. Vercel: Der DPA gilt laut Vercel nur für Pro- und Enterprise-Kunden;
    Hobby ist außerdem nur für nicht-kommerzielle Nutzung erlaubt. Für den Launch ist Vercel Pro
    vorgesehen. Resend: DPA gilt mit Annahme der AGB und ist vorunterschrieben im Dashboard
@@ -53,6 +58,10 @@ angesehen werden sollte und welche Entscheidungen bewusst getroffen wurden.
    auf das Stripe Connected Account Agreement verlinken?
 9. **Aufsichtsrechtlich (ZAG).** Annahme: Carfixo erbringt keinen Zahlungsdienst, weil das Geld
    über Stripe direkt an den Betrieb fließt und Carfixo es nie verwahrt.
+
+10a. **Klarna.** Bei Zahlung mit Klarna verarbeitet Klarna Bank AB Daten (u. a. Bonität)
+    als eigener Verantwortlicher. In der Datenschutzerklärung ergänzt; prüfen, ob das
+    so genügt.
 
 ### Niedrig
 
