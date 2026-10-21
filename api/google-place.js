@@ -25,7 +25,7 @@ const path = require("path");
 const PLACES = "https://places.googleapis.com/v1";
 const PLACE_ID = /^[A-Za-z0-9_-]{10,300}$/;
 const FOTO = /^places\/([A-Za-z0-9_-]{10,300})\/photos\/([A-Za-z0-9_-]{10,1000})$/;
-const MAX_FOTOS = 6;
+const MAX_FOTOS = 4;   // jedes Foto ist ein eigener, kostenpflichtiger Abruf
 
 // Supabase-Adresse und Publishable Key aus der Frontend-Konfiguration – kein Geheimnis.
 const SUPA = (() => {
