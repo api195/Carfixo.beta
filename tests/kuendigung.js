@@ -15,7 +15,7 @@ const check = (n, ok, i = "") => { console.log(`${ok ? "OK  " : "FAIL"}  ${n}${i
   page.on("pageerror", e => errs.push(String(e)));
   await page.goto(ROOT + "app.html#/search", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(1200);
-  const link = page.locator("footer.appFoot a.kuendigen");
+  const link = page.locator("footer.appFoot a.kuendigen[href='#/kuendigen']");
   check("App: Fußzeile zeigt „Verträge hier kündigen“", (await link.innerText()).trim() === "Verträge hier kündigen");
   await link.click();
   await page.waitForTimeout(400);

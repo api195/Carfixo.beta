@@ -20,7 +20,7 @@ function toast(msg) {
 
 const VIEWS = { dashboard: vDashboard, workshops: vWorkshops, users: vUsers, requests: vRequests, payments: vPayments, reports: vReports, kuendigungen: vCancellations };
 function nav(active) {
-  $("topNav").innerHTML = [["dashboard", "Übersicht"], ["workshops", "Werkstätten"], ["users", "Nutzer"], ["requests", "Anfragen"], ["payments", "Zahlungen"], ["reports", "Meldungen"], ["kuendigungen", "Kündigungen"]]
+  $("topNav").innerHTML = [["dashboard", "Übersicht"], ["workshops", "Werkstätten"], ["users", "Nutzer"], ["requests", "Anfragen"], ["payments", "Zahlungen"], ["reports", "Meldungen"], ["kuendigungen", "Kündigungen & Widerrufe"]]
     .map(([k, l]) => `<a href="#/${k}" class="${active === k ? "on" : ""}">${l}</a>`).join("") +
     `<a href="app.html" style="color:var(--blue2)">Zur App</a><a href="#" id="outLink">Abmelden</a>`;
   $("outLink").onclick = async (e) => { e.preventDefault(); await sb.auth.signOut(); location.reload(); };
@@ -259,7 +259,10 @@ const KD_VERTRAG = { kundenkonto: "Kundenkonto", betriebskonto: "Betriebskonto",
 const KD_STATUS = { eingegangen: "b-red", umgesetzt: "b-green", abgelehnt: "b-grey" };
 async function vCancellations() {
   main.innerHTML = `<div class="pageHead"><div><h1>Kündigungen</h1><div class="sub">Eingegangen über „Verträge hier kündigen“. Unverzüglich umsetzen – kostenlose Konten spätestens nach 2 Werktagen.</div></div></div>
-  <div id="kdList"><div class="sk" style="height:110px"></div></div>`;
+  <div id="kdList"><div class="sk" style="height:110px"></div></div>
+  <h2 style="font-size:18px;font-weight:800;margin:26px 0 12px">Widerrufe</h2>
+  <div id="wdList"><div class="sk" style="height:110px"></div></div>`;
+  ladeWiderrufe();
   const { data, error } = await sb.from("contract_cancellations").select("*").order("received_at", { ascending: false }).limit(200);
   if (error) { $("kdList").innerHTML = `<div class="warn">${esc(error.message)}</div>`; return; }
   $("kdList").innerHTML = (data || []).length === 0
@@ -267,7 +270,7 @@ async function vCancellations() {
     : data.map(k => `
       <div class="card" style="margin-bottom:12px">
         <div class="cardHead">
-          <div style="flex:1"><div class="tt">${esc(k.full_name)} <span class="mm">· ${esc(k.email)}</span></div>
+          <div style="flex:1"><div class="tt">Kündigung · ${esc(k.full_name)} <span class="mm">· ${esc(k.email)}</span></div>
           <div class="mm">${esc(KD_VERTRAG[k.contract] || k.contract)}${k.contract_ref ? " · " + esc(k.contract_ref) : ""}
             · ${k.kind === "ausserordentlich" ? "außerordentlich" : "ordentlich"}
             · ${k.effective === "datum" && k.effective_date ? "zum " + fmtDate(k.effective_date) : "nächstmöglich"}</div>
@@ -282,6 +285,32 @@ async function vCancellations() {
           ${k.user_id ? `<a class="btn ghost sm" href="#/users">Nutzer ansehen</a>` : ""}
         </div>
       </div>`).join("");
+}
+// Widerrufe (Widerrufsbutton): Carfixo leitet nur weiter, der Betrieb wickelt
+// ab. Hier prüfen, ob jede Erklärung zugeordnet und die Bestätigung raus ist.
+async function ladeWiderrufe() {
+  const box = $("wdList"); if (!box) return;
+  const { data, error } = await sb.from("contract_withdrawals").select("*, workshops(name)").order("received_at", { ascending: false }).limit(200);
+  if (error) { box.innerHTML = `<div class="warn">${esc(error.message)}</div>`; return; }
+  box.innerHTML = (data || []).length === 0
+    ? '<div class="empty"><div class="e"></div>Keine Widerrufe.</div>'
+    : data.map(w => `
+      <div class="card" style="margin-bottom:12px">
+        <div class="cardHead">
+          <div style="flex:1"><div class="tt">Widerruf · ${esc(w.full_name)} <span class="mm">· ${esc(w.email)}</span></div>
+          <div class="mm">Auftrag ${esc(w.booking_no)} · ${w.workshops ? esc(w.workshops.name) : '<b style="color:var(--red)">nicht zugeordnet – Kunde kontaktieren</b>'}</div>
+          <div class="mm">Eingang ${new Date(w.received_at).toLocaleString("de-DE")}
+            · Bestätigung ${w.receipt_sent_at ? "versendet ✓" : '<b style="color:var(--red)">nicht versendet – manuell bestätigen</b>'}</div>
+          ${w.note ? `<div class="mm">Nachricht: ${esc(w.note)}</div>` : ""}</div>
+          <span class="badge ${w.status === "bearbeitet" ? "b-green" : "b-red"}">${esc(w.status)}</span></div>
+        ${w.status !== "bearbeitet" ? `<div class="foot"><button class="btn green sm" onclick="setWithdrawal('${w.id}')">✓ Bearbeitet</button></div>` : ""}
+      </div>`).join("");
+}
+async function setWithdrawal(id) {
+  const { error } = await sb.from("contract_withdrawals").update({ status: "bearbeitet", processed_at: new Date().toISOString() }).eq("id", id);
+  if (error) return toast(error.message);
+  toast("Als bearbeitet markiert.");
+  ladeWiderrufe();
 }
 async function setCancellation(id, status) {
   if (status === "abgelehnt" && !confirm("Ablehnen nur, wenn die Kündigung keinem Vertrag zuzuordnen ist. Dem Absender per E-Mail Bescheid geben. Fortfahren?")) return;

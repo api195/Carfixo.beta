@@ -2,6 +2,7 @@
 // Aufruf per DB-Trigger (pg_net). Auth via x-notify-secret.
 //   { notification_id } -> Benachrichtigung an einen Nutzer (Push + E-Mail)
 //   { cancellation_id } -> Kündigungsbestätigung in Textform (§ 312k Abs. 4 BGB)
+//   { withdrawal_id }   -> Eingangsbestätigung eines Widerrufs (Widerrufsbutton)
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 
@@ -20,6 +21,7 @@ Deno.serve(async (req) => {
     }
     const payload = await req.json().catch(() => ({}));
     if (payload.cancellation_id) return await sendCancellationReceipt(admin, S, payload.cancellation_id);
+    if (payload.withdrawal_id) return await sendWithdrawalReceipt(admin, S, payload.withdrawal_id);
     const { notification_id } = payload;
     if (!notification_id) return json({ error: "missing notification_id" }, 400);
     const { data: n } = await admin.from("notifications").select("*").eq("id", notification_id).single();
@@ -123,6 +125,55 @@ async function sendCancellationReceipt(admin: any, S: Record<string, string>, id
   if (r.ok) {
     await admin.from("contract_cancellations").update({ receipt_sent_at: new Date().toISOString() }).eq("id", id);
   }
+  return json({ ok: r.ok, emailed: r.ok });
+}
+
+// ---------- Eingangsbestätigung Widerruf ----------
+// Pflicht beim Widerrufsbutton: Inhalt sowie Datum und Uhrzeit des Zugangs
+// unverzüglich auf einem dauerhaften Datenträger (hier E-Mail) bestätigen.
+// deno-lint-ignore no-explicit-any
+async function sendWithdrawalReceipt(admin: any, S: Record<string, string>, id: string) {
+  const { data: w } = await admin.from("contract_withdrawals").select("*, workshops(name)").eq("id", id).maybeSingle();
+  if (!w) return json({ error: "not found" }, 404);
+  if (!S.resend_api_key) return json({ ok: false, reason: "no resend key" });
+
+  const zugang = new Intl.DateTimeFormat("de-DE", { timeZone: "Europe/Berlin", dateStyle: "long", timeStyle: "medium" })
+    .format(new Date(w.received_at));
+  const betrieb = w.workshops?.name || "";
+  const zeilen: [string, string][] = [
+    ["Name", w.full_name],
+    ["E-Mail", w.email],
+    ["Auftrag", w.booking_no],
+    ...(betrieb ? [["Vertragspartner", betrieb] as [string, string]] : []),
+    ...(w.note ? [["Deine Nachricht", w.note] as [string, string]] : []),
+    ["Eingegangen am", zugang],
+    ["Vorgangsnummer", w.id],
+  ];
+  const kontakt = escapeHtml(S.contact_email || "info@carfixo.de");
+  const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#0f1830">`
+    + `<div style="font-size:22px;font-weight:800;color:#1E6BFF">car<span style="color:#0f1830">fixo</span></div>`
+    + `<h1 style="font-size:18px;margin:20px 0 6px">Eingangsbestätigung deines Widerrufs</h1>`
+    + `<p style="font-size:14px;color:#48566e;line-height:1.5;margin:0 0 14px">Dein Widerruf ist eingegangen. Hier sein Inhalt:</p>`
+    + `<table style="font-size:14px;border-collapse:collapse;width:100%">`
+    + zeilen.map(([k, v]) => `<tr><td style="padding:6px 10px 6px 0;color:#48566e;vertical-align:top;white-space:nowrap">${escapeHtml(k)}</td>`
+      + `<td style="padding:6px 0;font-weight:600">${escapeHtml(String(v))}</td></tr>`).join("")
+    + `</table>`
+    + `<p style="font-size:13px;color:#48566e;line-height:1.5;margin-top:16px">`
+    + (betrieb
+      ? `Wir haben den Widerruf an ${escapeHtml(betrieb)} weitergeleitet. Der Betrieb ist dein Vertragspartner und meldet sich zur Rückabwicklung, z. B. zur Erstattung bereits gezahlter Beträge.`
+      : `Wir konnten den Auftrag noch nicht eindeutig zuordnen und melden uns bei dir. Bitte antworte nicht auf diese E-Mail, sondern schreib bei Fragen an ${kontakt}.`)
+    + `</p><p style="font-size:12px;color:#9aa7bd;margin-top:20px;line-height:1.5">Der Widerruf wurde über die Schaltfläche „Widerruf bestätigen“ auf carfixo.de erklärt. `
+    + `Falls du das nicht warst, schreib uns an ${kontakt}.</p></div>`;
+
+  const r = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${S.resend_api_key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: S.resend_from || "Carfixo <onboarding@resend.dev>",
+      to: [w.email], subject: `Carfixo: Eingangsbestätigung deines Widerrufs (${w.booking_no})`, html,
+    }),
+  });
+  if (r.ok) await admin.from("contract_withdrawals").update({ receipt_sent_at: new Date().toISOString() }).eq("id", id);
   return json({ ok: r.ok, emailed: r.ok });
 }
 

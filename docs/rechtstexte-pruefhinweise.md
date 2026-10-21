@@ -50,9 +50,9 @@ angesehen werden sollte und welche Entscheidungen bewusst getroffen wurden.
 6. **Gerichtsstand Köln (AGB Betriebe).** Eine Gerichtsstandsvereinbarung wirkt nur zwischen
    Kaufleuten (§ 38 ZPO). Carfixo ist als nicht eingetragener Kleinunternehmer womöglich kein
    Kaufmann. Formuliert ist „soweit gesetzlich zulässig“.
-7. **Kennzeichnung „Gesponsert“.** Premium-Betriebe stehen in der Suche oben und tragen das Label
-   „Gesponsert“, obwohl Premium derzeit kostenlos ist und Carfixo dafür kein Geld erhält. Ist
-   „Hervorgehoben“ oder „Premium“ passender, solange nichts bezahlt wird (§ 5a Abs. 4 UWG)?
+7. **Kennzeichnung „Hervorgehoben“** (erledigt 21.10.2026). Premium-Betriebe stehen oben und
+   heißen „Hervorgehoben“, solange Premium kostenlos ist. Sobald Premium Geld kostet, muss das
+   Label auf „Anzeige“/„Gesponsert“ wechseln (§ 5a Abs. 4 UWG) – siehe Abschnitt Ranking.
 8. **Stripe Connect.** Ob der Abschnitt § 5a der Bedingungen für Betriebe ausreicht, damit Betriebe
    Carfixo als Plattform für ihr Stripe-Konto berechtigen. Auch zu prüfen: Muss Carfixo zusätzlich
    auf das Stripe Connected Account Agreement verlinken?

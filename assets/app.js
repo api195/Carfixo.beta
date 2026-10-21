@@ -77,7 +77,7 @@ const routes = {
   "ws/dashboard": vWsDashboard, "ws/leads": vWsLeads, "ws/lead": vWsLead,
   "ws/jobs": vWsJobs, "ws/calendar": vWsCalendar, "ws/profile": vWsProfile,
   "ws/parts": vWsParts, "ws/stats": vWsStats, "ws/archive": vWsArchive,
-  "kuendigen": vKuendigen,
+  "kuendigen": vKuendigen, "widerrufen": vWiderrufen,
 };
 const CUSTOMER_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"], ["requests", "megaphone", "Aufträge"], ["vehicles", "car", "Fahrzeuge"]];
 const WS_NAV = [["ws/dashboard", "gauge", "Dashboard"], ["ws/leads", "megaphone", "Anfragen"], ["ws/jobs", "box", "Aufträge"], ["ws/parts", "puzzle", "Teile"], ["ws/calendar", "calendar", "Kalender"], ["ws/profile", "shop", "Profil"]];
@@ -220,6 +220,85 @@ function kuendigungBestaetigt(k) {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
     a.download = `carfixo-kuendigung-${String(k.id).slice(0, 8)}.txt`;
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+}
+
+// ============================================================
+// WIDERRUF (Widerrufsbutton, Pflicht seit 19.06.2026)
+// Zwei Schritte wie vorgeschrieben: "Vertrag widerrufen" (Fußzeile, Buchung)
+// führt hierher, die Erklärung gilt erst mit "Widerruf bestätigen".
+// Vertragspartner ist der Betrieb – Carfixo nimmt die Erklärung an, leitet
+// sie weiter und bestätigt den Eingang (submit_withdrawal, notify-dispatch).
+// ============================================================
+const WIDERRUF_TAGE = 14;
+function vWiderrufen(bookingNo) {
+  main.innerHTML = `
+  <div class="pageHead"><div><h1>Vertrag widerrufen</h1>
+    <div class="sub">Hier widerrufst du einen Auftrag, den du über Carfixo bei einem Betrieb gebucht hast. Du bekommst sofort eine Eingangsbestätigung.</div></div></div>
+  <div class="card" style="max-width:640px">
+    <div class="label">Dein Name</div>
+    <input id="wdName" autocomplete="name" value="${esc(myProfile?.full_name || "")}" aria-label="Dein Name">
+    <div class="label">E-Mail-Adresse deines Kontos</div>
+    <input id="wdMail" type="email" autocomplete="email" value="${esc(me?.email || "")}" aria-label="E-Mail-Adresse">
+    <div class="label">Auftragsnummer</div>
+    <input id="wdNr" placeholder="z. B. CFX-1004" value="${esc(bookingNo || "")}" autocapitalize="characters" aria-label="Auftragsnummer">
+    <p class="mm" style="font-size:12px;margin-top:4px">Steht in deiner Buchung unter „Aufträge“ und in der Buchungsbestätigung.</p>
+    <div class="label">Nachricht an den Betrieb <span class="mm" style="font-weight:400">(optional)</span></div>
+    <textarea id="wdNote" rows="3" maxlength="2000" aria-label="Nachricht an den Betrieb"></textarea>
+    <div class="err" id="wdErr"></div>
+    <button class="btn wide" style="margin-top:18px" id="wdGo">Widerruf bestätigen</button>
+    <p class="mm" style="font-size:11.5px;margin-top:10px">Mit „Widerruf bestätigen“ erklärst du den Widerruf des Vertrags mit dem Betrieb.
+      Ob er wirksam ist – etwa wenn die Arbeit auf deinen Wunsch schon vor Ablauf der Frist begonnen hat –, klärt der Betrieb mit dir.</p>
+  </div>`;
+  $("wdGo").onclick = async () => {
+    const err = $("wdErr"); err.style.display = "none";
+    const eingabe = {
+      p_full_name: $("wdName").value.trim(), p_email: $("wdMail").value.trim(),
+      p_booking_no: $("wdNr").value.trim(), p_note: $("wdNote").value.trim() || null,
+    };
+    if (eingabe.p_full_name.length < 2) return showErr(err, "Bitte gib deinen Namen an.");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(eingabe.p_email)) return showErr(err, "Bitte gib eine gültige E-Mail-Adresse an.");
+    if (eingabe.p_booking_no.length < 3) return showErr(err, "Bitte gib die Auftragsnummer an.");
+    $("wdGo").disabled = true; $("wdGo").textContent = "Wird übermittelt…";
+    const { data, error } = await sb.rpc("submit_withdrawal", eingabe);
+    $("wdGo").disabled = false; $("wdGo").textContent = "Widerruf bestätigen";
+    if (error) {
+      const technisch = /function|schema cache|fetch|network|load failed/i.test(error.message || "");
+      return showErr(err, technisch
+        ? `Der Widerruf konnte gerade nicht übermittelt werden. Bitte versuche es gleich noch einmal oder schreib an ${KUENDIGUNG_KONTAKT}.`
+        : error.message);
+    }
+    widerrufBestaetigt({ ...eingabe, ...data });
+  };
+}
+function widerrufBestaetigt(w) {
+  const zugang = new Date(w.received_at).toLocaleString("de-DE", { timeZone: "Europe/Berlin", dateStyle: "long", timeStyle: "medium" });
+  const zeilen = [
+    ["Name", w.p_full_name], ["E-Mail", w.p_email], ["Auftrag", w.p_booking_no.toUpperCase()],
+    ...(w.betrieb ? [["Vertragspartner", w.betrieb]] : []),
+    ...(w.p_note ? [["Nachricht", w.p_note]] : []),
+    ["Eingegangen am", zugang + " Uhr"], ["Vorgangsnummer", w.id],
+  ];
+  main.innerHTML = `
+  <div class="pageHead"><div><h1>Dein Widerruf ist eingegangen</h1>
+    <div class="sub">Eine Bestätigung haben wir gerade an <b>${esc(w.p_email)}</b> geschickt.</div></div></div>
+  <div class="card" style="max-width:640px">
+    ${zeilen.map(([a, b]) => `<div class="offerLine"><span>${esc(a)}</span><span style="text-align:right">${esc(b)}</span></div>`).join("")}
+    <p class="mm" style="font-size:12.5px;margin-top:12px">${w.zugeordnet
+      ? `Wir haben den Widerruf an ${esc(w.betrieb || "den Betrieb")} weitergeleitet. Der Betrieb meldet sich zur Rückabwicklung, z. B. zur Erstattung bereits gezahlter Beträge.`
+      : "Wir konnten den Auftrag nicht sofort zuordnen und melden uns bei dir."}</p>
+    <div class="btnRow" style="margin-top:14px">
+      <button class="btn ghost sm" id="wdSave">Bestätigung speichern</button>
+      <button class="btn ghost sm" onclick="window.print()">Drucken</button>
+    </div>
+  </div>`;
+  $("wdSave").onclick = () => {
+    const text = "Carfixo – Eingangsbestätigung Widerruf\n\n" + zeilen.map(([a, b]) => `${a}: ${b}`).join("\n")
+      + "\n\nErklärt durch Betätigen der Schaltfläche „Widerruf bestätigen“ auf carfixo.de.\n";
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+    a.download = `carfixo-widerruf-${String(w.id).slice(0, 8)}.txt`;
     document.body.appendChild(a); a.click(); a.remove();
   };
 }
@@ -999,12 +1078,12 @@ function renderActiveFilters() {
   });
 }
 // Vertrauens-Abzeichen eines Betriebs. Beispielbetriebe (is_demo) zeigen
-// bewusst weder "verifiziert" noch "Gesponsert" noch "Meisterbetrieb":
+// bewusst weder "verifiziert" noch "Hervorgehoben" noch "Meisterbetrieb":
 // Ein erfundener Betrieb mit Prüfsiegel wäre irreführend.
 function trustBadges(ws, style = "") {
   const b = (cls, txt) => `<span class="badge ${cls}" style="${style}">${txt}</span>`;
   if (ws.is_demo) return b("b-blue", "Beispielbetrieb");
-  return (ws.is_premium ? b("b-gold", "Gesponsert") : "")
+  return (ws.is_premium ? b("b-gold", "Hervorgehoben") : "")
     + (ws.is_verified ? b("b-green", "✓ verifiziert") : "")
     + (ws.master_certified ? b("b-gold", "Meisterbetrieb") : "");
 }
@@ -1104,7 +1183,7 @@ async function vWorkshopProfile(id) {
     <div class="wsAv" style="width:64px;height:64px;font-size:23px;${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent;` : avStil(ws.name)}${ws.cover_url ? "border:3px solid var(--bg);" : ""}">${esc(initials(ws.name))}</div>
     <div style="flex:1">
       <h1>${esc(ws.name)} ${ws.is_demo ? '<span class="badge b-blue" style="vertical-align:6px">Beispielbetrieb</span>'
-        : `${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:6px">Gesponsert</span>' : ""} ${ws.is_verified ? '<span class="badge b-green" style="vertical-align:6px">✓ Verifiziert durch Carfixo</span>' : ""}`}</h1>
+        : `${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:6px">Hervorgehoben</span>' : ""} ${ws.is_verified ? '<span class="badge b-green" style="vertical-align:6px">✓ Verifiziert durch Carfixo</span>' : ""}`}</h1>
       <div class="ratingLine" style="margin-top:4px">${stars(ws.rating_avg)}<span class="cnt">${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${ws.rating_count || 0} Bewertungen · ${esc(ws.district || ws.city || "Köln")}</span></div>
       <div id="gStars"></div>
       ${openStatusLine(ws.opening_hours)}
@@ -1743,10 +1822,14 @@ async function loadBookingBox(r) {
   // bevor er überhaupt gearbeitet hat. Dieselbe Regel prüft die Datenbank.
   const canComplete = bk.status === "ready_for_pickup"
     || (!!bk.scheduled_at && new Date(bk.scheduled_at) < new Date());
-  const [{ data: rev }, { data: approvals }] = await Promise.all([
+  const [{ data: rev }, { data: approvals }, { data: widerruf }] = await Promise.all([
     sb.from("reviews").select("id,rating").eq("booking_id", bk.id).maybeSingle(),
     sb.from("approvals").select("*").eq("booking_id", bk.id).order("created_at", { ascending: false }),
+    sb.from("contract_withdrawals").select("received_at").eq("booking_id", bk.id).limit(1).maybeSingle(),
   ]);
+  // Widerrufsfrist: 14 Tage ab Buchung (Vertragsschluss). Danach kein Knopf mehr.
+  const fristEnde = new Date(new Date(bk.created_at).getTime() + WIDERRUF_TAGE * 864e5);
+  const widerrufbar = !widerruf && bk.status !== "cancelled" && new Date() < fristEnde;
   box.innerHTML = `
   <div class="card" style="border-color:rgba(30,107,255,.4);margin-bottom:14px">
     <div class="cardHead"><div class="ico icoGreen"></div>
@@ -1769,6 +1852,9 @@ async function loadBookingBox(r) {
       <button class="btn ghost sm" onclick="openReschedule('${bk.id}','${r.id}')">Termin verschieben</button>
       <button class="btn red sm" onclick="openCancel('${bk.id}','${r.id}',${bk.payment_status === "payment_paid"})">Stornieren</button>
     </div>` : ""}
+    ${widerruf ? `<div class="note" style="margin-top:12px">Dein Widerruf ist am ${fmtDateTime(widerruf.received_at)} eingegangen. Die Werkstatt meldet sich bei dir.</div>` : ""}
+    ${widerrufbar ? `<div class="wdRow"><span class="mm">Widerrufsfrist bis ${fmtDate(fristEnde.toISOString())}</span>
+      <a class="btn ghost sm" href="#/widerrufen/${encodeURIComponent(bk.booking_no || "")}">Vertrag widerrufen</a></div>` : ""}
     ${bookingDocsHtml(bk)}
     <p class="mm" style="margin-top:12px;font-size:11px">Die Reparaturleistung, Rechnung und Gewährleistung werden durch die ausgewählte Werkstatt erbracht.</p>
   </div>`;
@@ -3215,6 +3301,8 @@ async function loadWsJobs() {
     .eq("workshop_id", myWorkshop.id).order("created_at", { ascending: false });
   const box = $("jobList"); if (!box) return;
   if (error) { box.innerHTML = `<div class="warn">${esc(error.message)}</div>`; return; }
+  const { data: wds } = await sb.from("contract_withdrawals").select("booking_id,received_at").eq("workshop_id", myWorkshop.id);
+  const widerrufe = Object.fromEntries((wds || []).map(x => [x.booking_id, x.received_at]));
   if (!data || data.length === 0) { box.innerHTML = `<div class="empty"><div class="e">${ico("box",40)}</div>Noch keine gebuchten Aufträge. Sobald ein Kunde dein Angebot annimmt, erscheint der Auftrag hier.</div>`; return; }
   box.innerHTML = data.map(b => {
     const r = b.offers?.requests || {};
@@ -3228,6 +3316,7 @@ async function loadWsJobs() {
         <div style="flex:1;min-width:0"><div class="tt">${esc(b.booking_no || "")} · ${esc(r.title || "Auftrag")}</div>
         <div class="mm">${esc(cust)}${b.profiles?.phone ? " · " + esc(b.profiles.phone) : ""} · <b>${fmtEur(b.total_price)}</b> · <span class="badge ${pay[1]}">${pay[0]}</span>${b.payment_status === "payment_paid" ? ` <b>${fmtEur(b.paid_amount)}</b> online` : ""}${Number(b.refunded_amount) > 0 ? ` · erstattet ${fmtEur(b.refunded_amount)}` : ""}</div>
         <div class="mm">${esc(r.vehicle_label || "k.A.")}${b.scheduled_at ? " · " + fmtDateTime(b.scheduled_at) : " · kein Termin"}${b.no_show ? " · No-Show (" + (b.no_show === "customer" ? "Kunde" : "Werkstatt") + ")" : ""}</div>
+        ${widerrufe[b.id] ? `<div class="warn" style="margin:8px 0 0;padding:8px 10px"><b>Widerruf erhalten</b> am ${fmtDateTime(widerrufe[b.id])}. Bitte melde dich beim Kunden, stimme die Rückabwicklung ab und erstatte ggf. die Zahlung.</div>` : ""}
         ${b.proposed_date && b.reschedule_by === "customer" ? `<div class="note" style="margin:8px 0 0;padding:8px 10px">Kunde schlägt vor: <b>${fmtDateTime(b.proposed_date)}</b> <a href="#" onclick="wsAcceptProposed('${b.id}');return false" style="color:var(--green);font-weight:800">Annehmen ✓</a></div>` : ""}
         </div>
         <span class="badge ${s[1]}">${s[0]}</span></div>
@@ -3643,7 +3732,7 @@ async function vWsProfile() {
       </div>
       <div class="card pCard" data-tab="zahl">
         <div class="tt">Premium für Betriebe</div>
-        <p class="mm" style="margin-top:4px">${w.is_premium ? "Aktiv: bevorzugte Platzierung (als Gesponsert markiert), mehr Galerie-Bilder, detaillierte Statistiken." : "Bevorzugte Platzierung, mehr Bilder, detaillierte Statistiken – aktuell kostenlos."}</p>
+        <p class="mm" style="margin-top:4px">${w.is_premium ? "Aktiv: bevorzugte Platzierung (als „Hervorgehoben“ markiert), mehr Galerie-Bilder, detaillierte Statistiken." : "Bevorzugte Platzierung, mehr Bilder, detaillierte Statistiken – aktuell kostenlos."}</p>
         <div class="btnRow">
           <button class="btn ghost sm" id="pPremToggle">${w.is_premium ? "Premium deaktivieren" : "Premium aktivieren (aktuell kostenlos)"}</button>
           <a class="btn ghost sm" href="#/ws/stats">Statistiken</a>
@@ -4421,7 +4510,7 @@ async function vWsStats() {
     <div class="card" style="max-width:560px;margin:30px auto;text-align:center;border-color:rgba(255,176,32,.4)">
       <div style="font-size:44px"></div>
       <h2 style="font-size:22px;font-weight:800;margin-top:10px">Carfixo Premium für Betriebe</h2>
-      <p class="mm" style="margin-top:10px">Detaillierte Statistiken, bevorzugte Platzierung (als „Gesponsert" markiert), mehr Bilder, Angebotsvorlagen und Auslastungsübersicht.</p>
+      <p class="mm" style="margin-top:10px">Detaillierte Statistiken, bevorzugte Platzierung (als „Hervorgehoben" markiert), mehr Bilder, Angebotsvorlagen und Auslastungsübersicht.</p>
       <div class="chips" style="justify-content:center;margin-top:16px">
         <span class="pill">Angebots- & Annahmequote</span><span class="pill">Profil-Boost</span><span class="pill">Mehr Bilder</span>
       </div>
