@@ -1512,7 +1512,7 @@ async function vRequestDetail(id) {
   rtChannels.push(ch);
 }
 async function loadOffers(r) {
-  const { data } = await sb.from("offers").select("*, workshops(id,name,rating_avg,rating_count,is_verified,district)").eq("request_id", r.id).order("total_price");
+  const { data } = await sb.from("offers").select("*, workshops(*)").eq("request_id", r.id).order("total_price");
   const box = $("offers"); if (!box) return;
   $("offCount").textContent = (data || []).length || "";
   if (!data || data.length === 0) {
@@ -1548,7 +1548,9 @@ async function loadOffers(r) {
   }).join("");
 }
 
-// ---------- Buchungsübersicht + Testzahlung (Stripe folgt zum Launch) ----------
+// ---------- Buchungsübersicht ----------
+// Gebucht wird ohne Zahlung. Bezahlt wird nach der Reparatur – vor Ort oder,
+// wenn der Betrieb Stripe verbunden hat, online (siehe "Online-Zahlung").
 function openCheckout(offerId, requestId) {
   const o = (window._offers || []).find(x => x.id === offerId);
   if (!o) return;
@@ -1556,7 +1558,7 @@ function openCheckout(offerId, requestId) {
   const net = Number(o.total_price) / 1.19;
   openModal(`
     <h2 style="font-size:20px;font-weight:800">Buchungsübersicht</h2>
-    <div class="note" style="margin-top:12px"><b>Testmodus:</b> Zahlungen sind noch nicht aktiv. Es wird nichts berechnet – der komplette Ablauf funktioniert trotzdem.</div>
+    <div class="note" style="margin-top:12px">Jetzt wird nichts berechnet. Bezahlt wird nach der Reparatur – direkt beim Betrieb${w.online_payment ? " oder bequem online in Carfixo" : ""}.</div>
     <div class="card" style="margin-top:8px;padding:14px">
       <div class="offerLine"><span>Werkstatt</span><span><b>${esc(w.name || "")}</b></span></div>
       ${(o.line_items || []).map(li => `<div class="offerLine"><span>${esc(li.label)}</span><span>${fmtEur(li.price)}</span></div>`).join("")}
@@ -1569,31 +1571,75 @@ function openCheckout(offerId, requestId) {
       ${STORNO_HINWEIS}
       Die Reparaturleistung und Rechnung werden durch die ausgewählte Werkstatt erbracht.</p>
     <div class="btnRow">
-      <button class="btn green" id="ckGo">Testbuchung abschließen</button>
+      <button class="btn green" id="ckGo">Verbindlich buchen</button>
       <button class="btn ghost" onclick="closeModal()">Abbrechen</button>
     </div>
     <div class="err" id="ckErr"></div>`);
   $("ckGo").onclick = async () => {
     $("ckGo").disabled = true; $("ckGo").textContent = "Wird gebucht…";
     const { data: bkId, error } = await sb.rpc("accept_offer", { p_offer_id: offerId });
-    if (error) { $("ckGo").disabled = false; $("ckGo").textContent = "Testbuchung abschließen"; return showErr($("ckErr"), error.message); }
-    await sb.from("bookings").update({ payment_status: "test_payment_confirmed" }).eq("id", bkId);
+    if (error) { $("ckGo").disabled = false; $("ckGo").textContent = "Verbindlich buchen"; return showErr($("ckErr"), error.message); }
     closeModal();
-    toast("Testbuchung bestätigt ✓");
+    toast("Gebucht ✓ – die Werkstatt ist informiert.");
     vRequestDetail(requestId);
   };
 }
 
 const PAY_LABELS = {
-  none: ["Keine Zahlung", "b-grey"], payment_pending: ["Zahlung ausstehend", "b-gold"],
+  none: ["Noch nicht bezahlt", "b-grey"], payment_pending: ["Zahlung in Bearbeitung", "b-gold"],
   payment_authorized: ["Zahlung autorisiert", "b-blue"], payment_paid: ["Bezahlt", "b-green"],
   payment_failed: ["Zahlung fehlgeschlagen", "b-red"], payment_refunded: ["Erstattet", "b-purple"],
   payment_cancelled: ["Zahlung storniert", "b-grey"], test_payment_confirmed: ["Testzahlung bestätigt", "b-green"],
   pending: ["Ausstehend", "b-gold"], paid: ["Bezahlt", "b-green"], refunded: ["Erstattet", "b-purple"],
 };
+// ---------- Online-Zahlung (Stripe Connect) ----------
+// Die Werkstatt ist Zahlungsempfänger, Carfixo erhält kein Geld. Als bezahlt
+// markiert nur der stripe-webhook – die App leitet bloß zur Bezahlseite weiter.
+async function stripeCall(action, extra = {}) {
+  const { data, error } = await sb.functions.invoke("stripe", { body: { action, ...extra } });
+  if (!error) return data || {};
+  let msg = "Die Verbindung zu Stripe hat nicht geklappt. Bitte später erneut versuchen.";
+  try { const j = await error.context.json(); if (j?.error) msg = j.error; } catch (_) {}
+  return { error: msg };
+}
+const BEZAHLT = ["payment_paid", "payment_refunded"];
+async function payOnline(bkId, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = "Bezahlseite wird geöffnet…"; }
+  const r = await stripeCall("checkout", { booking_id: bkId });
+  if (r.url) { location.href = r.url; return; }
+  if (btn) { btn.disabled = false; btn.textContent = "Jetzt online bezahlen"; }
+  toast(r.error || "Bezahlen ist gerade nicht möglich.");
+}
+async function refundBooking(bkId) {
+  if (!confirm("Den online bezahlten Betrag vollständig an den Kunden zurückzahlen? Das lässt sich nicht rückgängig machen.")) return;
+  const r = await stripeCall("refund", { booking_id: bkId });
+  if (r.error) return toast(r.error);
+  toast("Erstattung ausgelöst – der Status aktualisiert sich, sobald Stripe sie bestätigt.");
+  setTimeout(loadWsJobs, 2500);
+}
+function payBoxHtml(bk, w, due) {
+  if (bk.status === "cancelled" && !BEZAHLT.includes(bk.payment_status)) return "";
+  if (bk.payment_status === "payment_paid") {
+    return `<div class="okBox" style="margin:14px 0 0">Online bezahlt: <b>${fmtEur(bk.paid_amount ?? due)}</b>${bk.paid_at ? " am " + fmtDate(bk.paid_at) : ""}${Number(bk.refunded_amount) > 0 ? ` · davon erstattet: ${fmtEur(bk.refunded_amount)}` : ""}</div>`;
+  }
+  if (bk.payment_status === "payment_refunded") return `<div class="note" style="margin-top:14px">Die Zahlung von ${fmtEur(bk.paid_amount ?? due)} wurde erstattet.</div>`;
+  if (bk.payment_status === "payment_pending") return `<div class="note" style="margin-top:14px">Deine Zahlung wird bearbeitet (z. B. Lastschrift). Das kann einige Tage dauern.</div>`;
+  if (!w.online_payment) return "";
+  const zahlbar = ["ready_for_pickup", "completed"].includes(bk.status);
+  return `<div class="card" style="margin-top:14px;padding:14px">
+    <div class="offerLine total" style="margin-top:0;border-top:0;padding-top:0"><span>Zu zahlen</span><span style="white-space:nowrap">${fmtEur(due)}</span></div>
+    ${due > Number(bk.total_price) ? '<div class="mm" style="font-size:11.5px">inkl. freigegebener Zusatzarbeiten</div>' : ""}
+    ${bk.payment_status === "payment_failed" ? '<div class="warn" style="margin-top:8px">Die letzte Zahlung ist fehlgeschlagen. Du kannst es erneut versuchen.</div>' : ""}
+    ${zahlbar
+      ? `<button class="btn green wide" style="margin-top:10px" onclick="payOnline('${bk.id}',this)">Jetzt online bezahlen</button>
+         <p class="mm" style="margin-top:8px;font-size:11px">Sichere Zahlung über Stripe direkt an ${esc(w.name || "die Werkstatt")}. Du kannst auch vor Ort bezahlen.</p>`
+      : `<p class="mm" style="margin-top:8px;font-size:12px">Online bezahlen kannst du, sobald die Werkstatt den Auftrag als abholbereit meldet – oder du zahlst vor Ort.</p>`}
+  </div>`;
+}
+
 const CANCEL_REASONS = ["Termin passt nicht mehr", "Problem hat sich erledigt", "Anderes Angebot gewählt", "Preis zu hoch", "Werkstatt nicht erreichbar", "Sonstiges"];
-// Zentrale Stornoregel. Carfixo vermittelt nur und wickelt keine Zahlung ab –
-// über die Plattform zu stornieren kostet daher nichts. Verbindlich sind die
+// Zentrale Stornoregel. Carfixo vermittelt nur; bezahlt wird an den Betrieb –
+// über die Plattform zu stornieren kostet nichts. Verbindlich sind die
 // Bedingungen des Betriebs. Bei Änderung hier auch legal.html anpassen.
 const STORNO_HINWEIS = "Das Stornieren über Carfixo ist kostenlos. Es gelten die Bedingungen des jeweiligen Betriebs – sage möglichst frühzeitig ab und nutze bei kurzfristigen Änderungen zusätzlich den Chat.";
 
@@ -1611,7 +1657,7 @@ function bookingTimeline(status) {
 
 async function loadBookingBox(r) {
   const { data: bk } = await sb.from("bookings")
-    .select("*, offers!inner(request_id,total_price,is_fixed_price,workshops(id,name,phone))")
+    .select("*, offers!inner(request_id,total_price,is_fixed_price,workshops(*))")
     .eq("offers.request_id", r.id).eq("customer_id", me.id).maybeSingle();
   const box = $("bookingBox"); if (!box || !bk) return;
   const s = BK_STATUS[bk.status] || ["?", "b-grey"];
@@ -1635,6 +1681,7 @@ async function loadBookingBox(r) {
       <div style="margin-top:6px"><span class="badge ${pay[1]}">${pay[0]}</span> ${bk.no_show ? `<span class="badge b-red">${bk.no_show === "customer" ? "Als nicht erschienen markiert" : "Werkstatt nicht erschienen"}</span>` : ""}</div></div>
       <span class="badge ${s[1]}">${s[0]}</span></div>
     ${bookingTimeline(bk.status)}
+    ${payBoxHtml(bk, w, Number(bk.total_price) + (approvals || []).filter(a => a.status === "approved").reduce((n, a) => n + Number(a.extra_cost || 0), 0))}
     ${bk.proposed_date && bk.reschedule_by === "workshop" ? `
       <div class="note" style="margin-top:12px">Die Werkstatt schlägt einen neuen Termin vor: <b>${fmtDateTime(bk.proposed_date)}</b>
       <div class="btnRow"><button class="btn green sm" onclick="acceptProposedDate('${bk.id}','${r.id}')">Termin annehmen</button></div></div>` : ""}
@@ -1646,7 +1693,7 @@ async function loadBookingBox(r) {
     <div class="btnRow">
       ${canComplete ? `<button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>` : ""}
       <button class="btn ghost sm" onclick="openReschedule('${bk.id}','${r.id}')">Termin verschieben</button>
-      <button class="btn red sm" onclick="openCancel('${bk.id}','${r.id}')">Stornieren</button>
+      <button class="btn red sm" onclick="openCancel('${bk.id}','${r.id}',${bk.payment_status === "payment_paid"})">Stornieren</button>
     </div>` : ""}
     ${bookingDocsHtml(bk)}
     <p class="mm" style="margin-top:12px;font-size:11px">Die Reparaturleistung, Rechnung und Gewährleistung werden durch die ausgewählte Werkstatt erbracht.</p>
@@ -1706,10 +1753,11 @@ async function acceptProposedDate(bkId, reqId) {
   toast("Neuer Termin bestätigt ✓");
   vRequestDetail(reqId);
 }
-function openCancel(bkId, reqId) {
+function openCancel(bkId, reqId, bezahlt) {
   openModal(`
     <h2 style="font-size:19px;font-weight:800">Buchung stornieren</h2>
     <div class="note" style="margin-top:10px">${STORNO_HINWEIS}</div>
+    ${bezahlt ? '<div class="warn" style="margin-top:10px">Du hast bereits online bezahlt. Die Erstattung veranlasst die Werkstatt nach ihren Bedingungen – sprich sie am besten im Chat darauf an.</div>' : ""}
     <div class="label">Grund</div>
     <select id="ccReason">${CANCEL_REASONS.map(x => `<option>${x}</option>`).join("")}</select>
     <div class="btnRow">
@@ -3099,7 +3147,7 @@ async function loadWsJobs() {
     return `<div class="card" style="margin-bottom:12px">
       <div class="cardHead"><div class="ico">${ico(r.category)}</div>
         <div style="flex:1;min-width:0"><div class="tt">${esc(b.booking_no || "")} · ${esc(r.title || "Auftrag")}</div>
-        <div class="mm">${esc(cust)}${b.profiles?.phone ? " · " + esc(b.profiles.phone) : ""} · <b>${fmtEur(b.total_price)}</b> · <span class="badge ${pay[1]}">${pay[0]}</span></div>
+        <div class="mm">${esc(cust)}${b.profiles?.phone ? " · " + esc(b.profiles.phone) : ""} · <b>${fmtEur(b.total_price)}</b> · <span class="badge ${pay[1]}">${pay[0]}</span>${b.payment_status === "payment_paid" ? ` <b>${fmtEur(b.paid_amount)}</b> online` : ""}${Number(b.refunded_amount) > 0 ? ` · erstattet ${fmtEur(b.refunded_amount)}` : ""}</div>
         <div class="mm">${esc(r.vehicle_label || "k.A.")}${b.scheduled_at ? " · " + fmtDateTime(b.scheduled_at) : " · kein Termin"}${b.no_show ? " · No-Show (" + (b.no_show === "customer" ? "Kunde" : "Werkstatt") + ")" : ""}</div>
         ${b.proposed_date && b.reschedule_by === "customer" ? `<div class="note" style="margin:8px 0 0;padding:8px 10px">Kunde schlägt vor: <b>${fmtDateTime(b.proposed_date)}</b> <a href="#" onclick="wsAcceptProposed('${b.id}');return false" style="color:var(--green);font-weight:800">Annehmen ✓</a></div>` : ""}
         </div>
@@ -3115,6 +3163,7 @@ async function loadWsJobs() {
         <button class="btn ghost sm" onclick="markNoShow('${b.id}')">Nicht erschienen</button>
         <button class="btn red sm" onclick="wsCancelJob('${b.id}')">Absagen</button>` : ""}
         <button class="btn ghost sm" onclick="go('ws/lead/${b.offers?.request_id}')">Chat</button>
+        ${b.payment_status === "payment_paid" ? `<button class="btn ghost sm" onclick="refundBooking('${b.id}')">Zahlung erstatten</button>` : ""}
       </div>
     </div>`;
   }).join("");
@@ -3490,6 +3539,10 @@ async function vWsProfile() {
           <a class="btn ghost sm" href="#/ws/stats">Statistiken</a>
         </div>
       </div>
+      <div class="card" style="margin-top:14px" id="payCard">
+        <div class="tt">Online-Zahlungen</div>
+        <p class="mm" style="margin-top:4px">Wird geladen…</p>
+      </div>
     </div>
   </div>
   <div class="err" id="pErr"></div>`;
@@ -3528,6 +3581,7 @@ async function vWsProfile() {
     if (d) { setProfLatLng(d); if (profMap) profMap.setView(d, 14); }
   };
   $("pSave").onclick = saveWsProfile.bind(null, () => priceLevel);
+  loadPayCard();
   loadTeamList();
   $("pMemberAdd").onclick = addTeamMember;
   $("pPremToggle").onclick = async () => {
@@ -3538,6 +3592,39 @@ async function vWsProfile() {
     allWorkshops = null;
     toast(nv ? "Premium aktiviert " : "Premium deaktiviert.");
     vWsProfile();
+  };
+}
+// Stripe-Verbindung des Betriebs. Kunden zahlen direkt an den Betrieb; Carfixo
+// nimmt keine Provision. Die Stripe-Gebühren trägt das Konto des Betriebs.
+async function loadPayCard() {
+  const box = $("payCard"); if (!box) return;
+  const kopf = '<div class="tt">Online-Zahlungen</div>';
+  const st = await stripeCall("status");
+  if (!$("payCard")) return;
+  if (st.error && st.configured !== false) { box.innerHTML = kopf + `<p class="mm" style="margin-top:4px">${esc(st.error)}</p>`; return; }
+  if (st.configured === false) {
+    box.innerHTML = kopf + '<p class="mm" style="margin-top:4px">Bald verfügbar: Kunden zahlen nach der Reparatur online direkt an dich – über Stripe, ohne Provision für Carfixo.</p>';
+    return;
+  }
+  if (!st.workshop) { box.innerHTML = kopf + '<p class="mm" style="margin-top:4px">Online-Zahlungen richtet der Inhaber des Betriebs ein.</p>'; return; }
+  const info = '<p class="mm" style="margin-top:6px;font-size:11.5px">Zahlungsempfänger bist du. Das Geld geht auf dein Stripe-Konto; Stripe berechnet dir dafür seine üblichen Gebühren, Carfixo nimmt keine Provision.</p>';
+  if (!st.connected) {
+    box.innerHTML = kopf + `<p class="mm" style="margin-top:4px">Lass dir Aufträge nach der Reparatur online bezahlen – per Karte, Apple Pay, Google Pay und mehr.</p>
+      ${st.verified ? '<div class="btnRow"><button class="btn sm" id="payConnect">Mit Stripe verbinden</button></div>' : '<div class="note" style="margin-top:8px">Möglich, sobald Carfixo deinen Betrieb verifiziert hat.</div>'}${info}`;
+  } else if (!st.charges_enabled) {
+    box.innerHTML = kopf + `<div class="note" style="margin-top:8px">Stripe prüft noch deine Angaben${st.details_submitted ? "" : " – die Einrichtung ist noch nicht abgeschlossen"}.</div>
+      <div class="btnRow"><button class="btn sm" id="payConnect">${st.details_submitted ? "Angaben bei Stripe prüfen" : "Einrichtung fortsetzen"}</button></div>${info}`;
+  } else {
+    box.innerHTML = kopf + `<div class="okBox" style="margin:8px 0 0">Aktiv ✓ Kunden können online an dich bezahlen.${st.payouts_enabled ? "" : " Auszahlungen sind bei Stripe noch nicht freigeschaltet."}</div>
+      <div class="btnRow"><a class="btn ghost sm" href="https://dashboard.stripe.com/" target="_blank" rel="noopener">Stripe-Dashboard öffnen</a></div>${info}`;
+  }
+  const btn = $("payConnect");
+  if (btn) btn.onclick = async () => {
+    btn.disabled = true; btn.textContent = "Stripe wird geöffnet…";
+    const r = await stripeCall("connect");
+    if (r.url) { location.href = r.url; return; }
+    btn.disabled = false; btn.textContent = "Mit Stripe verbinden";
+    toast(r.error || "Stripe ist gerade nicht erreichbar.");
   };
 }
 async function uploadWsImage(file, prefix) {
@@ -4796,5 +4883,26 @@ sb.auth.onAuthStateChange((event) => {
     // Einstieg begleiten, nicht den ersten Eindruck überdecken.
     if (me) setTimeout(renderInstallBanner, 2500);
   }
+  stripeRueckkehr();
   route();
 })();
+
+// Rückkehr von der Stripe-Bezahlseite bzw. -Einrichtung: Hinweis zeigen und
+// den Parameter aus der Adresse entfernen, damit er beim Neuladen nicht erneut kommt.
+function stripeRueckkehr() {
+  const q = new URLSearchParams(location.search);
+  const hinweis = {
+    "zahlung:ok": "Danke! Deine Zahlung wird bestätigt – das dauert meist nur Sekunden.",
+    "zahlung:abbruch": "Zahlung abgebrochen. Es wurde nichts berechnet.",
+    "stripe:zurueck": "Zurück von Stripe – der Stand deiner Online-Zahlungen wird aktualisiert.",
+    "stripe:erneut": "Der Stripe-Link war abgelaufen. Bitte starte die Einrichtung erneut.",
+  };
+  for (const k of ["zahlung", "stripe"]) {
+    const v = q.get(k);
+    if (!v) continue;
+    if (hinweis[k + ":" + v]) setTimeout(() => toast(hinweis[k + ":" + v]), 600);
+    // Stripes Bestätigung braucht einen Moment – danach die Ansicht neu laden.
+    if (k === "zahlung" && v === "ok") setTimeout(route, 4000);
+    history.replaceState(null, "", location.pathname + location.hash);
+  }
+}

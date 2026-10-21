@@ -31,13 +31,6 @@
   .lg table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px}
   .lg td,.lg th{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;color:var(--muted)}
   .lg th{color:var(--ink);font-weight:700;background:rgba(255,255,255,.03)}
-  /* Auszufüllende Stellen sichtbar markieren, damit vor dem Launch nichts übersehen wird */
-  .fill{background:rgba(255,176,32,.16);border:1px dashed rgba(255,176,32,.55);border-radius:5px;
-        padding:1px 6px;color:#FFD79A;font-weight:700;font-size:12.5px;
-        /* kein nowrap: lange Platzhalter haben die Seite sonst aufgespreizt */
-        display:inline;overflow-wrap:anywhere}
-  /* Interne Hinweise für die anwaltliche Prüfung – vor dem Launch entfernen */
-  .note{font-size:12px!important;border-left:3px solid rgba(255,176,32,.55);padding-left:10px;margin-top:8px}
   .toc{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 22px}
   .toc a{font-size:12px;font-weight:700;color:var(--blue2);border:1px solid var(--line2);
          border-radius:99px;padding:6px 13px;text-decoration:none}
@@ -57,13 +50,8 @@
 </header>
 <main class="lg">
 
-  <div class="warn">
-    <b>Entwurf – noch nicht veröffentlichungsreif.</b> Diese Texte sind ein vorbereiteter Entwurf,
-    <b>keine Rechtsberatung</b>. Alle <span class="fill">gelb markierten</span> Stellen müssen ausgefüllt
-    werden; Absätze mit gelbem Rand links sind interne Hinweise für die Prüfung und fliegen vor dem
-    Launch raus. Der gesamte Text muss vor dem Launch anwaltlich geprüft werden.
-  </div>
-  <p class="stand">Stand: <span class="fill">[Datum der Veröffentlichung]</span></p>
+  <h1 style="font-size:24px;font-weight:800">Rechtliches</h1>
+  <p class="stand">Stand: 21. Oktober 2026</p>
 
   <div class="toc">
     <a href="#rolle">Rolle von Carfixo</a>
@@ -99,12 +87,9 @@
           ersetzt keine Prüfung durch eine Fachwerkstatt.</li>
       <li>Die Nutzung von Carfixo ist derzeit für alle <b>kostenlos</b>. Carfixo erhält von
           Betrieben keine Provision und keine Zahlung für die Platzierung.</li>
+      <li>Bietet ein Betrieb Online-Zahlung an, zahlst du über den Zahlungsdienst <b>Stripe direkt
+          an den Betrieb</b>. Carfixo nimmt kein Geld entgegen.</li>
     </ul>
-    <p class="note">
-      Pflichtangaben für Online-Marktplätze (§ 312l BGB, Art. 246d EGBGB): Ranking-Kriterien,
-      Unternehmereigenschaft der Anbieter, Verteilung der Pflichten. Die Diagnose arbeitet
-      regelbasiert und heißt deshalb bewusst nicht „KI-Diagnose“ (§ 5 UWG).
-    </p>
   </div>
 
   <!-- ============================================================ -->
@@ -120,31 +105,15 @@
       50739 Köln<br>
       Deutschland
     </p>
-    <p class="note">
-      Einzelunternehmen: voller Vor- und Nachname des Inhabers, „Carfixo“ nur als
-      Geschäftsbezeichnung daneben. Entscheidung: Wohnadresse als ladungsfähige Anschrift.
-    </p>
 
     <h3>Kontakt</h3>
     <p>
       E-Mail: <a href="mailto:info@carfixo.de">info@carfixo.de</a>
     </p>
-    <p class="note">
-      Entscheidung: nur E-Mail, keine Telefonnummer. Nach EuGH (C-649/17) reicht ein schneller
-      elektronischer Kontaktweg, wenn E-Mails zügig (Richtwert 60 Minuten bis wenige Stunden)
-      beantwortet werden. Das Postfach info@carfixo.de muss daher eingerichtet sein und
-      regelmäßig gelesen werden. Anwalt fragen, ob zusätzlich ein Telefon/Fax nötig ist.
-    </p>
 
     <h3>Umsatzsteuer</h3>
     <p>
       Kleinunternehmer im Sinne von § 19 UStG; es wird keine Umsatzsteuer ausgewiesen.
-      <span class="fill">[Falls vorhanden: Wirtschafts-Identifikationsnummer gemäß § 139c AO: DE …]</span>
-    </p>
-    <p class="note">
-      Eine USt-IdNr. ist nur anzugeben, wenn eine erteilt wurde. Die Wirtschafts-IdNr. wird seit
-      2024/25 schrittweise automatisch vergeben – im ELSTER-Konto bzw. Bescheid des BZSt nachsehen.
-      Kein Registereintrag, solange kein „e. K.“ im Handelsregister eingetragen ist.
     </p>
 
     <h3>Verantwortlich für den Inhalt</h3>
@@ -157,12 +126,6 @@
     <p>
       Wir sind <b>nicht bereit und nicht verpflichtet</b>, an Streitbeilegungsverfahren vor einer
       Verbraucherschlichtungsstelle teilzunehmen.
-    </p>
-    <p class="note">
-      Kleinunternehmen mit höchstens 10 Beschäftigten sind zur Teilnahme nicht verpflichtet; der
-      Hinweis selbst ist nach § 36 VSBG nur Pflicht ab 11 Beschäftigten oder mit AGB – wir haben AGB,
-      daher bleibt er stehen. Den früheren Link zur EU-OS-Plattform braucht es nicht mehr; die
-      Plattform wurde eingestellt.
     </p>
 
     <h3>Kontaktstelle nach dem Digital Services Act</h3>
@@ -185,10 +148,6 @@
       Ein Datenschutzbeauftragter ist nicht benannt, da die gesetzlichen Voraussetzungen
       (§ 38 BDSG, Art. 37 DSGVO) nicht vorliegen.
     </p>
-    <p class="note">
-      Prüfen lassen, ob Art. 37 Abs. 1 lit. b DSGVO greift („umfangreiche regelmäßige und
-      systematische Überwachung“). Für einen Vermittlungsmarktplatz in der Startphase eher nicht.
-    </p>
 
     <h3>2. Welche Daten wir verarbeiten</h3>
     <div class="tblScroll"><table>
@@ -203,6 +162,8 @@
           <td>Vermittlung · lit. b</td></tr>
       <tr><td>Buchungen</td><td>Termin, Preis, Status, Dokumente</td>
           <td>Auftragsabwicklung · lit. b</td></tr>
+      <tr><td>Online-Zahlungen</td><td>Betrag, Zeitpunkt, Zahlungsstatus, Stripe-Referenz – <b>keine</b> Karten- oder Kontodaten</td>
+          <td>Zuordnung der Zahlung zum Auftrag · lit. b</td></tr>
       <tr><td>Nachrichten</td><td>Chat zwischen Kunde und Betrieb</td>
           <td>Kommunikation zum Auftrag · lit. b</td></tr>
       <tr><td>Bewertungen</td><td>Sterne, Text, Fotos – öffentlich sichtbar, <b>ohne Namen</b></td>
@@ -219,25 +180,38 @@
           <td>Sichere Auslieferung der Website · lit. f</td></tr>
     </table></div>
 
-    <h3>3. Empfänger und Auftragsverarbeiter</h3>
-    <p>Mit allen Auftragsverarbeitern besteht ein Vertrag nach Art. 28 DSGVO.</p>
+    <h3>3. Auftragsverarbeiter</h3>
+    <p>Diese Dienstleister verarbeiten Daten in unserem Auftrag und nach unserer Weisung. Mit jedem
+       besteht ein Vertrag nach Art. 28 DSGVO. Übermittlungen in die USA sind durch die
+       Standardvertragsklauseln der EU-Kommission abgesichert.</p>
     <div class="tblScroll"><table>
       <tr><th>Dienst</th><th>Zweck</th><th>Ort</th></tr>
       <tr><td>Supabase Inc.</td><td>Datenbank, Anmeldung, Dateispeicher, Server-Funktionen</td>
-          <td>Daten in der EU (Frankfurt, eu-central-1); Anbieter in den USA, Standardvertragsklauseln
-          <span class="fill">[DPA bestätigen]</span></td></tr>
+          <td>Daten in der EU (Frankfurt); Anbieter mit Sitz in den USA</td></tr>
       <tr><td>Vercel Inc.</td><td>Hosting und Auslieferung der Website</td>
-          <td>USA / weltweites CDN; EU-US Data Privacy Framework, Standardvertragsklauseln
-          <span class="fill">[DPA bestätigen]</span></td></tr>
+          <td>USA, Auslieferung über ein weltweites Servernetz</td></tr>
       <tr><td>Resend (Plus Five Five, Inc.)</td><td>Versand von E-Mails (Benachrichtigungen, Kündigungsbestätigung)</td>
-          <td>USA; Standardvertragsklauseln <span class="fill">[DPA bestätigen]</span></td></tr>
-      <tr><td>Google Cloud (Geocoding)</td><td>Umwandlung eingegebener Orte in Koordinaten – über unseren Server, ohne deine IP-Adresse</td>
-          <td>Google Ireland Ltd. / Google LLC, EU-US Data Privacy Framework</td></tr>
-      <tr><td>Betriebe</td><td>Erhalten die zur Bearbeitung einer Anfrage nötigen Angaben</td>
-          <td>Eigene Verantwortliche</td></tr>
+          <td>USA</td></tr>
     </table></div>
 
-    <h3>4. Beim Aufruf eingebundene Drittanbieter</h3>
+    <h3>4. Eigenständig Verantwortliche</h3>
+    <p>Diese Stellen erhalten Daten, verarbeiten sie aber in eigener Verantwortung:</p>
+    <div class="tblScroll"><table>
+      <tr><th>Empfänger</th><th>Was und wofür</th><th>Hinweise</th></tr>
+      <tr><td>Betriebe</td><td>Die zur Bearbeitung deiner Anfrage oder Buchung nötigen Angaben</td>
+          <td>Der Betrieb ist dein Vertragspartner für die Reparatur</td></tr>
+      <tr><td>Stripe Payments Europe, Ltd. (Dublin, Irland)</td>
+          <td>Online-Zahlungen: Zahlungsdaten, die du auf der Bezahlseite von Stripe eingibst;
+              bei Betrieben die Angaben zur Einrichtung ihres Stripe-Kontos</td>
+          <td>Nur wenn du online bezahlst bzw. als Betrieb Stripe verbindest.
+              <a href="https://stripe.com/de/privacy" target="_blank" rel="noopener">Datenschutzerklärung von Stripe</a></td></tr>
+      <tr><td>Google Ireland Limited</td>
+          <td>Umwandlung eingegebener Orte in Koordinaten (über unseren Server, ohne deine IP-Adresse)
+              und Kartendarstellung (siehe Nr. 5)</td>
+          <td>Google Maps Platform; Übermittlung an Google LLC (USA) möglich, EU-US Data Privacy Framework</td></tr>
+    </table></div>
+
+    <h3>5. Beim Aufruf eingebundene Drittanbieter</h3>
     <p>Bei diesen Diensten baut dein Browser selbst eine Verbindung auf; dabei wird technisch bedingt
        deine <b>IP-Adresse</b> übertragen:</p>
     <ul>
@@ -257,13 +231,15 @@
           läuft lokal. Rechtsgrundlage: lit. f (Schutz deines Kontos).</li>
       <li><b>Push-Dienste</b> deines Browsers (z. B. Google, Apple, Mozilla) – nur wenn du
           Push-Benachrichtigungen erlaubst. Der Inhalt ist verschlüsselt.</li>
+      <li><b>Stripe</b> – Wenn du online bezahlst, leiten wir dich auf die Bezahlseite von Stripe
+          weiter. Deine Zahlungsdaten gibst du dort direkt bei Stripe ein; Carfixo sieht sie nicht.</li>
     </ul>
     <p>
       <b>Fahrzeugschein-Scan:</b> Die Texterkennung läuft vollständig im Browser. Das Foto wird nicht
       an Carfixo oder Dritte übertragen – außer du speicherst es bewusst als Dokument.
     </p>
 
-    <h3>5. Sicherheitsmeldungen</h3>
+    <h3>6. Sicherheitsmeldungen</h3>
     <p>
       Versucht eine Seite, Inhalte aus nicht vorgesehenen Quellen zu laden, meldet der Browser das an
       unseren Server (Content-Security-Policy). Gespeichert werden nur die betroffene Seite, die
@@ -271,7 +247,7 @@
       nach 30 Tagen. Rechtsgrundlage: lit. f (Sicherheit der Website).
     </p>
 
-    <h3>6. Speicherdauer</h3>
+    <h3>7. Speicherdauer</h3>
     <ul>
       <li>Kontodaten, Fahrzeuge, Anfragen und Chats: bis zur Löschung des Kontos.</li>
       <li>Bewertungen: bis zur Löschung des Kontos oder der Bewertung.</li>
@@ -279,11 +255,12 @@
       <li>Meldungen: sechs Monate nach Abschluss.</li>
       <li>Sicherheitsmeldungen: 30 Tage.</li>
       <li>Server-Protokolle beim Hosting: werden von den Anbietern nach kurzer Zeit automatisch gelöscht (derzeit Vercel nach einer Stunde, Supabase nach einem Tag).</li>
-      <li>Unterlagen mit steuerlicher Relevanz (z. B. Rechnungen von Carfixo, sobald es welche gibt):
-          gesetzliche Fristen nach § 147 AO, § 257 HGB (bis zu 8 bzw. 10 Jahre).</li>
+      <li>Angaben zu Online-Zahlungen: solange die Buchung besteht. Stripe speichert Zahlungsdaten
+          nach eigenen gesetzlichen Pflichten.</li>
+      <li>Unterlagen mit steuerlicher Relevanz: gesetzliche Fristen nach § 147 AO (bis zu 10 Jahre).</li>
     </ul>
 
-    <h3>7. Deine Rechte</h3>
+    <h3>8. Deine Rechte</h3>
     <ul>
       <li>Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17)</li>
       <li>Einschränkung (Art. 18), Datenübertragbarkeit (Art. 20)</li>
@@ -347,8 +324,21 @@
       <li>Mit der Annahme eines Angebots kommt der Vertrag mit dem Betrieb zustande; die übrigen
           Angebote zur selben Anfrage werden abgelehnt.</li>
       <li><b>Zusatzarbeiten</b> benötigen deine vorherige Freigabe.</li>
-      <li>Bezahlt wird direkt beim Betrieb. Carfixo wickelt derzeit keine Zahlungen ab; in der App
-          angezeigte „Testzahlungen“ sind keine echten Zahlungen.</li>
+      <li>Bei der Buchung wird nichts berechnet. Bezahlt wird nach der Reparatur.</li>
+    </ul>
+
+    <h3>§ 5a Bezahlung</h3>
+    <ul>
+      <li>Du bezahlst den Betrieb, nicht Carfixo – vor Ort nach seinen Bedingungen oder, wenn der
+          Betrieb das anbietet, online in Carfixo.</li>
+      <li>Online bezahlen kannst du, sobald der Betrieb den Auftrag als abholbereit meldet. Der
+          Betrag ergibt sich aus dem angenommenen Angebot und den von dir freigegebenen
+          Zusatzarbeiten.</li>
+      <li>Die Online-Zahlung wickelt Stripe Payments Europe, Ltd. ab. Zahlungsempfänger ist der
+          Betrieb. Es gelten zusätzlich die Bedingungen von Stripe für die gewählte Zahlungsart.</li>
+      <li>Carfixo erhebt für die Online-Zahlung keine Gebühr.</li>
+      <li>Erstattungen (z. B. bei Stornierung) veranlasst der Betrieb nach seinen Bedingungen und
+          den gesetzlichen Vorschriften. Die Rechnung stellt der Betrieb.</li>
     </ul>
 
     <h3>§ 6 Stornierung und Nichterscheinen</h3>
@@ -412,10 +402,6 @@
           Vertragspflichten (Pflichten, deren Erfüllung die Nutzung erst ermöglicht und auf die du
           vertrauen darfst), begrenzt auf den vorhersehbaren, typischen Schaden.</li>
     </ul>
-    <p class="note">
-      Bei unentgeltlichen Diensten ist eine weitergehende Beschränkung auf Vorsatz und grobe
-      Fahrlässigkeit denkbar (Rechtsgedanke §§ 521, 599 BGB). Anwaltlich entscheiden lassen.
-    </p>
 
     <h3>§ 13 Änderungen dieser Bedingungen</h3>
     <p>
@@ -435,12 +421,6 @@
   <!-- ============================================================ -->
   <div class="card" style="margin-bottom:16px" id="agb-betriebe">
     <h2>Bedingungen für Betriebe</h2>
-    <p class="note" style="margin-top:8px">
-      Diese Bedingungen richten sich an Unternehmer und müssen die Vorgaben der
-      P2B-Verordnung (EU) 2019/1150 erfüllen: klare Sprache, Gründe für Einschränkung und
-      Sperrung, 15 Tage Ankündigung bei Änderungen, 30 Tage Frist bei Kündigung durch Carfixo,
-      Ranking-Parameter, Datenzugang, Beschwerdeweg.
-    </p>
 
     <h3>§ 1 Geltungsbereich</h3>
     <p>
@@ -455,6 +435,7 @@
       <li>Empfang von Direkt- und offenen Anfragen, Abgabe von Angeboten, Terminplanung, Chat</li>
       <li>Teile-Marktplatz: Einstellen von Teilen zum Verkauf oder zur Abholung</li>
       <li>Auswertungen zu Anfragen, Angeboten und Aufträgen</li>
+      <li>optional: Online-Zahlung durch Kunden über Stripe (§ 5a)</li>
     </ul>
 
     <h3>§ 3 Registrierung und Prüfung</h3>
@@ -485,6 +466,20 @@
       <li>Kein Abwerben über die Plattform hinaus mit Daten, die nur zur Auftragsabwicklung
           übermittelt wurden. Kundendaten nur für den jeweiligen Auftrag nutzen (eigene
           datenschutzrechtliche Verantwortung).</li>
+    </ul>
+
+    <h3>§ 5a Online-Zahlungen über Stripe</h3>
+    <ul>
+      <li>Verifizierte Betriebe können in ihrem Profil ein Stripe-Konto verbinden. Dafür schließt
+          der Betrieb direkt mit Stripe einen Vertrag (Stripe Services Agreement einschließlich des
+          Stripe Connected Account Agreement). Carfixo ist nicht Partei dieses Vertrags.</li>
+      <li>Der Betrieb ist Zahlungsempfänger. Stripe-Gebühren, Erstattungen, Rückbuchungen und
+          Streitfälle laufen über sein Stripe-Konto; Carfixo erhebt keine Provision.</li>
+      <li>Der Betrieb erlaubt Carfixo, über die Stripe-Schnittstelle in seinem Namen
+          Bezahlseiten für seine Aufträge anzulegen, Erstattungen auf seine Anweisung auszulösen und
+          den Stand seines Kontos sowie der Zahlungen abzurufen.</li>
+      <li>Der Betrieb stellt die Rechnung, weist die Umsatzsteuer aus und erstattet berechtigte
+          Beträge. Die Verbindung kann er jederzeit in Stripe trennen.</li>
     </ul>
 
     <h3>§ 6 Einschränkung, Aussetzung, Kündigung durch Carfixo</h3>
@@ -519,16 +514,16 @@
       Carfixo nutzt Daten zur Bereitstellung, Sicherheit und Verbesserung der Plattform und gibt
       sie nicht an Dritte zu Werbezwecken weiter (Art. 9 P2B-VO).
     </p>
+    <p>
+      Carfixo bietet selbst keine Werkstattleistungen oder Teile an und behandelt alle Betriebe nach
+      denselben Regeln (Art. 7 P2B-VO). Betriebe dürfen ihre Leistungen auch anderswo und zu anderen
+      Bedingungen anbieten (Art. 10 P2B-VO).
+    </p>
 
     <h3>§ 9 Beschwerden und Mediation</h3>
     <p>
       Beschwerden zu Entscheidungen oder technischen Problemen nimmt Carfixo per E-Mail an
       <a href="mailto:info@carfixo.de">info@carfixo.de</a> entgegen und beantwortet sie in angemessener Frist.
-    </p>
-    <p class="note">
-      Kleine Unternehmen (unter 50 Beschäftigte und höchstens 10 Mio. € Umsatz) sind vom
-      förmlichen internen Beschwerdesystem (Art. 11) und der Mediatorenbenennung (Art. 12) der
-      P2B-VO ausgenommen. Der E-Mail-Weg genügt daher vorerst.
     </p>
 
     <h3>§ 10 Laufzeit, Kündigung durch den Betrieb</h3>
@@ -558,10 +553,6 @@
       Es gilt deutsches Recht. Gerichtsstand ist, soweit gesetzlich zulässig,
       Köln.
     </p>
-    <p class="note">
-      Eine Gerichtsstandsvereinbarung ist nur zwischen Kaufleuten wirksam (§ 38 ZPO). Als nicht
-      eingetragener Kleinunternehmer ist Carfixo eventuell kein Kaufmann – prüfen lassen.
-    </p>
   </div>
 
   <!-- ============================================================ -->
@@ -582,10 +573,6 @@
       die Sortierung jederzeit auf <b>Entfernung</b> oder <b>Preisniveau</b> umstellen; dann gilt
       nur dieses Kriterium. Im Teile-Marktplatz kannst du nach Preis und Entfernung sortieren.
     </p>
-    <p class="note">
-      § 5b Abs. 2 UWG, Art. 246d § 1 Nr. 1 EGBGB, Art. 5 P2B-VO. Muss bei jeder Änderung der
-      Sortierlogik (<code>assets/app.js</code>, Suche „Empfohlen“) angepasst werden.
-    </p>
   </div>
 
   <!-- ============================================================ -->
@@ -603,7 +590,6 @@
           sie gemeldet und als rechtswidrig oder als Verstoß gegen die Nutzungsbedingungen erkannt
           werden (z. B. Beleidigung, fehlender Bezug zum Auftrag).</li>
     </ul>
-    <p class="note">§ 5b Abs. 3 UWG.</p>
   </div>
 
   <!-- ============================================================ -->
@@ -624,10 +610,6 @@
       <li>Wer wiederholt offensichtlich rechtswidrige Inhalte einstellt oder missbräuchlich meldet,
           kann gesperrt werden (Art. 23 DSA).</li>
     </ul>
-    <p class="note">
-      Art. 16 DSA. Kleinst- und Kleinunternehmen sind von Art. 20–28 DSA weitgehend ausgenommen
-      (Art. 19), Art. 16 und 17 gelten trotzdem.
-    </p>
   </div>
 
   <!-- ============================================================ -->
@@ -638,21 +620,13 @@
       Die Leistungen von Carfixo sind derzeit kostenlos. Ein Widerrufsrecht entfällt deshalb
       praktisch; du kannst jederzeit kündigen und dein Konto löschen.
     </p>
-    <p class="note">
-      Sobald kostenpflichtige Leistungen eingeführt werden (Premium mit Abo, Zahlungsabwicklung):
-      Muster-Widerrufsbelehrung nach Anlage 1 zu Art. 246a § 1 Abs. 2 EGBGB und Muster-
-      Widerrufsformular nach Anlage 2 hier einfügen, dazu den Ablauf „Ausführung vor Fristende
-      auf ausdrücklichen Wunsch“. Ab 19.06.2026 muss zusätzlich eine elektronische
-      Widerrufsfunktion („Vertrag widerrufen“) ähnlich dem Kündigungsbutton bereitstehen
-      (Richtlinie (EU) 2023/2673; deutsche Umsetzung im BGB prüfen lassen) – vor Einführung
-      kostenpflichtiger Leistungen bauen.
-    </p>
     <h3>Gegenüber den Betrieben</h3>
     <p>
       Schließt du über Carfixo einen Vertrag mit einem Betrieb, kann dir ihm gegenüber ein
-      gesetzliches Widerrufsrecht zustehen (z. B. 14 Tage bei Fernabsatz). Belehren muss dich darüber
-      der Betrieb. Soll die Reparatur vor Ablauf der Frist beginnen, braucht der Betrieb dein
-      ausdrückliches Verlangen.
+      gesetzliches Widerrufsrecht zustehen (in der Regel 14 Tage bei Verträgen, die online
+      geschlossen werden). Belehren muss dich darüber der Betrieb. Den Widerruf erklärst du dem
+      Betrieb, zum Beispiel über den Chat zum Auftrag oder per E-Mail. Soll die Reparatur vor Ablauf
+      der Frist beginnen, braucht der Betrieb dein ausdrückliches Verlangen.
     </p>
   </div>
 
@@ -672,10 +646,7 @@
     <p>
       Das ist technisch erforderlich und braucht keine Einwilligung (§ 25 Abs. 2 Nr. 2 TDDDG).
       Karten und Push-Benachrichtigungen werden nur auf deine aktive Handlung hin geladen bzw.
-      angefragt.
-    </p>
-    <p class="note">
-      Sobald Analyse- oder Marketingdienste hinzukommen, ist ein Einwilligungsbanner Pflicht.
+      angefragt. Auf der Bezahlseite von Stripe gelten die Cookie-Regeln von Stripe.
     </p>
   </div>
 
