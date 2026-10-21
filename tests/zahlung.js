@@ -82,7 +82,7 @@ const check = (n, ok, i = "") => { console.log(`${ok ? "OK  " : "FAIL"}  ${n}${i
   check("Verifizierter Betrieb: „Mit Stripe verbinden“", k.knopf && /Mit Stripe verbinden/.test(k.text));
   check("Hinweis: keine Provision für Carfixo", /keine Provision/.test(k.text));
   k = await karte({ configured: true, workshop: true, connected: true, verified: true, charges_enabled: false, details_submitted: false });
-  check("Einrichtung unvollständig: „Einrichtung fortsetzen“", k.knopf && /fortsetzen/.test(k.text));
+  check("Einrichtung unvollständig: „Angaben ergänzen“", k.knopf && /ergänzen/.test(k.text));
   k = await karte({ configured: true, workshop: true, connected: true, verified: true, charges_enabled: true, payouts_enabled: true });
   check("Aktiv: Bestätigung, kein Verbinden-Knopf", /Aktiv/.test(k.text) && !k.knopf);
   k = await karte({ configured: true, workshop: false });

@@ -78,7 +78,14 @@ async function abgleichen(admin: Db, stripe: Stripe, workshopId: string, account
   };
   await admin.from("workshop_payment_accounts").update(felder).eq("workshop_id", workshopId);
   await admin.from("workshops").update({ online_payment: felder.charges_enabled }).eq("id", workshopId);
-  return felder;
+  // Warum Stripe noch nicht freigibt: nur Feldnamen, keine Inhalte.
+  const r = a.requirements;
+  return {
+    ...felder,
+    disabled_reason: r?.disabled_reason || null,
+    fehlt: [...(r?.past_due || []), ...(r?.currently_due || [])].filter((x, i, l) => l.indexOf(x) === i),
+    in_pruefung: r?.pending_verification || [],
+  };
 }
 
 async function status(admin: Db, stripe: Stripe, userId: string) {

@@ -3612,8 +3612,12 @@ async function loadPayCard() {
     box.innerHTML = kopf + `<p class="mm" style="margin-top:4px">Lass dir Aufträge nach der Reparatur online bezahlen – per Karte, Apple Pay, Google Pay und mehr.</p>
       ${st.verified ? '<div class="btnRow"><button class="btn sm" id="payConnect">Mit Stripe verbinden</button></div>' : '<div class="note" style="margin-top:8px">Möglich, sobald Carfixo deinen Betrieb verifiziert hat.</div>'}${info}`;
   } else if (!st.charges_enabled) {
-    box.innerHTML = kopf + `<div class="note" style="margin-top:8px">Stripe prüft noch deine Angaben${st.details_submitted ? "" : " – die Einrichtung ist noch nicht abgeschlossen"}.</div>
-      <div class="btnRow"><button class="btn sm" id="payConnect">${st.details_submitted ? "Angaben bei Stripe prüfen" : "Einrichtung fortsetzen"}</button></div>${info}`;
+    // Fehlen noch Angaben, muss der Betrieb zurück zu Stripe – sonst wartet er nur auf die Prüfung.
+    const fehlt = (st.fehlt || []).length > 0 || !st.details_submitted;
+    box.innerHTML = kopf + `<div class="note" style="margin-top:8px">${fehlt
+        ? "Stripe braucht noch Angaben von dir, bevor Kunden online zahlen können."
+        : "Stripe prüft deine Angaben. Das dauert meist nur kurz – du bekommst Bescheid, sobald es freigeschaltet ist."}</div>
+      <div class="btnRow"><button class="btn sm" id="payConnect">${fehlt ? "Angaben bei Stripe ergänzen" : "Angaben bei Stripe ansehen"}</button></div>${info}`;
   } else {
     box.innerHTML = kopf + `<div class="okBox" style="margin:8px 0 0">Aktiv ✓ Kunden können online an dich bezahlen.${st.payouts_enabled ? "" : " Auszahlungen sind bei Stripe noch nicht freigeschaltet."}</div>
       <div class="btnRow"><a class="btn ghost sm" href="https://dashboard.stripe.com/" target="_blank" rel="noopener">Stripe-Dashboard öffnen</a></div>${info}`;
