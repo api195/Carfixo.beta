@@ -24,6 +24,31 @@ function openModal(html) {
   $("modalHost").innerHTML = `<div class="modal" onclick="if(event.target===this)closeModal()"><div class="modalBox">${html}</div></div>`;
 }
 function closeModal() { $("modalHost").innerHTML = ""; }
+// Eigener Bestätigungsdialog statt window.confirm: passt zum Design, sieht in der
+// installierten App nicht nach Systemfenster aus und liegt über einem offenen Modal.
+function frage(text, { titel = "Bist du sicher?", ja = "Bestätigen", nein = "Abbrechen", gefahr = false } = {}) {
+  return new Promise((resolve) => {
+    const dlg = document.createElement("div");
+    dlg.className = "modal dlg";
+    dlg.setAttribute("role", "alertdialog");
+    dlg.setAttribute("aria-modal", "true");
+    dlg.innerHTML = `<div class="modalBox dlgBox">
+      <h2>${esc(titel)}</h2>
+      <p class="mm">${esc(text)}</p>
+      <div class="btnRow"><button class="btn ${gefahr ? "red" : "green"}" data-a="1">${esc(ja)}</button>
+      <button class="btn ghost" data-a="0">${esc(nein)}</button></div></div>`;
+    const taste = (e) => { if (e.key === "Escape") fertig(false); };
+    const fertig = (v) => { dlg.remove(); document.removeEventListener("keydown", taste); resolve(v); };
+    dlg.onclick = (e) => {
+      if (e.target === dlg) return fertig(false);
+      const b = e.target.closest("[data-a]");
+      if (b) fertig(b.dataset.a === "1");
+    };
+    document.addEventListener("keydown", taste);
+    document.body.appendChild(dlg);
+    dlg.querySelector('[data-a="1"]').focus();
+  });
+}
 function cleanRT() { rtChannels.forEach(c => { try { sb.removeChannel(c); } catch (e) {} }); rtChannels = []; }
 function initials(s) { return (s || "?").split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join(""); }
 function opt(ph, list, sel) {
@@ -1498,7 +1523,7 @@ async function vRequestDetail(id) {
     </div>
   </div>`;
   if ($("rCancel")) $("rCancel").onclick = async () => {
-    if (!confirm("Anfrage wirklich zurückziehen?")) return;
+    if (!(await frage("Die Werkstätten sehen deine Anfrage danach nicht mehr.", { titel: "Anfrage zurückziehen?", ja: "Zurückziehen", gefahr: true }))) return;
     const { error } = await sb.from("requests").update({ status: "cancelled" }).eq("id", r.id);
     if (error) toast(error.message); else { toast("Zurückgezogen."); go("requests"); }
   };
@@ -1611,7 +1636,7 @@ async function payOnline(bkId, btn) {
   toast(r.error || "Bezahlen ist gerade nicht möglich.");
 }
 async function refundBooking(bkId) {
-  if (!confirm("Den online bezahlten Betrag vollständig an den Kunden zurückzahlen? Das lässt sich nicht rückgängig machen.")) return;
+  if (!(await frage("Der online bezahlte Betrag geht vollständig an den Kunden zurück. Das lässt sich nicht rückgängig machen.", { titel: "Zahlung erstatten?", ja: "Erstatten", gefahr: true }))) return;
   const r = await stripeCall("refund", { booking_id: bkId });
   if (r.error) return toast(r.error);
   toast("Erstattung ausgelöst – der Status aktualisiert sich, sobald Stripe sie bestätigt.");
@@ -1691,7 +1716,7 @@ async function loadBookingBox(r) {
     ${active && !canComplete ? `<p class="mm" style="margin-top:12px;font-size:12px">Abschließen und bewerten kannst du, sobald die Werkstatt den Auftrag als fertig meldet oder der Termin vorbei ist.</p>` : ""}
     ${active ? `
     <div class="btnRow">
-      ${canComplete ? `<button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}')">Auftrag abschließen</button>` : ""}
+      ${canComplete ? `<button class="btn green sm" onclick="completeBooking('${bk.id}','${r.id}','${w.id}',${jsArg(w.name || "")})">Auftrag abschließen</button>` : ""}
       <button class="btn ghost sm" onclick="openReschedule('${bk.id}','${r.id}')">Termin verschieben</button>
       <button class="btn red sm" onclick="openCancel('${bk.id}','${r.id}',${bk.payment_status === "payment_paid"})">Stornieren</button>
     </div>` : ""}
@@ -1718,7 +1743,7 @@ function approvalCardHtml(a, reqId) {
   </div>`;
 }
 async function decideApproval(id, status, reqId) {
-  if (status === "declined" && !confirm("Zusatzarbeit wirklich ablehnen?")) return;
+  if (status === "declined" && !(await frage("Die Werkstatt führt die Zusatzarbeit dann nicht aus.", { titel: "Zusatzarbeit ablehnen?", ja: "Ablehnen", gefahr: true }))) return;
   const { error } = await sb.from("approvals").update({ status, decided_at: new Date().toISOString() }).eq("id", id);
   if (error) return toast(error.message);
   await sb.from("messages").insert({ request_id: reqId, sender_id: me.id, kind: "system", body: status === "approved" ? "Zusatzarbeit freigegeben" : "Zusatzarbeit abgelehnt" });
@@ -1772,11 +1797,16 @@ function openCancel(bkId, reqId, bezahlt) {
     vRequestDetail(reqId);
   };
 }
-async function completeBooking(bkId, reqId) {
-  if (!confirm("Auftrag wirklich als abgeschlossen bestätigen?")) return;
+async function completeBooking(bkId, reqId, wsId, wsName) {
+  if (!(await frage("Bestätige, dass die Arbeit erledigt ist und du dein Fahrzeug abgeholt hast. Danach kannst du die Werkstatt bewerten.", { titel: "Auftrag abschließen?", ja: "Ja, abschließen" }))) return;
   const { error } = await sb.from("bookings").update({ status: "completed" }).eq("id", bkId);
   if (error) toast(error.message);
-  else { toast("Abgeschlossen ✓ – du kannst jetzt bewerten."); vRequestDetail(reqId); }
+  else {
+    toast("Auftrag abgeschlossen ✓");
+    await vRequestDetail(reqId);
+    // Direkt danach fragen, solange die Erfahrung frisch ist – überspringen geht jederzeit.
+    if (wsId) openReviewModal(bkId, wsId, wsName, reqId);
+  }
 }
 
 // ---------- Bewertung ----------
@@ -1878,7 +1908,7 @@ async function loadVehicles() {
     </div>`).join("");
 }
 async function deleteVehicle(id) {
-  if (!confirm("Fahrzeug wirklich löschen?")) return;
+  if (!(await frage("Auch die Fahrzeugakte mit Kilometerständen wird gelöscht.", { titel: "Fahrzeug löschen?", ja: "Löschen", gefahr: true }))) return;
   const { error } = await sb.from("vehicles").delete().eq("id", id);
   if (error) toast(error.message); else { toast("Gelöscht."); loadVehicles(); }
 }
@@ -2382,7 +2412,7 @@ async function loadMyPartOrders() {
     }).join("");
 }
 async function cancelPartOrder(id) {
-  if (!confirm("Kaufanfrage wirklich stornieren?")) return;
+  if (!(await frage("Der Betrieb wird über die Stornierung informiert.", { titel: "Kaufanfrage stornieren?", ja: "Stornieren", gefahr: true }))) return;
   const { error } = await sb.from("part_orders").update({ status: "cancelled" }).eq("id", id);
   if (error) return toast(error.message);
   toast("Storniert."); vPartsMarket();
@@ -2547,7 +2577,7 @@ async function togglePart(id, active) {
   loadWsParts();
 }
 async function deletePart(id) {
-  if (!confirm("Teil wirklich löschen?")) return;
+  if (!(await frage("Das Teil verschwindet aus dem Marktplatz.", { titel: "Teil löschen?", ja: "Löschen", gefahr: true }))) return;
   const { error } = await sb.from("parts").delete().eq("id", id);
   if (error) return toast(error.message);
   allParts = null;
@@ -3200,7 +3230,7 @@ async function wsAcceptProposed(id) {
   loadWsJobs();
 }
 async function markNoShow(id) {
-  if (!confirm("Kunden als nicht erschienen markieren? Der Fall wird im Auftrag gespeichert und der Kunde informiert.")) return;
+  if (!(await frage("Der Fall wird im Auftrag gespeichert und der Kunde informiert.", { titel: "Kunde nicht erschienen?", ja: "Als nicht erschienen markieren", gefahr: true }))) return;
   const { error } = await sb.from("bookings").update({ no_show: "customer" }).eq("id", id);
   if (error) return toast(error.message);
   toast("No-Show vermerkt.");
@@ -3392,6 +3422,36 @@ function getMonday(d) {
 // WERKSTATT: Profil-Editor
 // ============================================================
 let profCats = [], profServices = [], profBrands = [], profLatLng = null, profMap = null, profMarker = null;
+// Betriebsprofil in Reitern statt einer langen Seite. Alle Felder bleiben im DOM,
+// damit "Speichern" unabhängig vom offenen Reiter alles mitnimmt.
+let profTab = "allg";
+const PROF_TABS = [["allg", "Allgemein"], ["leist", "Leistungen"], ["zeiten", "Zeiten & Ausstattung"], ["bilder", "Bilder"], ["zahl", "Zahlungen & Premium"], ["team", "Team"]];
+// Was fehlt, damit Kunden den Betrieb finden und ihm vertrauen – Punkt am Reiter.
+function profLuecken(w) {
+  return {
+    allg: !w.phone || !w.street || !w.district,
+    leist: !(w.categories || []).length,
+    zeiten: !Object.values(w.opening_hours || {}).some(Boolean),
+    bilder: !w.logo_url && !w.cover_url,
+    zahl: !w.online_payment,
+  };
+}
+function profTabsHtml(w) {
+  const l = profLuecken(w);
+  const offen = ["allg", "leist", "zeiten", "bilder"].filter(k => l[k]).length;
+  const pct = Math.round((4 - offen) / 4 * 100);
+  return `<div class="profFort"><div class="profFortBar"><span style="width:${pct}%"></span></div>
+    <span class="mm">Profil zu ${pct} % vollständig${offen ? " · der Punkt zeigt, wo noch etwas fehlt" : " ✓"}</span></div>
+  <div class="pTabs" role="tablist">${PROF_TABS.map(([k, t]) =>
+    `<button role="tab" data-ptab="${k}" class="${k === profTab ? "on" : ""}">${t}${l[k] ? '<i class="pDot" aria-label="unvollständig"></i>' : ""}</button>`).join("")}</div>`;
+}
+function zeigeProfTab(tab) {
+  profTab = tab;
+  document.querySelectorAll("[data-ptab]").forEach(b => { b.classList.toggle("on", b.dataset.ptab === tab); b.setAttribute("aria-selected", b.dataset.ptab === tab); });
+  document.querySelectorAll("#profPanes .pCard").forEach(c => { c.hidden = c.dataset.tab !== tab; });
+  // Team und Zahlungen speichern sich selbst – dort keine Speichern-Leiste.
+  const bar = $("pSaveBar"); if (bar) bar.hidden = tab === "team" || tab === "zahl";
+}
 async function vWsProfile() {
   if (needWorkshop()) return;
   const w = myWorkshop;
@@ -3406,11 +3466,10 @@ async function vWsProfile() {
   <div class="pageHead">
     <div><h1>Betriebsprofil</h1>
     <div class="sub">Je vollständiger dein Profil, desto besser wirst du gefunden. ${w.is_verified ? '<span class="badge b-green">✓ verifiziert</span>' : '<span class="badge b-gold">Verifizierung ausstehend</span>'}</div></div>
-    <div class="right"><button class="btn sm" id="pSave">Alles speichern</button></div>
   </div>
-  <div class="grid2" style="align-items:start">
-    <div>
-      <div class="card" style="margin-bottom:14px">
+  ${profTabsHtml(w)}
+  <div id="profPanes">
+      <div class="card pCard" data-tab="allg">
         <div class="tt">Stammdaten</div>
         <div class="label">Name des Betriebs</div>
         <input id="pName" value="${esc(w.name)}">
@@ -3437,7 +3496,7 @@ async function vWsProfile() {
           <option value="both" ${w.service_mode === "both" ? "selected" : ""}>Werkstatt + mobil</option>
         </select>
       </div>
-      <div class="card" style="margin-bottom:14px">
+      <div class="card pCard" data-tab="allg">
         <div class="tt">Adresse &amp; Standort</div>
         <div class="label">Straße &amp; Nr.</div>
         <input id="pStreet" value="${esc(w.street || "")}">
@@ -3457,7 +3516,7 @@ async function vWsProfile() {
         </div>
         <p class="mm" id="pLatLng" style="margin-top:6px">${profLatLng ? "Standort gesetzt" : "Noch kein Standort – auf die Karte klicken oder Stadtteil wählen."}</p>
       </div>
-      <div class="card">
+      <div class="card pCard" data-tab="zeiten">
         <div class="tt">Öffnungszeiten</div>
         ${days.map(([k, label]) => `
           <div class="split" style="margin-top:8px;align-items:center">
@@ -3465,27 +3524,25 @@ async function vWsProfile() {
             <input data-oh="${k}" value="${esc(oh[k] || "")}" placeholder="z.B. 08:00–18:00 (leer = geschlossen)">
           </div>`).join("")}
       </div>
-    </div>
-    <div>
-      <div class="card" style="margin-bottom:14px">
+      <div class="card pCard" data-tab="leist">
         <div class="tt">Kategorien</div>
         <p class="mm" style="margin-top:4px">Du siehst nur Ausschreibungen aus deinen Kategorien.</p>
         <div class="catGrid" id="pCats" style="margin-top:10px">${Object.entries(CATS).map(([k, v]) => `
           <div class="catCard ${profCats.includes(k) ? "on" : ""}" data-k="${k}"><span class="ce">${ico(k)}</span><span class="cn">${v.name}</span></div>`).join("")}</div>
       </div>
-      <div class="card" style="margin-bottom:14px">
+      <div class="card pCard" data-tab="leist">
         <div class="tt">Leistungen im Detail</div>
         <p class="mm" style="margin-top:4px">Danach filtern Kunden in der Suche.</p>
         <input id="pSvcFilter" placeholder="Leistung suchen – z.B. Chiptuning, Felgenaufbereitung…" style="margin-top:8px">
         <div id="pServices" style="margin-top:6px"></div>
       </div>
-      <div class="card">
+      <div class="card pCard" data-tab="leist">
         <div class="tt">Fahrzeugmarken</div>
         <p class="mm" style="margin-top:4px">Leer lassen = alle Marken.</p>
         <div class="chips" id="pBrands" style="margin-top:10px">${Object.keys(BRANDS).map(b => `
           <span class="chip ${profBrands.includes(b) ? "on" : ""}" data-b="${esc(b)}">${esc(b)}</span>`).join("")}</div>
       </div>
-      <div class="card" style="margin-top:14px">
+      <div class="card pCard" data-tab="bilder">
         <div class="tt">Bilder</div>
         <div class="label">Logo</div>
         <div class="split" style="align-items:center">
@@ -3501,7 +3558,7 @@ async function vWsProfile() {
           <span style="position:relative"><img src="${esc(u)}" loading="lazy" alt="">
           <button onclick="removeGalleryImg(${i})" aria-label="Bild entfernen" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--red);color:#fff;font-size:11px;cursor:pointer">✕</button></span>`).join("")}</div>
       </div>
-      <div class="card" style="margin-top:14px">
+      <div class="card pCard" data-tab="zeiten">
         <div class="tt">Verfügbarkeit & Kapazität</div>
         <div class="label">Nächster freier Termin</div>
         <input type="date" id="pNextFree" value="${esc(w.next_free_date || "")}">
@@ -3519,7 +3576,7 @@ async function vWsProfile() {
         <div class="chips" id="pPay">${["Bar","EC-Karte","Kreditkarte","Überweisung","PayPal","Rechnung"].map(p => `
           <span class="chip ${(w.payment_methods || []).includes(p) ? "on" : ""}" data-p="${p}">${p}</span>`).join("")}</div>
       </div>
-      <div class="card" style="margin-top:14px">
+      <div class="card pCard" data-tab="team">
         <div class="tt">Team-Zugänge</div>
         <p class="mm" style="margin-top:4px">Mitarbeiter mit eigenem Carfixo-Konto erhalten Zugriff auf deinen Betrieb (Rollen-Feinsteuerung folgt).</p>
         <div id="pTeamList" style="margin-top:8px"><div class="sk" style="height:30px"></div></div>
@@ -3531,7 +3588,7 @@ async function vWsProfile() {
           <button class="btn sm" id="pMemberAdd" style="flex:0 0 auto">＋</button>
         </div>
       </div>
-      <div class="card" style="margin-top:14px;border-color:rgba(255,176,32,.35)">
+      <div class="card pCard" data-tab="zahl">
         <div class="tt">Premium für Betriebe</div>
         <p class="mm" style="margin-top:4px">${w.is_premium ? "Aktiv: bevorzugte Platzierung (als Gesponsert markiert), mehr Galerie-Bilder, detaillierte Statistiken." : "Bevorzugte Platzierung, mehr Bilder, detaillierte Statistiken – aktuell kostenlos."}</p>
         <div class="btnRow">
@@ -3539,13 +3596,15 @@ async function vWsProfile() {
           <a class="btn ghost sm" href="#/ws/stats">Statistiken</a>
         </div>
       </div>
-      <div class="card" style="margin-top:14px" id="payCard">
+      <div class="card pCard" data-tab="zahl" id="payCard">
         <div class="tt">Online-Zahlungen</div>
         <p class="mm" style="margin-top:4px">Wird geladen…</p>
       </div>
-    </div>
   </div>
-  <div class="err" id="pErr"></div>`;
+  <div class="saveBar" id="pSaveBar">
+    <div class="err" id="pErr"></div>
+    <button class="btn wide" id="pSave">Änderungen speichern</button>
+  </div>`;
 
   let priceLevel = w.price_level || 2;
   document.querySelectorAll("[data-pl]").forEach(d => d.onclick = () => {
@@ -3581,6 +3640,8 @@ async function vWsProfile() {
     if (d) { setProfLatLng(d); if (profMap) profMap.setView(d, 14); }
   };
   $("pSave").onclick = saveWsProfile.bind(null, () => priceLevel);
+  document.querySelectorAll("[data-ptab]").forEach(b => b.onclick = () => zeigeProfTab(b.dataset.ptab));
+  zeigeProfTab(profTab);
   loadPayCard();
   loadTeamList();
   $("pMemberAdd").onclick = addTeamMember;
@@ -3710,8 +3771,8 @@ function filterServiceChips(boxSel, query) {
 }
 async function saveWsProfile(getPriceLevel) {
   const err = $("pErr"); err.style.display = "none";
-  if (!$("pName").value.trim()) return showErr(err, "Bitte einen Namen angeben.");
-  if (profCats.length === 0) return showErr(err, "Bitte mindestens eine Kategorie wählen.");
+  if (!$("pName").value.trim()) { zeigeProfTab("allg"); return showErr(err, "Bitte einen Namen angeben."); }
+  if (profCats.length === 0) { zeigeProfTab("leist"); return showErr(err, "Bitte mindestens eine Kategorie wählen."); }
   const oh = {};
   document.querySelectorAll("[data-oh]").forEach(i => { oh[i.dataset.oh] = i.value.trim() || null; });
   const row = {
@@ -4223,7 +4284,7 @@ async function vVehicleRecord(id) {
     const km = parseInt($("vlKm").value, 10);
     if (!km && !$("vlNote").value.trim()) return toast("Kilometerstand oder Notiz angeben.");
     if (km && lastKm && km < Number(lastKm)) {
-      if (!confirm("Der neue Kilometerstand ist niedriger als der letzte – trotzdem speichern?")) return;
+      if (!(await frage("Der neue Kilometerstand ist niedriger als der letzte eingetragene.", { titel: "Trotzdem speichern?", ja: "Speichern" }))) return;
     }
     const { error } = await sb.from("vehicle_logs").insert({ vehicle_id: v.id, user_id: me.id, mileage: km || null, note: $("vlNote").value.trim() || null });
     if (error) return toast(error.message);
@@ -4905,6 +4966,7 @@ function stripeRueckkehr() {
     const v = q.get(k);
     if (!v) continue;
     if (hinweis[k + ":" + v]) setTimeout(() => toast(hinweis[k + ":" + v]), 600);
+    if (k === "stripe") profTab = "zahl";
     // Stripes Bestätigung braucht einen Moment – danach die Ansicht neu laden.
     if (k === "zahlung" && v === "ok") setTimeout(route, 4000);
     history.replaceState(null, "", location.pathname + location.hash);

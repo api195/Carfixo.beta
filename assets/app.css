@@ -209,6 +209,13 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .modal{position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,5,10,.7);backdrop-filter:blur(6px)}
 .modalBox{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line2);border-radius:20px;padding:24px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto}
+/* Bestätigungsdialog (frage()) – liegt über einem offenen Modal */
+.modal.dlg{z-index:170}
+.dlgBox{max-width:420px}
+.dlgBox h2{font-size:19px;font-weight:800}
+.dlgBox p{margin-top:8px;font-size:14px;line-height:1.55}
+.dlgBox .btnRow{margin-top:20px}
+.dlgBox .btnRow .btn{flex:1}
 .hidden{display:none!important}
 .offerLine{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#B9C7DB}
 .offerLine.total{border-top:1px solid var(--line);margin-top:6px;padding-top:9px;font-weight:800;color:#fff}
@@ -434,3 +441,25 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
   }
   .btn:hover, .btn:active { transform: none !important; }
 }
+
+/* ---------- Betriebsprofil in Reitern ---------- */
+.profFort{display:flex;align-items:center;gap:12px;margin:2px 0 12px}
+.profFortBar{flex:0 0 140px;height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.profFortBar span{display:block;height:100%;background:var(--green);border-radius:99px}
+.pTabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 16px;padding-bottom:2px}
+.pTabs::-webkit-scrollbar{display:none}
+.pTabs button{flex:0 0 auto;position:relative;border:1px solid var(--line2);background:rgba(255,255,255,.04);color:var(--muted);
+  font:inherit;font-size:13px;font-weight:700;padding:9px 15px;border-radius:99px;cursor:pointer;transition:background .15s,color .15s}
+.pTabs button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.pDot{position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+#profPanes{max-width:780px}
+.pCard{margin-bottom:14px}
+.pCard[hidden]{display:none}
+/* Speichern läuft mit, damit man nach dem Ändern nicht nach oben scrollen muss */
+.saveBar{position:sticky;bottom:12px;z-index:5;max-width:780px;margin-top:6px;padding:10px;border-radius:16px;
+  background:rgba(8,12,22,.88);backdrop-filter:blur(10px);border:1px solid var(--line2)}
+.saveBar[hidden]{display:none}
+.saveBar .err{margin:0 0 8px}
+.saveBar .btn{padding-top:11px;padding-bottom:11px}
+@media(max-width:760px){.saveBar{padding:7px;border-radius:14px}}
+@media(max-width:760px){.saveBar{bottom:calc(var(--tabbarH) + env(safe-area-inset-bottom) + 8px)}.profFortBar{flex-basis:90px}}
