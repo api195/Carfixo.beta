@@ -463,3 +463,18 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
 .saveBar .btn{padding-top:11px;padding-bottom:11px}
 @media(max-width:760px){.saveBar{padding:7px;border-radius:14px}}
 @media(max-width:760px){.saveBar{bottom:calc(var(--tabbarH) + env(safe-area-inset-bottom) + 8px)}.profFortBar{flex-basis:90px}}
+
+/* ---------- Google-Eintrag ---------- */
+.gStars{display:inline-flex;gap:6px;align-items:center;margin-top:6px;font-size:12.5px;color:var(--muted);text-decoration:none;
+  border:1px solid var(--line2);border-radius:99px;padding:4px 11px}
+.gStars span{color:var(--gold);font-weight:800}
+.gStars:hover{border-color:var(--blue2)}
+.gTreffer{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.gTreffer:last-child{border-bottom:none}
+@media(max-width:760px){.gTreffer{flex-wrap:wrap}.gTreffer .btn{width:100%}}
+
+/* Suchkarten auf dem Handy: Vergleichen nur als Symbol, damit Name und Bewertung Platz haben */
+@media(max-width:760px){
+  .cmpBtn{padding:7px 10px;align-self:flex-start}
+  .cmpTxt{display:none}
+}

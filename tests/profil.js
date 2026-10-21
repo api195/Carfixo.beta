@@ -29,7 +29,7 @@ const check = (n, ok, i = "") => { console.log(`${ok ? "OK  " : "FAIL"}  ${n}${i
 
   // ---------- Reiter ----------
   check("Sechs Reiter vorhanden", await page.locator(".pTabs [data-ptab]").count() === 6);
-  check("Start: nur „Allgemein“ sichtbar", JSON.stringify(await sichtbar()) === JSON.stringify(["Stammdaten", "Adresse & Standort"]), JSON.stringify(await sichtbar()));
+  check("Start: nur „Allgemein“ sichtbar", JSON.stringify(await sichtbar()) === JSON.stringify(["Stammdaten", "Adresse & Standort", "Google-Eintrag"]), JSON.stringify(await sichtbar()));
   const punkte = await page.evaluate(() => [...document.querySelectorAll(".pTabs .pDot")].map(d => d.parentElement.dataset.ptab));
   check("Punkte markieren Lücken (Telefon, Zeiten, Bilder)", JSON.stringify(punkte) === JSON.stringify(["allg", "zeiten", "bilder"]), JSON.stringify(punkte));
   check("Fortschritt wird angezeigt", /Profil zu \d+ % vollständig/.test(await page.locator(".profFort").innerText()));
@@ -40,12 +40,53 @@ const check = (n, ok, i = "") => { console.log(`${ok ? "OK  " : "FAIL"}  ${n}${i
   check("Bei Zahlungen keine Speichern-Leiste", await page.evaluate(() => $("pSaveBar").hidden));
   check("Alle Eingabefelder bleiben im DOM (Speichern nimmt alles mit)", await page.evaluate(() => !!$("pName") && !!$("pStreet") && !!$("pNextFree")));
 
+  // ---------- Google-Eintrag verknüpfen ----------
+  check("Reiter „Allgemein“ enthält Google-Eintrag", await page.evaluate(() => { zeigeProfTab("allg"); return !!$("pGoogle") && !$("pGoogle").closest(".pCard").hidden; }));
+  check("Suchfeld mit Name und Ort vorbelegt", await page.inputValue("#gSuche") === "Testwerkstatt");
+  await page.evaluate(() => {
+    window.__fetch = window.fetch;
+    window.fetch = async (u) => u.startsWith("/api/google-place?suche=")
+      ? new Response(JSON.stringify({ treffer: [{ id: "ChIJtreffer000001", name: "Testwerkstatt GmbH", adresse: "Köln", sterne: 4.6, anzahl: 230 }] }))
+      : window.__fetch(u);
+    window.__update = null;
+    sb.from = () => ({ update: (o) => { window.__update = o; return { eq: () => ({ select: () => ({ maybeSingle: async () => ({ data: { ...myWorkshop, ...o, google_place_confirmed: false }, error: null }) }) }) }; } });
+  });
+  await page.click("#gGo");
+  await page.waitForTimeout(300);
+  check("Treffer werden angezeigt", (await page.locator(".gTreffer").innerText()).includes("Testwerkstatt GmbH"));
+  await page.click(".gTreffer [data-place]");
+  await page.waitForTimeout(300);
+  check("Auswahl speichert die Place-ID", await page.evaluate(() => window.__update?.google_place_id) === "ChIJtreffer000001");
+  check("Hinweis: wartet auf Bestätigung", (await page.locator("#pGoogle").innerText()).includes("prüft noch"));
+
   // ---------- Fehler führt zum richtigen Reiter ----------
   await page.click('[data-ptab="allg"]');
   await page.evaluate(() => { profCats.length = 0; $("pSave").click(); });
   await page.waitForTimeout(200);
   check("Fehlende Kategorie öffnet „Leistungen“", await page.evaluate(() => profTab) === "leist");
   check("Fehlermeldung sichtbar", (await page.locator("#pErr").innerText()).includes("Kategorie"));
+
+  // ---------- Google-Sterne und -Fotos im öffentlichen Profil ----------
+  const g = await page.evaluate(async () => {
+    main.innerHTML = '<div id="gStars"></div><div id="gBox" hidden></div>';
+    window.fetch = async () => new Response(JSON.stringify({ sterne: 4.6, anzahl: 1234, link: "https://maps.google.com/?cid=1",
+      fotos: [{ name: "places/ChIJx/photos/a", autoren: [{ name: "Max" }] }, { name: "places/ChIJx/photos/b", autoren: [] }] }));
+    await ladeGoogle({ google_place_id: "ChIJx", google_place_confirmed: false });
+    const vorher = $("gStars").innerHTML;
+    await ladeGoogle({ google_place_id: "ChIJx", google_place_confirmed: true });
+    return { vorher, sterne: $("gStars").textContent.replace(/\s+/g, " "), fotos: $("gBox").querySelectorAll("img").length, sichtbar: !$("gBox").hidden, text: $("gBox").innerText,
+      src: $("gBox").querySelector("img").getAttribute("src") };
+  });
+  check("Unbestätigt: nichts von Google", g.vorher === "");
+  check("Google-Sterne klar gekennzeichnet", /4,6.*bei Google.*1\.234 Bewertungen/.test(g.sterne), g.sterne);
+  check("Fotos werden angezeigt", g.sichtbar && g.fotos === 2);
+  check("Fotos über eigenen Server (keine IP an Google)", g.src.startsWith("/api/google-place?foto="));
+  check("Urheber genannt", g.text.includes("Max"));
+
+  // ---------- Platzhalter-Logos ----------
+  const farben = await page.evaluate(() => [avStil("Autohaus Müller"), avStil("Reifen Schmidt"), avStil("Autohaus Müller")]);
+  check("Platzhalter: verschiedene Betriebe, verschiedene Farben", farben[0] !== farben[1]);
+  check("Platzhalter: gleicher Name, gleiche Farbe", farben[0] === farben[2]);
 
   // ---------- Rückkehr von Stripe öffnet den Zahlungs-Reiter ----------
   await page.goto(BASE.replace(/#.*$/, "") + "?stripe=zurueck#/search", { waitUntil: "domcontentloaded" });

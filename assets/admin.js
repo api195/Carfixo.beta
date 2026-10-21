@@ -134,7 +134,10 @@ async function vWorkshops() {
       <td>${esc(w.district || "–")}${w.lat != null ? " " : ""}</td>
       <td>${(w.categories || []).map(c => CATS[c]?.icon || "").join(" ")}</td>
       <td>${w.rating_avg > 0 ? "★ " + Number(w.rating_avg).toLocaleString("de-DE") + ` (${w.rating_count})` : "–"}</td>
-      <td>${w.is_verified ? '<span class="badge b-green">verifiziert</span>' : '<span class="badge b-gold">wartet</span>'}</td>
+      <td>${w.is_verified ? '<span class="badge b-green">verifiziert</span>' : '<span class="badge b-gold">wartet</span>'}
+        ${w.google_place_id ? `<div style="margin-top:6px"><a class="mm" href="https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(w.google_place_id)}" target="_blank" rel="noopener">Google-Eintrag ↗</a>
+          ${w.google_place_confirmed ? '<span class="badge b-green">bestätigt</span>' : `<button class="btn green sm" style="margin-left:4px;padding:3px 8px" onclick="confirmGoogle('${w.id}',true)">Bestätigen</button>`}
+          ${w.google_place_confirmed ? `<button class="btn ghost sm" style="margin-left:4px;padding:3px 8px" onclick="confirmGoogle('${w.id}',false)">Aufheben</button>` : ""}</div>` : ""}</td>
       <td>${w.is_premium ? "" : "–"}</td>
       <td style="white-space:nowrap">
         <button class="btn ${w.is_verified ? "red" : "green"} sm" onclick="verifyWs('${w.id}',${!w.is_verified})">${w.is_verified ? "Sperren" : "✓ Verifizieren"}</button>
@@ -142,6 +145,14 @@ async function vWorkshops() {
         <a class="btn ghost sm" href="app.html#/workshop/${w.id}" style="margin-left:6px">Profil</a>
       </td>
     </tr>`).join("") || '<tr><td colspan="7" class="mm">Keine Werkstätten.</td></tr>';
+}
+// Google-Eintrag erst nach Sichtprüfung freigeben: Gehört er wirklich zu
+// diesem Betrieb (Name, Adresse)? Sonst könnte ein Betrieb fremde Sterne zeigen.
+async function confirmGoogle(id, val) {
+  const { error } = await sb.from("workshops").update({ google_place_confirmed: val }).eq("id", id);
+  if (error) return toast(error.message);
+  toast(val ? "Google-Eintrag bestätigt ✓" : "Bestätigung aufgehoben.");
+  route();
 }
 async function togglePremium(id, val) {
   const { error } = await sb.from("workshops").update({ is_premium: val }).eq("id", id);

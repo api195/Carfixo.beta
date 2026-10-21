@@ -50,6 +50,13 @@ function frage(text, { titel = "Bist du sicher?", ja = "Bestätigen", nein = "Ab
   });
 }
 function cleanRT() { rtChannels.forEach(c => { try { sb.removeChannel(c); } catch (e) {} }); rtChannels = []; }
+// Platzhalter-Logo: Jede Werkstatt bekommt aus ihrem Namen eine eigene Farbe,
+// damit Listen ohne hochgeladene Logos nicht einförmig aussehen.
+function avStil(name) {
+  let h = 0;
+  for (const c of String(name || "?")) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return `background:linear-gradient(135deg,hsl(${h} 75% 50% / .55),hsl(${(h + 50) % 360} 80% 45% / .18));color:hsl(${h} 95% 84%);`;
+}
 function initials(s) { return (s || "?").split(/[\s@.]+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join(""); }
 function opt(ph, list, sel) {
   return `<option value="">${esc(ph)}</option>` + list.map(x =>
@@ -1007,7 +1014,7 @@ function wsCardHtml(ws) {
   const inCompare = compareSet.includes(ws.id);
   return `<div class="card tap" style="margin-bottom:12px" onclick="go('workshop/${ws.id}')">
     <div class="wsCard">
-      <div class="wsAv" style="${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent` : ""}">${esc(initials(ws.name))}</div>
+      <div class="wsAv" style="${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent` : avStil(ws.name)}">${esc(initials(ws.name))}</div>
       <div style="flex:1;min-width:0">
         <div class="tt">${esc(ws.name)} ${trustBadges(ws, "vertical-align:2px")}
           ${open === true ? '<span class="badge b-green" style="vertical-align:2px">Geöffnet</span>' : open === false ? '<span class="badge b-grey" style="vertical-align:2px">Geschlossen</span>' : ""}</div>
@@ -1016,7 +1023,7 @@ function wsCardHtml(ws) {
         ${ws.next_free_date ? `<div class="mm" style="color:var(--green)">Nächster freier Termin: ${new Date(ws.next_free_date) <= new Date() ? "heute" : fmtDate(ws.next_free_date)}</div>` : ""}
         <div class="chips" style="margin-top:9px">${ws.categories.slice(0, 4).map(c => `<span class="pill">${ico(c)} ${CATS[c]?.name || c}</span>`).join("")}</div>
       </div>
-      <button class="btn ghost sm" style="flex-shrink:0" onclick="event.stopPropagation();toggleCompare('${ws.id}')">${inCompare ? "✓ Im Vergleich" : "⇄ Vergleichen"}</button>
+      <button class="btn ghost sm cmpBtn" style="flex-shrink:0" onclick="event.stopPropagation();toggleCompare('${ws.id}')" aria-label="${inCompare ? "Aus dem Vergleich entfernen" : "Zum Vergleich hinzufügen"}">${inCompare ? "✓" : "⇄"}<span class="cmpTxt">${inCompare ? " Im Vergleich" : " Vergleichen"}</span></button>
     </div>
   </div>`;
 }
@@ -1042,6 +1049,33 @@ function renderCompareBar() {
 // ============================================================
 // WERKSTATTPROFIL (öffentlich)
 // ============================================================
+// Google-Sterne und -Fotos – nur wenn der Betrieb seinen Eintrag verknüpft und
+// Carfixo die Zuordnung bestätigt hat. Bewusst getrennt von den Carfixo-
+// Bewertungen: die stammen nachweislich aus Buchungen (§ 5b UWG), Google-
+// Bewertungen prüfen wir nicht. Sie zählen auch nicht für Ranking und Schnitt.
+async function ladeGoogle(ws) {
+  if (!ws.google_place_id || !ws.google_place_confirmed) return;
+  let g;
+  try {
+    const r = await fetch("/api/google-place?id=" + encodeURIComponent(ws.google_place_id));
+    if (!r.ok) return;
+    g = await r.json();
+  } catch (_) { return; }
+  const st = $("gStars");
+  if (st && g.sterne) {
+    st.innerHTML = `<a class="gStars" href="${esc(g.link)}" target="_blank" rel="noopener">
+      <span>★ ${String(g.sterne).replace(".", ",")}</span> bei Google · ${Number(g.anzahl).toLocaleString("de-DE")} Bewertungen ↗</a>`;
+  }
+  const box = $("gBox");
+  if (!box || !(g.fotos || []).length) return;
+  const src = (f) => "/api/google-place?foto=" + encodeURIComponent(f.name);
+  const autoren = [...new Set(g.fotos.flatMap(f => f.autoren.map(a => a.name)).filter(Boolean))].slice(0, 4);
+  box.innerHTML = `<div class="tt">Fotos von Google</div>
+    <div class="thumbs" id="gFotos" style="margin-top:10px">${g.fotos.map(f => `<img src="${src(f)}" data-full="${src(f)}" loading="lazy" style="width:110px;height:110px;cursor:zoom-in" alt="Foto des Betriebs von Google">`).join("")}</div>
+    <p class="mm" style="margin-top:8px;font-size:11px">Fotos über Google${autoren.length ? " · " + autoren.map(esc).join(", ") : ""}</p>`;
+  box.hidden = false;
+  box.querySelectorAll("img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));
+}
 async function vWorkshopProfile(id) {
   if (!id) return go("search");
   main.innerHTML = `<div class="sk" style="height:200px"></div>`;
@@ -1055,11 +1089,12 @@ async function vWorkshopProfile(id) {
   main.innerHTML = `
   ${ws.cover_url ? `<div style="height:180px;border-radius:20px;margin-bottom:-40px;background-image:url('${esc(ws.cover_url)}');background-size:cover;background-position:center;border:1px solid var(--line)"></div>` : ""}
   <div class="pageHead" style="${ws.cover_url ? "position:relative;padding:0 18px" : ""}">
-    <div class="wsAv" style="width:64px;height:64px;font-size:23px;${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent;` : ""}${ws.cover_url ? "border:3px solid var(--bg);" : ""}">${esc(initials(ws.name))}</div>
+    <div class="wsAv" style="width:64px;height:64px;font-size:23px;${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent;` : avStil(ws.name)}${ws.cover_url ? "border:3px solid var(--bg);" : ""}">${esc(initials(ws.name))}</div>
     <div style="flex:1">
       <h1>${esc(ws.name)} ${ws.is_demo ? '<span class="badge b-blue" style="vertical-align:6px">Beispielbetrieb</span>'
         : `${ws.is_premium ? '<span class="badge b-gold" style="vertical-align:6px">Gesponsert</span>' : ""} ${ws.is_verified ? '<span class="badge b-green" style="vertical-align:6px">✓ Verifiziert durch Carfixo</span>' : ""}`}</h1>
       <div class="ratingLine" style="margin-top:4px">${stars(ws.rating_avg)}<span class="cnt">${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${ws.rating_count || 0} Bewertungen · ${esc(ws.district || ws.city || "Köln")}</span></div>
+      <div id="gStars"></div>
       ${openStatusLine(ws.opening_hours)}
     </div>
     <div class="right">
@@ -1091,6 +1126,7 @@ async function vWorkshopProfile(id) {
         <div class="offerLine" style="margin-top:8px"><span>Abgeschlossene Aufträge über Carfixo</span><span><b>${ws.rating_count || 0}</b></span></div>
         ${(ws.payment_methods || []).length ? `<div class="offerLine"><span>Zahlungsmöglichkeiten</span><span>${ws.payment_methods.map(esc).join(" · ")}</span></div>` : ""}
       </div>
+      <div class="card" style="margin-bottom:14px" id="gBox" hidden></div>
       ${(ws.gallery || []).length ? `<div class="card" style="margin-bottom:14px">
         <div class="tt">Einblicke & Referenzen</div>
         <div class="thumbs" id="wsGallery" style="margin-top:10px">${ws.gallery.map(u => `<img src="${esc(u)}" loading="lazy" data-full="${esc(u)}" style="width:110px;height:110px;cursor:zoom-in" alt="Werkstattbild">`).join("")}</div>
@@ -1145,6 +1181,7 @@ async function vWorkshopProfile(id) {
   };
   $("wsFav").onclick = () => toggleFavorite(ws.id, $("wsFav"));
   document.querySelectorAll("#wsGallery img, #revList .rvThumbs img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));
+  ladeGoogle(ws);
   if (me) {
     sb.from("favorites").select("workshop_id").eq("user_id", me.id).eq("workshop_id", ws.id).maybeSingle()
       .then(({ data }) => { if (data && $("wsFav")) $("wsFav").textContent = "Gemerkt"; });
@@ -1558,7 +1595,7 @@ async function loadOffers(r) {
     return `<div class="card" style="margin-bottom:11px;${best ? "border-color:rgba(43,213,138,.45)" : ""};position:relative">
       ${best ? '<span class="badge b-green" style="position:absolute;top:-9px;right:14px">Bester Preis</span>' : ""}
       <div class="cardHead">
-        <div class="wsAv" style="width:42px;height:42px;font-size:15px">${esc(initials(w.name))}</div>
+        <div class="wsAv" style="width:42px;height:42px;font-size:15px;${w.logo_url ? `background-image:url('${esc(w.logo_url)}');background-size:cover;background-position:center;color:transparent` : avStil(w.name)}">${esc(initials(w.name))}</div>
         <div style="flex:1;min-width:0">
           <div class="tt"><a href="#/workshop/${w.id}" style="color:inherit">${esc(w.name || "Werkstatt")}</a>${w.is_verified ? " ✓" : ""}</div>
           <div class="ratingLine">${stars(w.rating_avg)}<span class="cnt">${w.rating_avg > 0 ? Number(w.rating_avg).toLocaleString("de-DE") : "Neu"} · ${w.rating_count || 0} Bew.${w.district ? " · " + esc(w.district) : ""}</span></div>
@@ -3516,6 +3553,10 @@ async function vWsProfile() {
         </div>
         <p class="mm" id="pLatLng" style="margin-top:6px">${profLatLng ? "Standort gesetzt" : "Noch kein Standort – auf die Karte klicken oder Stadtteil wählen."}</p>
       </div>
+      <div class="card pCard" data-tab="allg">
+        <div class="tt">Google-Eintrag</div>
+        <div id="pGoogle"></div>
+      </div>
       <div class="card pCard" data-tab="zeiten">
         <div class="tt">Öffnungszeiten</div>
         ${days.map(([k, label]) => `
@@ -3546,7 +3587,7 @@ async function vWsProfile() {
         <div class="tt">Bilder</div>
         <div class="label">Logo</div>
         <div class="split" style="align-items:center">
-          <div class="wsAv" id="pLogoPrev" style="${w.logo_url ? `background-image:url('${esc(w.logo_url)}');background-size:cover;color:transparent` : ""}">${esc(initials(w.name))}</div>
+          <div class="wsAv" id="pLogoPrev" style="${w.logo_url ? `background-image:url('${esc(w.logo_url)}');background-size:cover;color:transparent` : avStil(w.name)}">${esc(initials(w.name))}</div>
           <input type="file" id="pLogo" accept="image/*" style="padding:9px">
         </div>
         <div class="label">Titelbild</div>
@@ -3643,6 +3684,7 @@ async function vWsProfile() {
   document.querySelectorAll("[data-ptab]").forEach(b => b.onclick = () => zeigeProfTab(b.dataset.ptab));
   zeigeProfTab(profTab);
   loadPayCard();
+  renderGoogleCard();
   loadTeamList();
   $("pMemberAdd").onclick = addTeamMember;
   $("pPremToggle").onclick = async () => {
@@ -3691,6 +3733,55 @@ async function loadPayCard() {
     btn.disabled = false; btn.textContent = "Mit Stripe verbinden";
     toast(r.error || "Stripe ist gerade nicht erreichbar.");
   };
+}
+// Google-Unternehmenseintrag verknüpfen. Angezeigt wird er erst nach
+// Bestätigung durch Carfixo (Admin) – das erzwingt auch die Datenbank.
+function renderGoogleCard() {
+  const box = $("pGoogle"); if (!box) return;
+  const w = myWorkshop;
+  const stand = !w.google_place_id ? ""
+    : w.google_place_confirmed
+      ? '<div class="okBox" style="margin:8px 0 0">Verknüpft ✓ Deine Google-Sterne und -Fotos erscheinen in deinem Profil.</div>'
+      : '<div class="note" style="margin-top:8px">Verknüpft – Carfixo prüft noch, ob der Eintrag zu deinem Betrieb gehört. Danach erscheinen Sterne und Fotos.</div>';
+  box.innerHTML = `<p class="mm" style="margin-top:4px">Zeig deine Google-Sterne und Fotos im Profil – ideal, solange du auf Carfixo noch wenige Bewertungen und Bilder hast.</p>
+    ${stand}
+    <div class="split" style="margin-top:10px">
+      <input id="gSuche" value="${esc([w.name, w.city].filter(Boolean).join(" "))}" placeholder="Name und Ort deines Betriebs" aria-label="Google-Eintrag suchen">
+      <button class="btn sm" id="gGo" style="flex:0 0 auto">${w.google_place_id ? "Neu suchen" : "Suchen"}</button>
+    </div>
+    <div id="gTreffer"></div>
+    ${w.google_place_id ? '<button class="btn ghost sm" id="gLoesen" style="margin-top:10px">Verknüpfung lösen</button>' : ""}`;
+  $("gGo").onclick = googleSuchen;
+  $("gSuche").onkeydown = (e) => { if (e.key === "Enter") googleSuchen(); };
+  if ($("gLoesen")) $("gLoesen").onclick = () => setGooglePlace(null);
+}
+async function googleSuchen() {
+  const out = $("gTreffer"), text = $("gSuche").value.trim();
+  if (text.length < 3) return toast("Bitte Name und Ort eingeben.");
+  out.innerHTML = '<div class="sk" style="height:60px;margin-top:10px"></div>';
+  const { data: { session } } = await sb.auth.getSession();
+  let d = {};
+  try {
+    const r = await fetch("/api/google-place?suche=" + encodeURIComponent(text), { headers: { Authorization: "Bearer " + (session?.access_token || "") } });
+    d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+  } catch (e) {
+    out.innerHTML = `<p class="mm" style="margin-top:10px">${esc(e.message || "Google ist gerade nicht erreichbar.")}</p>`;
+    return;
+  }
+  out.innerHTML = (d.treffer || []).length === 0
+    ? '<p class="mm" style="margin-top:10px">Nichts gefunden. Probier es mit dem Namen wie bei Google und dem Ort.</p>'
+    : d.treffer.map(t => `<div class="gTreffer">
+        <div style="flex:1;min-width:0"><b>${esc(t.name)}</b><div class="mm">${esc(t.adresse)}${t.sterne ? ` · ★ ${String(t.sterne).replace(".", ",")} (${t.anzahl})` : ""}</div></div>
+        <button class="btn green sm" data-place="${esc(t.id)}">Das ist mein Betrieb</button></div>`).join("");
+  out.querySelectorAll("[data-place]").forEach(b => b.onclick = () => setGooglePlace(b.dataset.place));
+}
+async function setGooglePlace(id) {
+  const { data, error } = await sb.from("workshops").update({ google_place_id: id }).eq("id", myWorkshop.id).select().maybeSingle();
+  if (error) return toast(error.message);
+  if (data) myWorkshop = data;
+  toast(id ? "Verknüpft – Carfixo bestätigt den Eintrag in Kürze." : "Verknüpfung gelöst.");
+  renderGoogleCard();
 }
 async function uploadWsImage(file, prefix) {
   const path = `${me.id}/${prefix}_${Date.now()}_${file.name.replace(/[^\w.\-]/g, "_")}`;
