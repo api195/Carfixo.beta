@@ -74,9 +74,12 @@ const check = (n, ok, i = "") => { console.log(`${ok ? "OK  " : "FAIL"}  ${n}${i
     await ladeGoogle({ google_place_id: "ChIJx", google_place_confirmed: false });
     const vorher = $("gStars").innerHTML;
     await ladeGoogle({ google_place_id: "ChIJx", google_place_confirmed: true });
-    return { vorher, sterne: $("gStars").textContent.replace(/\s+/g, " "), fotos: $("gBox").querySelectorAll("img").length, sichtbar: !$("gBox").hidden, text: $("gBox").innerText,
+    const vorKlick = $("gBox").querySelectorAll("img").length;
+    $("gFotosZeigen").click();
+    return { vorher, vorKlick, sterne: $("gStars").textContent.replace(/\s+/g, " "), fotos: $("gBox").querySelectorAll("img").length, sichtbar: !$("gBox").hidden, text: $("gBox").innerText,
       src: $("gBox").querySelector("img").getAttribute("src") };
   });
+  check("Fotos laden erst nach Klick (Kosten)", g.vorKlick === 0);
   check("Unbestätigt: nichts von Google", g.vorher === "");
   check("Google-Sterne klar gekennzeichnet", /4,6.*bei Google.*1\.234 Bewertungen/.test(g.sterne), g.sterne);
   check("Fotos werden angezeigt", g.sichtbar && g.fotos === 2);

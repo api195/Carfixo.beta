@@ -38,7 +38,7 @@ const rufe = (query, headers = {}) => new Promise((resolve) => {
 
   r = await rufe({ id: BESTAETIGT });
   check("Bestätigter Eintrag: Sterne und Link", r.status === 200 && r.body.sterne === 4.6 && r.body.anzahl === 230 && r.body.link.startsWith("https://"));
-  check("Höchstens 6 Fotos mit Urheber", r.body.fotos.length === 6 && r.body.fotos[0].autoren[0].name === "Max");
+  check("Höchstens 4 Fotos mit Urheber", r.body.fotos.length === 4 && r.body.fotos[0].autoren[0].name === "Max");
   check("Nur kurz im Browser zwischengespeichert", r.h["cache-control"] === "private, max-age=600");
   r = await rufe({ id: "ChIJfremd0000000001" });
   check("Fremder/unbestätigter Eintrag abgelehnt", r.status === 404);

@@ -1055,26 +1055,38 @@ function renderCompareBar() {
 // Bewertungen prüfen wir nicht. Sie zählen auch nicht für Ranking und Schnitt.
 async function ladeGoogle(ws) {
   if (!ws.google_place_id || !ws.google_place_confirmed) return;
-  let g;
-  try {
-    const r = await fetch("/api/google-place?id=" + encodeURIComponent(ws.google_place_id));
-    if (!r.ok) return;
-    g = await r.json();
-  } catch (_) { return; }
+  // Jeder Abruf kostet bei Google Geld. Darum: Sterne 10 Minuten im Browser
+  // merken und Fotos erst laden, wenn jemand sie sehen will.
+  const merk = "cfx_g_" + ws.google_place_id;
+  let g = null;
+  try { const m = JSON.parse(sessionStorage.getItem(merk) || "null"); if (m && Date.now() - m.t < 600000) g = m.g; } catch (_) {}
+  if (!g) {
+    try {
+      const r = await fetch("/api/google-place?id=" + encodeURIComponent(ws.google_place_id));
+      if (!r.ok) return;
+      g = await r.json();
+      try { sessionStorage.setItem(merk, JSON.stringify({ t: Date.now(), g })); } catch (_) {}
+    } catch (_) { return; }
+  }
   const st = $("gStars");
   if (st && g.sterne) {
     st.innerHTML = `<a class="gStars" href="${esc(g.link)}" target="_blank" rel="noopener">
       <span>★ ${String(g.sterne).replace(".", ",")}</span> bei Google · ${Number(g.anzahl).toLocaleString("de-DE")} Bewertungen ↗</a>`;
   }
   const box = $("gBox");
-  if (!box || !(g.fotos || []).length) return;
-  const src = (f) => "/api/google-place?foto=" + encodeURIComponent(f.name);
-  const autoren = [...new Set(g.fotos.flatMap(f => f.autoren.map(a => a.name)).filter(Boolean))].slice(0, 4);
+  const fotos = (g.fotos || []).slice(0, 4);
+  if (!box || !fotos.length) return;
   box.innerHTML = `<div class="tt">Fotos von Google</div>
-    <div class="thumbs" id="gFotos" style="margin-top:10px">${g.fotos.map(f => `<img src="${src(f)}" data-full="${src(f)}" loading="lazy" style="width:110px;height:110px;cursor:zoom-in" alt="Foto des Betriebs von Google">`).join("")}</div>
-    <p class="mm" style="margin-top:8px;font-size:11px">Fotos über Google${autoren.length ? " · " + autoren.map(esc).join(", ") : ""}</p>`;
+    <button class="btn ghost sm" id="gFotosZeigen" style="margin-top:10px">${fotos.length} Fotos von Google ansehen</button>`;
   box.hidden = false;
-  box.querySelectorAll("img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));
+  $("gFotosZeigen").onclick = () => {
+    const src = (f) => "/api/google-place?foto=" + encodeURIComponent(f.name);
+    const autoren = [...new Set(fotos.flatMap(f => f.autoren.map(a => a.name)).filter(Boolean))].slice(0, 4);
+    box.innerHTML = `<div class="tt">Fotos von Google</div>
+      <div class="thumbs" id="gFotos" style="margin-top:10px">${fotos.map(f => `<img src="${src(f)}" data-full="${src(f)}" style="width:110px;height:110px;cursor:zoom-in" alt="Foto des Betriebs von Google">`).join("")}</div>
+      <p class="mm" style="margin-top:8px;font-size:11px">Fotos über Google${autoren.length ? " · " + autoren.map(esc).join(", ") : ""}</p>`;
+    box.querySelectorAll("img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));
+  };
 }
 async function vWorkshopProfile(id) {
   if (!id) return go("search");
