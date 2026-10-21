@@ -65,6 +65,7 @@
     <a href="#widerruf">Widerruf</a>
     <a href="#cookies">Cookies</a>
     <a href="app.html#/kuendigen" class="kd">Verträge hier kündigen</a>
+    <a href="app.html#/widerrufen" class="kd">Vertrag widerrufen</a>
   </div>
 
   <!-- ============================================================ -->
@@ -174,6 +175,8 @@
           <td>Vertragsdurchführung · lit. b; Push nur nach Erlaubnis im Browser</td></tr>
       <tr><td>Meldungen</td><td>Gemeldeter Inhalt, Grund, Beschreibung, Entscheidung</td>
           <td>Melde- und Abhilfeverfahren (Art. 16 DSA) · lit. c</td></tr>
+      <tr><td>Widerrufe</td><td>Name, E-Mail, Auftragsnummer, Nachricht, Zeitpunkt, Prüfwert der IP-Adresse</td>
+          <td>Weiterleitung an den Betrieb und Nachweis des Zugangs · lit. c; Missbrauchsschutz · lit. f</td></tr>
       <tr><td>Kündigungen</td><td>Name, E-Mail, Vertrag, Zeitpunkt, Prüfwert der IP-Adresse</td>
           <td>Nachweis der Kündigung (§ 312k BGB) · lit. c; Missbrauchsschutz · lit. f</td></tr>
       <tr><td>Technische Daten</td><td>IP-Adresse, Zeitpunkt, Browser beim Seitenaufruf</td>
@@ -255,7 +258,7 @@
     <ul>
       <li>Kontodaten, Fahrzeuge, Anfragen und Chats: bis zur Löschung des Kontos.</li>
       <li>Bewertungen: bis zur Löschung des Kontos oder der Bewertung.</li>
-      <li>Kündigungen: drei Jahre ab Jahresende (regelmäßige Verjährung), danach Löschung.</li>
+      <li>Kündigungen und Widerrufe: drei Jahre ab Jahresende (regelmäßige Verjährung), danach Löschung.</li>
       <li>Meldungen: sechs Monate nach Abschluss.</li>
       <li>Sicherheitsmeldungen: 30 Tage.</li>
       <li>Server-Protokolle beim Hosting: werden von den Anbietern nach kurzer Zeit automatisch gelöscht (derzeit Vercel nach einer Stunde, Supabase nach einem Tag).</li>
@@ -469,6 +472,9 @@
       <li>Der Betrieb erfüllt gegenüber Kunden alle gesetzlichen Pflichten, insbesondere
           Informationspflichten, Widerrufsbelehrung bei Fernabsatz, Rechnungsstellung und
           Gewährleistung. Carfixo übernimmt diese Pflichten nicht.</li>
+      <li>Widerrufe, die Kunden über Carfixo erklären („Vertrag widerrufen“), leitet Carfixo an den
+          Betrieb weiter. Der Betrieb bearbeitet sie unverzüglich, insbesondere erstattet er Zahlungen
+          nach den gesetzlichen Vorschriften.</li>
       <li>Keine Bewertungen fälschen, kaufen oder Kunden für Bewertungen belohnen.</li>
       <li>Kein Abwerben über die Plattform hinaus mit Daten, die nur zur Auftragsabwicklung
           übermittelt wurden. Kundendaten nur für den jeweiligen Auftrag nutzen (eigene
@@ -509,7 +515,7 @@
     <p>
       Die Reihenfolge in der Suche bestimmen die unter <a href="#ranking">Ranking</a> genannten
       Hauptparameter. Mit „Premium für Betriebe“ wird ein Betrieb bevorzugt platziert und als
-      „Gesponsert“ gekennzeichnet. Premium ist derzeit kostenlos und für jeden Betrieb in den
+      „Hervorgehoben“ gekennzeichnet. Premium ist derzeit kostenlos und für jeden Betrieb in den
       Einstellungen selbst aktivierbar.
     </p>
 
@@ -571,7 +577,9 @@
     </p>
     <ol>
       <li><b>Premium:</b> Betriebe mit „Premium für Betriebe“ stehen oben und sind als
-          „Gesponsert“ gekennzeichnet. Premium ist derzeit kostenlos; Carfixo erhält dafür kein Geld.</li>
+          „Hervorgehoben“ gekennzeichnet. Premium ist derzeit kostenlos; Carfixo erhält dafür kein Geld.
+          Sollte Premium künftig kostenpflichtig werden, kennzeichnen wir solche Platzierungen als
+          „Anzeige“ bzw. „Gesponsert“.</li>
       <li><b>Durchschnittliche Bewertung</b> (höher zuerst)</li>
       <li><b>Anzahl der Bewertungen</b> (mehr zuerst)</li>
     </ol>
@@ -638,8 +646,11 @@
       Schließt du über Carfixo einen Vertrag mit einem Betrieb, kann dir ihm gegenüber ein
       gesetzliches Widerrufsrecht zustehen (in der Regel 14 Tage bei Verträgen, die online
       geschlossen werden). Belehren muss dich darüber der Betrieb. Den Widerruf erklärst du dem
-      Betrieb, zum Beispiel über den Chat zum Auftrag oder per E-Mail. Soll die Reparatur vor Ablauf
-      der Frist beginnen, braucht der Betrieb dein ausdrückliches Verlangen.
+      Betrieb – am einfachsten über die Schaltfläche <a href="app.html#/widerrufen">„Vertrag widerrufen“</a>
+      in deiner Buchung oder in der Fußzeile. Nach „Widerruf bestätigen“ leitet Carfixo die Erklärung an
+      den Betrieb weiter und schickt dir sofort eine Eingangsbestätigung mit Datum und Uhrzeit per E-Mail.
+      Du kannst den Widerruf auch direkt gegenüber dem Betrieb erklären, z. B. im Chat zum Auftrag.
+      Soll die Reparatur vor Ablauf der Frist beginnen, braucht der Betrieb dein ausdrückliches Verlangen.
     </p>
   </div>
 
@@ -663,8 +674,9 @@
     </p>
   </div>
 
-  <div class="card" style="text-align:center">
+  <div class="card" style="text-align:center;display:flex;gap:18px;justify-content:center;flex-wrap:wrap">
     <a href="app.html#/kuendigen" style="font-weight:800;color:var(--ink)">Verträge hier kündigen</a>
+    <a href="app.html#/widerrufen" style="font-weight:800;color:var(--ink)">Vertrag widerrufen</a>
   </div>
 
 </main>
