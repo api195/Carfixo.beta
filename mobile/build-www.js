@@ -32,6 +32,11 @@ for (const p of PLUGINS) {
   fs.copyFileSync(path.join(NM, p, "dist", "plugin.js"), path.join(WWW, "assets", "native", `${p}.js`));
 }
 
+// Vektorkarte für die App (assets/maps.js lädt sie nur in der App)
+for (const f of ["maplibre-gl.js", "maplibre-gl.css"]) {
+  fs.copyFileSync(path.join(__dirname, "node_modules", "maplibre-gl", "dist", f), path.join(WWW, "assets", "vendor", f));
+}
+
 const capTags = ["capacitor", ...PLUGINS].map(n => `<script src="assets/native/${n}.js"></script>`).join("\n");
 
 function einbinden(datei) {
@@ -39,8 +44,8 @@ function einbinden(datei) {
   let html = fs.readFileSync(p, "utf8");
   html = html.replace("</head>", `${capTags}\n</head>`);
   html = html.replace("</body>", '<script src="assets/native.js"></script>\n</body>');
-  // Logo und "Startseite" führen in der App zur Suche statt zur Website.
-  html = html.replace(/href="index\.html"/g, 'href="app.html#/search"');
+  // Logo und "Startseite" führen in der App zu Home statt zur Website.
+  html = html.replace(/href="index\.html"/g, 'href="app.html#/home"');
   fs.writeFileSync(p, html);
 }
 einbinden("app.html");
@@ -50,11 +55,11 @@ einbinden("legal.html");
 fs.writeFileSync(path.join(WWW, "index.html"),
   '<!doctype html><meta charset="utf-8"><title>Carfixo</title>' +
   '<style>html,body{margin:0;background:#05070D}</style>' +
-  '<script>location.replace("app.html" + (location.hash || "#/search"))</script>\n');
+  '<script>location.replace("app.html" + (location.hash || "#/home"))</script>\n');
 
 // Verweise in app.js auf index.html (z. B. "Zur Startseite") ebenfalls umbiegen.
 const appJs = path.join(WWW, "assets", "app.js");
-fs.writeFileSync(appJs, fs.readFileSync(appJs, "utf8").replace(/href="index\.html"/g, 'href="app.html#/search"'));
+fs.writeFileSync(appJs, fs.readFileSync(appJs, "utf8").replace(/href="index\.html"/g, 'href="app.html#/home"'));
 
 const n = (d) => fs.readdirSync(d, { recursive: true }).length;
 console.log(`www/ fertig: ${n(WWW)} Dateien`);

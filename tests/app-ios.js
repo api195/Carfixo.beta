@@ -42,19 +42,51 @@ const server = http.createServer((req, res) => {
     };
   });
   const api = [];
+  // Supabase ohne Netz: Betriebe als Beispieldaten, sonst leer
+  const WS = [{ id: "w1", name: "Meister Auto Köln", district: "Ehrenfeld", rating_avg: 4.9, is_demo: true, is_verified: true, categories: ["reparatur"], lat: 50.95, lng: 6.92 },
+    { id: "w2", name: "KFZ Schmitz", district: "Nippes", rating_avg: 4.7, is_verified: true, categories: ["reifen"], lat: 50.96, lng: 6.95 }];
+  await page.route("**/rest/v1/**", r => r.fulfill({ status: 200, contentType: "application/json", body: r.request().url().includes("/workshops") ? JSON.stringify(WS) : "[]" }));
+  await page.route("**/auth/v1/**", r => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
+  // OpenFreeMap: minimaler heller Stil – die App muss ihn dunkel färben
+  let stilErreichbar = true;
+  await page.route("https://tiles.openfreemap.org/**", r => stilErreichbar
+    ? r.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ version: 8, sources: {},
+        layers: [{ id: "background", type: "background", paint: { "background-color": "#ffffff" } }] }) })
+    : r.abort());
   await page.route("https://carfixo.de/api/**", r => { api.push(r.request().url()); r.fulfill({ status: 200, contentType: "application/json", body: '{"found":false}' }); });
 
   // ---------- Start ----------
   await page.goto("http://localhost:8001/", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(1500);
-  check("index.html leitet in die App weiter", page.url().includes("/app.html#/search"), page.url());
+  check("App startet auf Home", page.url().includes("/app.html#/home"), page.url());
+  check("Home: Frage, Suchfeld, 8 Leistungs-Kacheln", await page.locator(".hmTitle").count() === 1 && await page.locator("#hmQ").count() === 1 && await page.locator(".hmTile").count() === 8);
+  check("Tabs: Home · Suche · Diagnose · Teile · Login", (await page.$$eval(".tabbar a", as => as.map(a => a.innerText.trim()).join("|"))) === "Home|Suche|Diagnose|Teile|Login");
+  check("Notfall über Home erreichbar", await page.locator('.hmQ[href="#/notfall"]').count() === 1);
+  check("Top-Betriebe mit Kennzeichnung „Beispielbetrieb“", (await page.locator("#hmTop").innerText()).includes("Meister Auto Köln") && (await page.locator("#hmTop").innerText()).includes("Beispielbetrieb"));
+  await page.fill("#hmQ", "Ölwechsel");
+  await page.locator("#hmQ").press("Enter");
+  await page.waitForTimeout(500);
+  check("Suchfeld auf Home führt zur Suche", page.url().includes("#/search?q=") && await page.inputValue("#fQ") === "Ölwechsel", page.url());
+  check("Karte als Chip neben dem Filter", await page.locator("#mFilterBar #mapToggle").count() === 1);
+  await page.click("#mapToggle");
+  await page.waitForTimeout(2500);
+  check("Karte in der App: MapLibre (OpenFreeMap)", await page.evaluate(() => searchMap && searchMap.provider) === "maplibre", await page.evaluate(() => searchMap && searchMap.provider));
+  check("Karte wird eingeblendet (nach dem Umfärben)", await page.evaluate(() => getComputedStyle(document.getElementById("map")).opacity) === "1");
+  stilErreichbar = false;
+  await page.evaluate(() => { location.hash = "#/home"; });
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { location.hash = "#/search"; });
+  await page.waitForTimeout(500);
+  await page.click("#mapToggle");
+  await page.waitForTimeout(2500);
+  check("OpenFreeMap nicht erreichbar: Rückfall auf Leaflet", await page.evaluate(() => searchMap && searchMap.provider) === "leaflet", await page.evaluate(() => searchMap && searchMap.provider));
   check("App erkennt sich als iPhone-App", await page.evaluate(() => NATIVE && API === "https://carfixo.de"));
   const nativ = await page.evaluate(() => window.__nativ.map(x => x.pluginId + "." + x.methodName));
   check("Statusleiste hell, Startbild ausgeblendet", nativ.includes("StatusBar.setStyle") && nativ.includes("SplashScreen.hide"), nativ.join(" "));
   check("Rückkehr aus Stripe wird beobachtet", nativ.includes("Browser.addListener"));
   check("Markierung html.native gesetzt", await page.evaluate(() => document.documentElement.classList.contains("native")));
   check("Kein Hinweis „Als App installieren“", await page.locator("#installBanner").count() === 0);
-  check("Logo führt zur Suche statt zur Website", await page.locator("a.logo").getAttribute("href") === "app.html#/search");
+  check("Logo führt zu Home statt zur Website", await page.locator("a.logo").getAttribute("href") === "app.html#/home");
   check("Keine Google-Karte (Browser-Key gilt nur für carfixo.de)", !(await page.evaluate(() => [...document.scripts].some(s => s.src.includes("maps.googleapis.com")))));
 
   // ---------- Serverabrufe mit voller Adresse ----------
