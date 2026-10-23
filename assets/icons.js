@@ -66,6 +66,8 @@
     send: '<path d="M4 12l16-8-6 16-3-6-7-2z"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
     edit: '<path d="M14 5l5 5M4 20l1-4L16 5l3 3L8 19l-4 1z"/>',
+    home: '<path d="M4 10.5L12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"/>',
+    chev: '<path d="M9.5 6l6 6-6 6"/>',
   };
   // Alias-Zuordnung Kategorie-Schlüssel → Icon
   const ALIAS = {

@@ -99,6 +99,138 @@
     return leafletLoader;
   }
 
+  // ---- MapLibre (nur iPhone-App) ------------------------------------
+  // CARTO liefert der App (capacitor://localhost) keine freien Kacheln mehr
+  // ("API KEY REQUIRED"). In der App deshalb Vektorkarte mit OpenFreeMap:
+  // ohne Schlüssel, ohne Anmeldung, kommerziell erlaubt. MapLibre liegt im
+  // App-Paket (mobile/build-www.js), auf carfixo.de gibt es die Datei nicht.
+  const MAPLIBRE_STYLE = "https://tiles.openfreemap.org/styles/positron";
+  let maplibreLoader = null;
+  function loadMaplibre() {
+    if (window.maplibregl) return Promise.resolve(true);
+    if (maplibreLoader) return maplibreLoader;
+    maplibreLoader = new Promise((resolve) => {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "assets/vendor/maplibre-gl.css";
+      document.head.appendChild(css);
+      const s = document.createElement("script");
+      s.src = "assets/vendor/maplibre-gl.js";
+      s.onload = () => resolve(!!window.maplibregl);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+    return maplibreLoader;
+  }
+
+  // Positron ist hell und schlicht – wir färben es ins Carfixo-Dunkel um,
+  // statt uns auf einen fremden Dunkel-Stil zu verlassen.
+  function carfixoDark(map) {
+    const set = (id, prop, val) => { try { map.setPaintProperty(id, prop, val); } catch (e) { /* Eigenschaft fehlt */ } };
+    (map.getStyle().layers || []).forEach((l) => {
+      const id = l.id, name = id.toLowerCase();
+      if (l.type === "background") set(id, "background-color", "#0A0F1A");
+      else if (l.type === "fill") {
+        if (/water/.test(name)) set(id, "fill-color", "#050A14");
+        else if (/building/.test(name)) set(id, "fill-color", "#141C2B");
+        else if (/park|wood|grass|landcover|forest/.test(name)) set(id, "fill-color", "#0D1A1C");
+        else set(id, "fill-color", "#0C1220");
+        set(id, "fill-outline-color", "rgba(0,0,0,0)");
+      } else if (l.type === "line") {
+        if (/water|river/.test(name)) set(id, "line-color", "#0B1A2E");
+        else if (/boundary|admin/.test(name)) set(id, "line-color", "#2A3A55");
+        else if (/rail/.test(name)) set(id, "line-color", "#1A2333");
+        else if (/motorway|trunk|primary|major/.test(name)) set(id, "line-color", "#2A3950");
+        else set(id, "line-color", "#1B2536");
+      } else if (l.type === "symbol") {
+        set(id, "text-color", /water/.test(name) ? "#3D5576" : "#8C99AD");
+        set(id, "text-halo-color", "#0A0F1A");
+        set(id, "icon-opacity", 0.55);
+      } else if (l.type === "fill-extrusion") {
+        set(id, "fill-extrusion-color", "#141C2B");
+      }
+    });
+  }
+
+  function pinEl(iconName) {
+    const el = document.createElement("div");
+    el.style.cssText = "width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);cursor:pointer;"
+      + "background:linear-gradient(135deg,#2E77FF,#0A47C2);box-shadow:0 6px 16px rgba(30,107,255,.5);"
+      + "display:flex;align-items:center;justify-content:center";
+    el.innerHTML = '<span style="transform:rotate(45deg);color:#fff;display:flex">'
+      + (window.ico ? window.ico(iconName || "reparatur", 13) : "") + "</span>";
+    // Die Drehung gehört aufs innere Element – MapLibre setzt am äußeren selbst transform.
+    const box = document.createElement("div");
+    box.appendChild(el);
+    return box;
+  }
+
+  function maplibreImpl(el, opts, onFail) {
+    const ml = window.maplibregl;
+    const interactive = opts.interactive !== false;
+    const map = new ml.Map({
+      container: el, style: MAPLIBRE_STYLE,
+      center: [opts.center[1], opts.center[0]], zoom: opts.zoom - 1,
+      interactive, scrollZoom: !!opts.scrollWheel, dragRotate: false, pitchWithRotate: false,
+      attributionControl: { compact: true },
+    });
+    map.touchZoomRotate && map.touchZoomRotate.disableRotation();
+    if (interactive) map.addControl(new ml.NavigationControl({ showCompass: false }), "top-left");
+    // Bis zum Umfärben unsichtbar – sonst blitzt kurz die helle Karte auf.
+    el.style.opacity = "0";
+    el.style.transition = "opacity .25s";
+    let stilDa = false, gefaerbt = false;
+    const zeigen = () => {
+      if (!gefaerbt) { gefaerbt = true; try { carfixoDark(map); } catch (e) { /* Stil unvollständig */ } }
+      el.style.opacity = "1";
+    };
+    map.once("styledata", () => { stilDa = true; });
+    map.on("load", zeigen);
+    setTimeout(() => { if (stilDa) zeigen(); }, 5000);
+    // Stil nicht erreichbar (offline, Dienst weg): zurück auf Leaflet.
+    map.on("error", () => {
+      if (stilDa || !onFail) return;
+      const f = onFail; onFail = null;
+      map.remove(); el.style.opacity = "1"; f();
+    });
+
+    const markers = [];
+    const ll2 = (ll) => [ll[1], ll[0]];
+    const mitPopup = (m, html) => { if (html) m.setPopup(new ml.Popup({ offset: 22, maxWidth: "260px" }).setHTML(html)); };
+    return {
+      setView: (ll, zoom) => map.jumpTo({ center: ll2(ll), zoom: zoom ? zoom - 1 : map.getZoom() }),
+      onClick: (cb) => map.on("click", (e) => cb([e.lngLat.lat, e.lngLat.lng])),
+      addDot: (ll, o) => {
+        const d = document.createElement("div");
+        const r = (o && o.radius) || 8;
+        d.style.cssText = `width:${r * 2}px;height:${r * 2}px;border-radius:50%;background:${(o && o.color) || "#1E6BFF"};`
+          + `border:2px solid ${(o && o.stroke) || "#9CC6FF"};box-shadow:0 0 0 6px rgba(30,107,255,.18)`;
+        const m = new ml.Marker({ element: d }).setLngLat(ll2(ll)).addTo(map);
+        mitPopup(m, o && o.popup);
+        markers.push(m); return m;
+      },
+      addPin: (ll, o) => {
+        const m = new ml.Marker({ element: pinEl(o && o.iconName), anchor: "bottom" }).setLngLat(ll2(ll)).addTo(map);
+        mitPopup(m, o && o.popup);
+        markers.push(m); return m;
+      },
+      addDraggable: (ll, onMove) => {
+        const m = new ml.Marker({ draggable: true, color: "#1E6BFF" }).setLngLat(ll2(ll)).addTo(map);
+        m.on("dragend", () => { const p = m.getLngLat(); onMove([p.lat, p.lng]); });
+        return { setPosition: (p) => m.setLngLat(ll2(p)), _raw: m };
+      },
+      clearMarkers: () => { markers.forEach(m => m.remove()); markers.length = 0; },
+      fitMarkers: () => {
+        if (!markers.length) return;
+        if (markers.length === 1) return map.jumpTo({ center: markers[0].getLngLat() });
+        const b = new ml.LngLatBounds();
+        markers.forEach(m => b.extend(m.getLngLat()));
+        map.fitBounds(b, { padding: 48, duration: 0, maxZoom: 15 });
+      },
+      refresh: () => map.resize(),
+    };
+  }
+
   // ---- Marker-Grafik: Tropfen-Pin mit Kategorie-Icon als Data-URI -----
   function pinDataUri(iconName) {
     const inner = String(window.ico ? window.ico(iconName || "reparatur", 15) : "")
@@ -261,6 +393,42 @@
       queue.length = 0;
     }
 
+    function bootLeaflet() {
+      loadLeaflet().then((ok) => {
+        // Waehrend des Nachladens kann die Ansicht gewechselt worden sein.
+        const el2 = document.getElementById(elId);
+        if (!ok || !el2) return;             // ohne Leaflet bleibt der Kasten leer
+        el2.innerHTML = "";
+        impl = leafletImpl(el2, o);
+        handle.provider = "leaflet";
+        flush();
+      });
+    }
+
+    function bootMaplibre() {
+      loadMaplibre().then((ok) => {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        if (!ok) return bootLeaflet();
+        try {
+          // Fällt der Stil aus, übernimmt Leaflet – Marker kommen erneut aus der Warteschlange.
+          const verlauf = [];
+          impl = maplibreImpl(el, o, () => {
+            impl = null;
+            verlauf.forEach(x => queue.push(x));
+            bootLeaflet();
+          });
+          handle.provider = "maplibre";
+          const echt = impl;
+          METHODS.forEach((name) => {
+            const f = echt[name];
+            echt[name] = function () { verlauf.push([name, Array.prototype.slice.call(arguments), null]); return f.apply(echt, arguments); };
+          });
+          flush();
+        } catch (e) { impl = null; bootLeaflet(); }
+      });
+    }
+
     function boot(useGoogle) {
       const el = document.getElementById(elId);
       if (!el) return;                       // Ansicht wurde inzwischen verlassen
@@ -271,17 +439,11 @@
           return flush();
         } catch (e) { /* Google da, aber unbrauchbar -> unten Leaflet nachladen */ }
       }
-      loadLeaflet().then((ok) => {
-        // Waehrend des Nachladens kann die Ansicht gewechselt worden sein.
-        const el2 = document.getElementById(elId);
-        if (!ok || !el2) return;             // ohne Leaflet bleibt der Kasten leer
-        impl = leafletImpl(el2, o);
-        handle.provider = "leaflet";
-        flush();
-      });
+      bootLeaflet();
     }
 
-    if (WANT_GOOGLE) loadGoogle().then(boot);
+    if (NATIVE) bootMaplibre();
+    else if (WANT_GOOGLE) loadGoogle().then(boot);
     else boot(false);
 
     return handle;

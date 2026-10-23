@@ -84,3 +84,10 @@ angesehen werden sollte und welche Entscheidungen bewusst getroffen wurden.
   Einwilligungsbanner Pflicht
 - Kostenpflichtige Leistungen (Premium-Abo, Provision) → AGB § 4 bzw. § 4 Betriebe,
   Muster-Widerrufsbelehrung, Widerrufsbutton, Kleinunternehmergrenze beachten
+
+## iPhone-App: Kartendienst OpenFreeMap (neu)
+In der App kommen Karten von OpenFreeMap (tiles.openfreemap.org) statt CARTO, weil CARTO
+der App keine Kacheln ohne API-Schlüssel ausliefert. Prüfen: Betreiber/Sitz für die
+Datenschutzerklärung ergänzen, Drittlandbezug klären, ob ein Auftragsverarbeitungsvertrag
+nötig/möglich ist (öffentlicher Dienst ohne Vertrag – ggf. als eigenständig Verantwortlicher
+einordnen). Eintrag steht in legal.html unter „Karten“.

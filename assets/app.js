@@ -20,6 +20,10 @@ const API = NATIVE ? SITE : "";
 const appAdresse = () => NATIVE ? SITE + "/app.html" : location.origin + location.pathname;
 // Fremde Seiten (Stripe, Google Maps, PDFs) öffnet die App in einem Safari-
 // Fenster über der App, statt die App selbst wegzunavigieren.
+// Eigene Oberfläche für die App (Startseite, schwebende Tab-Leiste, randlos).
+// Im Browser zur Vorschau mit app.html?appui=1 – die Website bleibt wie sie ist.
+const APP_UI = NATIVE || /[?&]appui=1\b/.test(location.search);
+if (APP_UI) document.documentElement.classList.add("appui");
 function oeffneExtern(url) {
   if (NATIVE && window.capacitorBrowser) return window.capacitorBrowser.Browser.open({ url });
   location.href = url;
@@ -92,11 +96,14 @@ const routes = {
   "ws/dashboard": vWsDashboard, "ws/leads": vWsLeads, "ws/lead": vWsLead,
   "ws/jobs": vWsJobs, "ws/calendar": vWsCalendar, "ws/profile": vWsProfile,
   "ws/parts": vWsParts, "ws/stats": vWsStats, "ws/archive": vWsArchive,
-  "kuendigen": vKuendigen, "widerrufen": vWiderrufen,
+  "kuendigen": vKuendigen, "widerrufen": vWiderrufen, "home": vHome,
 };
 const CUSTOMER_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"], ["requests", "megaphone", "Aufträge"], ["vehicles", "car", "Fahrzeuge"]];
 const WS_NAV = [["ws/dashboard", "gauge", "Dashboard"], ["ws/leads", "megaphone", "Anfragen"], ["ws/jobs", "box", "Aufträge"], ["ws/parts", "puzzle", "Teile"], ["ws/calendar", "calendar", "Kalender"], ["ws/profile", "shop", "Profil"]];
 const ANON_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"], ["notfall", "alert", "Notfall"]];
+// App: Home vorne, höchstens fünf Tabs (mit Login/Konto). Notfall, Aufträge
+// und Fahrzeuge sind über die Startseite erreichbar.
+const APP_NAV = [["home", "home", "Home"], ["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"]];
 
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, "");
@@ -338,10 +345,10 @@ async function route() {
   const { name, param, query } = parseHash();
   window.scrollTo(0, 0);
   if (!name) {
-    if (!me) return go("search");
     if (myProfile?.role === "workshop_owner" || myProfile?.role === "workshop_staff") return go("ws/dashboard");
-    return go("search");
+    return go(APP_UI ? "home" : "search");
   }
+  document.body.dataset.route = name;
   const view = routes[name] || vNotFound;
   renderNav(name);
   try { await view(param, query); mountFilterSheet(); } catch (e) {
@@ -352,7 +359,7 @@ async function route() {
 
 function renderNav(active) {
   const isWs = myProfile?.role === "workshop_owner" || myProfile?.role === "workshop_staff";
-  const items = me ? (isWs ? WS_NAV : CUSTOMER_NAV) : ANON_NAV;
+  const items = isWs ? WS_NAV : APP_UI ? APP_NAV : me ? CUSTOMER_NAV : ANON_NAV;
   const nav = items.map(([r, ic, label]) =>
     `<a href="#/${r}" class="${active === r ? "on" : ""}">${label}</a>`).join("");
   $("topNav").innerHTML = nav + (me
@@ -395,6 +402,8 @@ function updateFilterCount(n) {
 }
 
 function mountFilterSheet() {
+  // App: Karten-Knopf festhalten – er sitzt evtl. schon in der alten Leiste
+  const karte = APP_UI ? $("mapToggle") : null;
   // Reste der vorigen Seite entfernen – sonst bleibt die Sperre am Body hängen
   $("mFilterBar")?.remove();
   $("sheetBack")?.remove();
@@ -411,6 +420,8 @@ function mountFilterSheet() {
   bar.innerHTML = `<button class="btn ghost sm" type="button" id="mFilterOpen" aria-expanded="false">
     ${ico("gear", 16)} Filter &amp; Umkreis <span class="fCount" id="mFilterCount" hidden></span></button>`;
   grid.parentNode.insertBefore(bar, grid);
+  // App: Karte als zweiter Chip neben dem Filter statt eigener Knopfzeile
+  if (karte) { bar.appendChild(karte); $("mapToggleWrap")?.remove(); }
 
   const back = document.createElement("div");
   back.id = "sheetBack";
@@ -762,6 +773,149 @@ let searchOrigin = null, searchOriginLabel = "";   // [lat,lng] – Standort des
 const PSEUDO_LOC_LABELS = ["Dein Standort", "Karten-Position"];
 let allWorkshops = null, searchMap = null, compareSet = [];
 
+// ============================================================
+// HOME (nur in der App)
+// Aufbau nach Uber und CHECK24: große Frage mit Suchfeld, Kacheln für die
+// häufigsten Leistungen, der laufende Auftrag wie eine Fahrt im Blick,
+// dann Vergleichen, Garage und Top-Betriebe in der Nähe.
+// ============================================================
+const HOME_TILES = [
+  ["reparatur", "Reparatur", "#4D8DFF"], ["inspektion", "Inspektion", "#38BDF8"],
+  ["reifen", "Reifen", "#A78BFF"], ["tuev", "TÜV", "#2BD58A"],
+  ["pflege", "Pflege", "#FFB020"], ["karosserie", "Karosserie", "#FF7A59"],
+  ["klima", "Klima", "#5EEAD4"], ["tuning", "Tuning", "#F472B6"],
+];
+
+function hmGruss() {
+  const h = new Date().getHours();
+  const name = (myProfile?.full_name || "").trim().split(/\s+/)[0];
+  const gruss = h < 11 ? "Guten Morgen" : h < 18 ? "Hallo" : "Guten Abend";
+  return name ? `${gruss}, ${esc(name)}` : gruss;
+}
+
+async function vHome() {
+  const kunde = me && !myWorkshop;
+  main.innerHTML = `
+  <section class="hm">
+    <div class="hmHi">${hmGruss()}</div>
+    <h1 class="hmTitle">Was braucht<br>dein Auto?</h1>
+
+    <form class="hmSearch" id="hmSearch" role="search">
+      <span class="hmSearchIco">${ico("search", 20)}</span>
+      <input id="hmQ" placeholder="Leistung oder Werkstatt" enterkeyhint="search" autocomplete="off" aria-label="Suche">
+      <button class="hmGo" type="submit" aria-label="Suchen">${ico("chev", 20)}</button>
+    </form>
+
+    <div class="hmTiles">
+      ${HOME_TILES.map(([k, label, farbe]) => `<a class="hmTile" href="#/search?cat=${k}" style="--c:${farbe}">
+        <span class="hmTileIco">${ico(k, 24)}</span><span>${label}</span></a>`).join("")}
+    </div>
+
+    <div id="hmLive"></div>
+
+    <a class="hmPromo" href="#/${kunde ? "new-request" : me ? "search" : "register"}">
+      <div class="hmPromoTxt">
+        <span class="hmKicker">Kostenlos vergleichen</span>
+        <b>Angebote einholen,<br>günstigsten wählen</b>
+        <span class="hmPromoBtn">${kunde ? "Anfrage starten" : me ? "Betriebe ansehen" : "Jetzt loslegen"} ${ico("chev", 16)}</span>
+      </div>
+      <span class="hmPromoArt">${ico("euro", 64)}</span>
+    </a>
+
+    <div class="hmQuick">
+      <a class="hmQ" href="#/diagnose"><span class="hmQIco" style="--c:#A78BFF">${ico("robot", 22)}</span>
+        <b>Diagnose</b><span>Was hat mein Auto?</span></a>
+      <a class="hmQ hmQRed" href="#/notfall"><span class="hmQIco" style="--c:#FF5C5C">${ico("alert", 22)}</span>
+        <b>Notfall</b><span>Panne? Hilfe in der Nähe</span></a>
+      <a class="hmQ" href="#/teile"><span class="hmQIco" style="--c:#38BDF8">${ico("puzzle", 22)}</span>
+        <b>Teile</b><span>Kaufen & einbauen lassen</span></a>
+    </div>
+
+    <div id="hmGarage"></div>
+
+    <div class="hmSec"><h2>Top in deiner Nähe</h2><a href="#/search">Alle ${ico("chev", 14)}</a></div>
+    <div class="hmRail" id="hmTop">${'<div class="hmWs sk"></div>'.repeat(3)}</div>
+
+    <div class="hmTrust">
+      <div>${ico("shield", 20)}<span>Geprüfte Betriebe</span></div>
+      <div>${ico("star", 20)}<span>Echte Bewertungen</span></div>
+      <div>${ico("euro", 20)}<span>Kostenlos für dich</span></div>
+    </div>
+  </section>`;
+
+  $("hmSearch").onsubmit = (e) => {
+    e.preventDefault();
+    const q = $("hmQ").value.trim();
+    go(q ? "search?q=" + encodeURIComponent(q) : "search");
+  };
+
+  const top = (async () => {
+    if (!allWorkshops) {
+      const { data } = await sb.from("workshops").select("*").eq("is_verified", true).order("rating_avg", { ascending: false }).limit(200);
+      allWorkshops = data || [];
+    }
+    const box = $("hmTop");
+    if (!box) return;
+    const liste = allWorkshops.slice().sort((a, b) => (b.rating_avg || 0) - (a.rating_avg || 0)).slice(0, 8);
+    box.innerHTML = liste.length ? liste.map(ws => `<a class="hmWs" href="#/workshop/${ws.id}">
+      <div class="wsAv" style="${ws.logo_url ? `background-image:url('${esc(ws.logo_url)}');background-size:cover;background-position:center;color:transparent` : avStil(ws.name)}">${esc(initials(ws.name))}</div>
+      <b>${esc(ws.name)}</b>
+      <span class="hmWsMeta">${ico("star", 13)} ${ws.rating_avg > 0 ? Number(ws.rating_avg).toLocaleString("de-DE") : "Neu"} · ${esc(ws.district || ws.city || "")}</span>
+      ${ws.is_demo ? '<span class="badge b-blue">Beispielbetrieb</span>' : ""}
+    </a>`).join("") : `<div class="mm">Noch keine Betriebe in deiner Nähe.</div>`;
+  })();
+
+  if (kunde) await Promise.all([top, hmLive(), hmGarage()]);
+  else await top;
+}
+
+// Laufender Auftrag – wie eine Fahrt bei Uber: Status und Fortschritt
+async function hmLive() {
+  const [{ data: bks }, { data: reqs }] = await Promise.all([
+    sb.from("bookings").select("id,status,booking_no,offers(request_id)").eq("customer_id", me.id)
+      .not("status", "in", "(completed,cancelled)").order("created_at", { ascending: false }).limit(1),
+    sb.from("requests").select("id,title,category,status,offers(count)").eq("customer_id", me.id)
+      .eq("status", "open").order("created_at", { ascending: false }).limit(1),
+  ]);
+  const box = $("hmLive");
+  if (!box) return;
+  const bk = bks?.[0], r = reqs?.[0];
+  if (bk && BK_STATUS[bk.status]) {
+    const schritt = Math.max(0, BK_FLOW.indexOf(bk.status));
+    const anteil = Math.round(((schritt + 1) / BK_FLOW.length) * 100);
+    const ziel = bk.offers?.request_id ? `request/${bk.offers.request_id}` : "requests";
+    box.innerHTML = `<a class="hmLive" href="#/${ziel}">
+      <div class="hmLiveTop"><span class="hmPulse"></span><span class="hmKicker">Dein Auftrag ${esc(bk.booking_no || "")}</span></div>
+      <b>${BK_STATUS[bk.status][0]}</b>
+      <div class="hmBar"><i style="width:${anteil}%"></i></div>
+      <span class="mm">Tippen für Details ${ico("chev", 13)}</span></a>`;
+  } else if (r) {
+    const n = r.offers?.[0]?.count || 0;
+    box.innerHTML = `<a class="hmLive" href="#/request/${r.id}">
+      <div class="hmLiveTop"><span class="hmPulse"></span><span class="hmKicker">Deine Anfrage</span></div>
+      <b>${esc(r.title)}</b>
+      <span class="mm">${n ? `${n} Angebot${n > 1 ? "e" : ""} zum Vergleichen` : "Betriebe schauen sich deine Anfrage an"} ${ico("chev", 13)}</span></a>`;
+  }
+}
+
+// Garage: Fahrzeuge mit TÜV-Hinweis, plus "Meine Aufträge"
+async function hmGarage() {
+  const { data: autos } = await sb.from("vehicles").select("id,make,model,license_plate,tuev_until").eq("owner_id", me.id).order("created_at");
+  const box = $("hmGarage");
+  if (!box) return;
+  const bald = (d) => d && new Date(d) < new Date(Date.now() + 60 * 864e5);
+  box.innerHTML = `<div class="hmSec"><h2>Meine Garage</h2><a href="#/requests">Meine Aufträge ${ico("chev", 14)}</a></div>
+    <div class="hmRail">
+      ${(autos || []).map(v => `<a class="hmCar" href="#/vehicle/${v.id}">
+        <span class="hmCarIco">${ico("car", 26)}</span>
+        <b>${esc(v.make || "")} ${esc(v.model || "")}</b>
+        <span class="mm">${esc(v.license_plate || "")}</span>
+        ${v.tuev_until ? `<span class="badge ${bald(v.tuev_until) ? "b-gold" : "b-grey"}">TÜV ${fmtDate(v.tuev_until)}</span>` : ""}
+      </a>`).join("")}
+      <a class="hmCar hmCarAdd" href="#/vehicles"><span class="hmCarIco">${ico("plus", 26)}</span><b>Fahrzeug</b><span class="mm">hinzufügen</span></a>
+    </div>`;
+}
+
 async function vSearch(_p, query) {
   // Deep-Links von der Startseite: #/search?q=…&cat=…&world=…&loc=…
   if (query) {
@@ -786,7 +940,7 @@ async function vSearch(_p, query) {
     ${s.q ? `<button class="btn ghost sm" id="fQClear" style="flex:0 0 auto" aria-label="Suche zurücksetzen">✕</button>` : ""}
   </div>
 
-  <div class="card" style="margin-bottom:16px;border-color:rgba(124,92,255,.35);background:linear-gradient(120deg,rgba(124,92,255,.1),var(--panel))">
+  <div class="card diagPromo" style="margin-bottom:16px;border-color:rgba(124,92,255,.35);background:linear-gradient(120deg,rgba(124,92,255,.1),var(--panel))">
     <div class="cardHead">
       <div class="ico icoPurple" style="width:48px;height:48px;font-size:22px">${ico("robot", 22)}</div>
       <div style="flex:1"><div class="tt">Nicht sicher, was dein Auto hat?</div>
