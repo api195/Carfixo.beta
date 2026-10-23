@@ -34,3 +34,12 @@ Rand gehen (randlos, durchscheinend/verschwommen statt massiv schwarz).
   (Apple empfiehlt höchstens 5 Tabs).
 - Suche: weniger Text, Diagnose-Werbung ausgeblendet, Filter und Karte als Chips.
 - Vorschau im Browser: app.html?appui=1
+
+## Rückmeldungen, Runde 2 (23.10.2026)
+1. **Echte Bilder für die Kategorien** statt Icons auf den Home-Kacheln
+   (Reparatur, Inspektion, Reifen, TÜV, Pflege, Karosserie, Klima, Tuning).
+   Bildrechte klären: eigene Fotos, lizenzfreie Fotos (z. B. Unsplash/Pexels-Lizenz)
+   oder KI-generiert – keine Bilder ohne Nutzungsrecht.
+2. **Diagnose zu voll gepackt** – moderner und übersichtlicher machen
+   (Schritt für Schritt statt alles auf einer Seite).
+3. Zum Durchtesten: je ein Kunden-, Betriebs- und Admin-Login.
