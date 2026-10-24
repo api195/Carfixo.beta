@@ -538,10 +538,12 @@ html.appui .diagPromo{display:none}
   background:linear-gradient(135deg,#2E77FF,#0A47C2);box-shadow:0 6px 18px rgba(30,107,255,.4)}
 .hmTiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .hmTile{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#C9D3E3}
-.hmTileIco{width:100%;aspect-ratio:1;border-radius:20px;display:flex;align-items:center;justify-content:center;color:var(--c);
-  background:radial-gradient(circle at 30% 20%,color-mix(in srgb,var(--c) 30%,transparent),color-mix(in srgb,var(--c) 10%,transparent));
-  border:1px solid color-mix(in srgb,var(--c) 22%,transparent)}
-.hmTile:active .hmTileIco,.hmQ:active,.hmWs:active,.hmCar:active,.hmPromo:active,.hmLive:active{transform:scale(.97)}
+.hmTileImg{position:relative;width:100%;aspect-ratio:1;border-radius:20px;overflow:hidden;
+  background:color-mix(in srgb,var(--c) 18%,#111725);box-shadow:0 6px 16px rgba(0,0,0,.35)}
+.hmTileImg img{width:100%;height:100%;object-fit:cover;display:block}
+.hmTileImg::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);background:linear-gradient(180deg,transparent 55%,rgba(5,7,13,.35))}
+.hmTile:active .hmTileImg,.hmQ:active,.hmWs:active,.hmCar:active,.hmPromo:active,.hmLive:active{transform:scale(.97)}
 .hmLive{display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-radius:22px;
   background:linear-gradient(135deg,rgba(43,213,138,.14),rgba(17,23,37,.8));border:1px solid rgba(43,213,138,.25)}
 .hmLive b{font-size:19px}
@@ -599,3 +601,49 @@ html.appui .mFilterBar>.btn{height:42px;border-radius:99px;font-size:13.5px;padd
 /* Home: Kopf liegt über dem Inhalt – Gruß steht auf Höhe von Glocke/Konto */
 html.appui body[data-route="home"] .topbar{position:fixed;left:0;right:0}
 html.appui body[data-route="home"] main{padding-top:calc(env(safe-area-inset-top) + 14px)}
+
+/* ---------- Diagnose: Schritt für Schritt ---------- */
+.dg{max-width:680px;margin:0 auto}
+.dgCard[hidden],.dgStep[hidden]{display:none}
+.dgCard{padding:22px}
+.dgProg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px}
+.dgSeg{display:flex;flex-direction:column;gap:7px;font-size:11.5px;font-weight:700;color:var(--muted)}
+.dgSeg i{display:block;height:4px;border-radius:99px;background:rgba(255,255,255,.09);transition:background .25s}
+.dgSeg.on i{background:linear-gradient(90deg,#2E77FF,#38BDF8)}
+.dgSeg.cur{color:var(--ink)}
+.dgStep h2{font-size:22px;font-weight:800;letter-spacing:-.5px;line-height:1.2}
+.dgStep>.mm{margin:6px 0 14px;font-size:13.5px}
+.dgStep textarea{min-height:120px;font-size:15px}
+.dgHint{margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.dgSwitch{margin:0 0 14px}
+.dgSwitch b{display:inline-flex;min-width:18px;height:18px;padding:0 5px;border-radius:99px;align-items:center;justify-content:center;
+  font-size:11px;background:rgba(255,255,255,.18);margin-left:4px}
+.dgSwitch b:empty{display:none}
+.dgChips[hidden]{display:none}
+.dgChips .chip{padding:10px 14px;font-size:13px}
+.dgDot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex:none}
+.dgDot.rot{background:var(--red)}
+.dgChips .chip.on .dgDot{background:#fff}
+.dgNav{display:flex;justify-content:space-between;gap:10px;margin-top:22px}
+.dgNav .btn{min-width:120px;justify-content:center}
+.dgNav #dgNext{flex:1;max-width:280px;margin-left:auto}
+.dgNote{margin-top:14px;font-size:11px;color:var(--muted);line-height:1.5}
+.dgResHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.dgResHead h2{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.dgCause{margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
+.dgCause>.mm{line-height:1.55}
+.dgCauseTop{display:flex;gap:12px;align-items:flex-start;font-size:15.5px;line-height:1.35}
+.dgRank{flex:none;width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:var(--blue2);background:rgba(30,107,255,.16)}
+.dgTags{display:flex;flex-wrap:wrap;gap:6px}
+.dgTags .badge{display:inline-flex;align-items:center;gap:4px}
+.dgLine{display:flex;gap:8px;font-size:13px;line-height:1.55;color:var(--muted)}
+.dgLine svg{flex:none;margin-top:3px}
+.dgRisk{color:#EBC172}
+.dgDo{color:#8FE7BF}
+.dgPrice{align-self:flex-start;display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;
+  background:rgba(255,255,255,.05);font-size:13px}
+.dgPrice span{color:var(--muted);font-size:12px}
+.dgActions{margin-top:4px}
+html.appui .dgCard{border-radius:24px}
+html.appui .dgActions .btn{flex:1;justify-content:center;white-space:nowrap}
