@@ -104,7 +104,7 @@ Sicherheit:
 
 ## Testkonten (Beta)
 
-Es gibt 3 Testkonten (`…@carfixo-test.de`) und 6 Demo-Betriebe in Köln
+Früher gab es 3 Testkonten (`…@carfixo-test.de`) und 6 Demo-Betriebe in Köln
 (`demo-…@carfixo-demo.de`).
 
 > **Alle 9 Konten sind seit 2026-10-18 gesperrt.** Ihre Zugangsdaten standen früher
@@ -122,6 +122,21 @@ mit Hinweis „Beispielbetrieb", ohne Prüfsiegel, ohne Anfrage- oder Kaufmögli
 Vor dem echten Launch ausblenden mit
 `update public.workshops set is_verified = false where is_demo;`
 
+**Aktuelle Testkonten (seit 2026-10-24)** – Passwörter wurden nur im Chat übergeben
+und stehen bewusst nicht hier:
+
+| Konto | Rolle | Hinweis |
+|---|---|---|
+| `test-kunde@carfixo-test.de` | Kunde | E-Mail-Benachrichtigungen aus (Domain empfängt keine Mails) |
+| `test-werkstatt@carfixo-test.de` | Betrieb „Carfixo Testwerkstatt“ | verifiziert **und** Beispielbetrieb, alle 8 Home-Kategorien |
+
+Die Testwerkstatt ist verifiziert, sieht also offene Ausschreibungen und kann Angebote
+abgeben. Als Beispielbetrieb nimmt sie aber keine Direktanfragen an und trägt den
+Hinweis „Beispielbetrieb“. Durchspielen: als Kunde eine Ausschreibung in Köln anlegen,
+als Werkstatt anbieten, als Kunde annehmen. Echte verifizierte Betriebe sehen
+Ausschreibungen des Testkunden ebenfalls – im Titel am besten „TEST“ schreiben.
+Vor dem Launch sperren wie oben (`banned_until`); die Zeile oben blendet die Testwerkstatt mit aus.
+
 ## Lokal starten
 
 ```bash
@@ -135,6 +150,9 @@ python3 -m http.server 8000
 python3 -m http.server 8000     # in einem zweiten Terminal
 npm i playwright && node tests/smoke.js
 ```
+
+`node tests/diagnose.js` prüft die Diagnose-Schritte und die Fotos der Home-Kacheln
+(mit `SHOTS=ordner` entstehen Bildschirmfotos).
 
 Smoke-Test für Routing, Auth-Ansichten und Handler-Escaping. Prüft bewusst nur, was
 ohne Backend läuft – datengetriebene Inhalte brauchen eine erreichbare Supabase-Instanz.

@@ -778,6 +778,8 @@ let allWorkshops = null, searchMap = null, compareSet = [];
 // Aufbau nach Uber und CHECK24: große Frage mit Suchfeld, Kacheln für die
 // häufigsten Leistungen, der laufende Auftrag wie eine Fahrt im Blick,
 // dann Vergleichen, Garage und Top-Betriebe in der Nähe.
+// Kachelbilder: Unsplash-Lizenz, lokal unter assets/img/kategorien/
+// (Nachweis in docs/bildnachweise.md).
 // ============================================================
 const HOME_TILES = [
   ["reparatur", "Reparatur", "#4D8DFF"], ["inspektion", "Inspektion", "#38BDF8"],
@@ -808,7 +810,7 @@ async function vHome() {
 
     <div class="hmTiles">
       ${HOME_TILES.map(([k, label, farbe]) => `<a class="hmTile" href="#/search?cat=${k}" style="--c:${farbe}">
-        <span class="hmTileIco">${ico(k, 24)}</span><span>${label}</span></a>`).join("")}
+        <span class="hmTileImg"><img src="assets/img/kategorien/${k}.webp" alt="" loading="lazy" decoding="async"></span><span>${label}</span></a>`).join("")}
     </div>
 
     <div id="hmLive"></div>
@@ -4191,55 +4193,81 @@ async function vDiagnose() {
     cars = data || [];
   }
   window._dgCars = cars;
+  // Schritt für Schritt: alle Felder bleiben im DOM (Sichern/Wiederherstellen
+  // nach dem Login greift weiter über die IDs), sichtbar ist nur ein Schritt.
   main.innerHTML = `
+  <div class="dg">
   <div class="pageHead"><div>
     <h1>Diagnose</h1>
-    <div class="sub">Beschreibe das Problem deines Autos – du bekommst eine <b>unverbindliche Ersteinschätzung</b> mit möglichen Ursachen, Preisorientierung und passenden Werkstätten. Ersetzt keine Prüfung durch eine Fachwerkstatt.</div>
+    <div class="sub">In drei kurzen Schritten zur unverbindlichen Ersteinschätzung.</div>
   </div></div>
-  <div class="grid2" style="align-items:start">
-    <div class="card">
-      <div class="label" style="margin-top:0">Fahrzeug ${cars.length ? "" : "(optional – ohne Login allgemein)"}</div>
+  <div class="card dgCard" id="dgWizard">
+    <div class="dgProg" aria-hidden="true">
+      ${DG_STEPS.map((t, i) => `<div class="dgSeg" data-i="${i + 1}"><i></i><span>${t}</span></div>`).join("")}
+    </div>
+
+    <section class="dgStep" data-step="1">
+      <h2>Was ist los mit deinem Auto?</h2>
+      <p class="mm">Ein, zwei Sätze reichen: Was passiert, wann und wo am Auto?</p>
+      <textarea id="dgDesc" rows="4" placeholder="z.B. Beim Bremsen quietscht es vorne laut, besonders wenn es kalt ist"></textarea>
+      <p class="dgHint">Lieber antippen statt tippen? Einfach weiter – im nächsten Schritt wählst du Warnleuchte oder Geräusch.</p>
+    </section>
+
+    <section class="dgStep" data-step="2" hidden>
+      <h2>Leuchte oder Geräusch?</h2>
+      <p class="mm">Tippe an, was zutrifft. Nichts davon? Einfach weiter.</p>
+      <div class="seg dgSwitch" id="dgSwitch">
+        <div data-p="dgLights" class="on">Warnleuchte <b id="dgCntL"></b></div>
+        <div data-p="dgSounds">Geräusch <b id="dgCntS"></b></div>
+      </div>
+      <div class="chips dgChips" id="dgLights">${WARNING_LIGHTS.map(w => `<span class="chip" data-k="${w.k}"><span class="dgDot ${w.sev === "hoch" ? "rot" : ""}"></span>${w.name}</span>`).join("")}</div>
+      <div class="chips dgChips" id="dgSounds" hidden>${SOUNDS.map(s => `<span class="chip" data-k="${s.k}">${s.name}</span>`).join("")}</div>
+    </section>
+
+    <section class="dgStep" data-step="3" hidden>
+      <h2>Fast geschafft</h2>
+      <p class="mm">Mit Fahrzeug und Dringlichkeit wird die Einschätzung genauer.</p>
+      <div class="label">Fahrzeug ${cars.length ? "" : "(optional)"}</div>
       ${cars.length
         ? `<select id="dgCar">${cars.map((c, i) => `<option value="${c.id}" ${i === 0 ? "selected" : ""}>${esc(carLabel(c))}</option>`).join("")}</select>`
-        : `<div class="split"><select id="dgMake">${opt("Marke (optional)", Object.keys(BRANDS), "")}</select><select id="dgPs">${opt("PS (optional)", PS_LIST, "")}</select></div>
-           ${me ? "" : '<p class="mm" style="margin-top:6px">Tipp: <a href="#/login" style="color:var(--blue2)">Anmelden</a> und Fahrzeug speichern – dann wird die Einschätzung genauer.</p>'}`}
-      <div class="label">Was ist das Problem? *</div>
-      <textarea id="dgDesc" placeholder="z.B. Beim Bremsen quietscht es vorne laut, besonders wenn es kalt ist…"></textarea>
-      <div class="label">Leuchtet eine Warnleuchte?</div>
-      <div class="chips" id="dgLights">${WARNING_LIGHTS.map(w => `<span class="chip" data-k="${w.k}"><span style="color:${w.sev==='hoch'?'var(--red)':'var(--gold)'};line-height:1">●</span> ${w.name}</span>`).join("")}</div>
-      <div class="label">Hörst du ein Geräusch?</div>
-      <div class="chips" id="dgSounds">${SOUNDS.map(s => `<span class="chip" data-k="${s.k}">${s.name}</span>`).join("")}</div>
-      <div class="label">Foto / Video (optional)</div>
-      <div class="uploadTile" onclick="$('dgFile').click()">
-        <div class="ico icoPurple"></div>
-        <div><div class="tt" style="font-size:12.5px">Schaden fotografieren oder filmen</div>
-        <div class="mm">Bilder werden mit deiner Anfrage an Betriebe übergeben</div></div>
-      </div>
-      <input type="file" id="dgFile" accept="image/*,video/*" multiple class="hidden">
-      <div class="thumbs" id="dgThumbs"></div>
-      <div class="label">Wie dringend ist es?</div>
+        : `<div class="split"><select id="dgMake">${opt("Marke (optional)", Object.keys(BRANDS), "")}</select><select id="dgPs">${opt("PS (optional)", PS_LIST, "")}</select></div>`}
+      <div class="label">Wie dringend?</div>
       <div class="seg" style="margin:4px 0 0" id="dgUrgency">
         <div data-u="normal" class="on">Kann warten</div>
         <div data-u="dringend">Diese Woche</div>
-        <div data-u="notfall">Sofort / Notfall</div>
+        <div data-u="notfall">Sofort</div>
       </div>
-      <button class="btn wide" style="margin-top:18px" id="dgGo">Einschätzung anzeigen</button>
-      <div class="err" id="dgErr"></div>
-    </div>
-    <div id="dgResult">
-      <div class="card" style="text-align:center;padding:40px 24px">
-        <div style="font-size:42px"></div>
-        <div class="tt" style="margin-top:10px">Deine Ersteinschätzung erscheint hier</div>
-        <p class="mm" style="margin-top:6px">Je genauer deine Beschreibung, desto besser die Einschätzung. Bei roten Warnleuchten: besser sofort anhalten und prüfen lassen.</p>
+      <div class="label">Foto oder Video (optional)</div>
+      <div class="uploadTile" onclick="$('dgFile').click()">
+        <div class="ico icoPurple">${ico("camera", 20)}</div>
+        <div><div class="tt" style="font-size:12.5px">Schaden fotografieren oder filmen</div>
+        <div class="mm">Geht mit deiner Anfrage an die Betriebe</div></div>
       </div>
+      <input type="file" id="dgFile" accept="image/*,video/*" multiple class="hidden">
+      <div class="thumbs" id="dgThumbs"></div>
+    </section>
+
+    <div class="err" id="dgErr"></div>
+    <div class="dgNav">
+      <button class="btn ghost" id="dgBack" type="button">Zurück</button>
+      <button class="btn" id="dgNext" type="button">Weiter</button>
     </div>
+    <p class="dgNote">Unverbindlich – ersetzt keine Prüfung durch eine Fachwerkstatt. Bei roten Warnleuchten besser sofort anhalten.</p>
+  </div>
+  <div id="dgResult"></div>
   </div>`;
   ["dgLights", "dgSounds"].forEach(boxId => document.querySelectorAll(`#${boxId} .chip`).forEach(c => c.onclick = () => {
     const arr = boxId === "dgLights" ? dgLights : dgSounds;
     const i = arr.indexOf(c.dataset.k);
     if (i >= 0) arr.splice(i, 1); else arr.push(c.dataset.k);
     c.classList.toggle("on");
+    dgCounts();
   }));
+  // Warnleuchten und Geräusche nacheinander statt untereinander – kürzere Liste
+  document.querySelectorAll("#dgSwitch div").forEach(d => d.onclick = () => {
+    document.querySelectorAll("#dgSwitch div").forEach(x => x.classList.toggle("on", x === d));
+    ["dgLights", "dgSounds"].forEach(id => { $(id).hidden = id !== d.dataset.p; });
+  });
   document.querySelectorAll("#dgUrgency div").forEach(d => d.onclick = () => {
     document.querySelectorAll("#dgUrgency div").forEach(x => x.classList.toggle("on", x === d));
   });
@@ -4250,7 +4278,9 @@ async function vDiagnose() {
       ? `<span class="pill">${esc(f.name)}</span>`
       : `<img src="${URL.createObjectURL(f)}" loading="lazy" alt="">`).join("");
   };
-  $("dgGo").onclick = runDiagnose;
+  $("dgBack").onclick = () => dgShow(dgStep - 1);
+  $("dgNext").onclick = () => dgStep < DG_STEPS.length ? dgShow(dgStep + 1) : runDiagnose();
+  dgShow(1);
 
   // Nach Registrierung/Login: zuvor eingegebene Diagnose wiederherstellen …
   const pend = sessionStorage.getItem("cfx_dg_pending");
@@ -4263,13 +4293,43 @@ async function vDiagnose() {
       dgSounds = Array.isArray(d.sounds) ? d.sounds.slice() : [];
       document.querySelectorAll("#dgLights .chip").forEach(c => c.classList.toggle("on", dgLights.includes(c.dataset.k)));
       document.querySelectorAll("#dgSounds .chip").forEach(c => c.classList.toggle("on", dgSounds.includes(c.dataset.k)));
+      dgCounts();
       if (d.urgency) document.querySelectorAll("#dgUrgency div").forEach(x => x.classList.toggle("on", x.dataset.u === d.urgency));
       if ($("dgMake") && d.make) $("dgMake").value = d.make;
       if ($("dgPs") && d.ps) $("dgPs").value = d.ps;
+      dgShow(DG_STEPS.length);
     } catch (e) { /* ignore */ }
     // … und die Einschätzung direkt anzeigen, wenn jetzt angemeldet
     if (me) runDiagnose();
   }
+}
+const DG_STEPS = ["Problem", "Anzeichen", "Details"];
+let dgStep = 1;
+function dgShow(n) {
+  dgStep = Math.min(Math.max(n, 1), DG_STEPS.length);
+  document.querySelectorAll(".dgStep").forEach(st => { st.hidden = +st.dataset.step !== dgStep; });
+  document.querySelectorAll(".dgSeg").forEach(sg => {
+    sg.classList.toggle("on", +sg.dataset.i <= dgStep);
+    sg.classList.toggle("cur", +sg.dataset.i === dgStep);
+  });
+  $("dgBack").style.visibility = dgStep > 1 ? "visible" : "hidden";
+  $("dgNext").textContent = dgStep < DG_STEPS.length ? "Weiter" : "Ergebnis zeigen";
+  $("dgErr").style.display = "none";
+}
+function dgCounts() {
+  $("dgCntL").textContent = dgLights.length || "";
+  $("dgCntS").textContent = dgSounds.length || "";
+}
+// Ergebnis ausblenden und zurück zu den Angaben (alles bleibt ausgefüllt)
+function dgEdit() {
+  $("dgResult").innerHTML = "";
+  $("dgWizard").hidden = false;
+  dgShow(1);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function dgResultHead() {
+  return `<div class="dgResHead"><h2>Deine Ersteinschätzung</h2>
+    <button class="btn ghost sm" type="button" onclick="dgEdit()">Angaben ändern</button></div>`;
 }
 function saveDgPending() {
   sessionStorage.setItem("cfx_dg_pending", JSON.stringify({
@@ -4281,14 +4341,17 @@ function saveDgPending() {
 function runDiagnose() {
   const err = $("dgErr"); err.style.display = "none";
   const desc = $("dgDesc").value.trim();
-  if (!desc && dgLights.length === 0 && dgSounds.length === 0)
-    return showErr(err, "Bitte beschreibe das Problem oder wähle mindestens eine Warnleuchte / ein Geräusch.");
+  if (!desc && dgLights.length === 0 && dgSounds.length === 0) {
+    dgShow(1);
+    return showErr(err, "Beschreibe kurz das Problem oder wähle im nächsten Schritt eine Warnleuchte bzw. ein Geräusch.");
+  }
+  $("dgWizard").hidden = true;
   // KI-Antwort erst nach Registrierung – Eingaben werden gesichert und danach fortgesetzt
   if (!me) {
     saveDgPending();
-    $("dgResult").innerHTML = `
+    $("dgResult").innerHTML = `${dgResultHead()}
       <div class="card" style="text-align:center;padding:34px 24px;border-color:rgba(30,107,255,.4);background:linear-gradient(160deg,rgba(30,107,255,.08),var(--panel))">
-        <div style="font-size:40px"></div>
+        <div style="color:var(--blue2)">${ico("lock", 34)}</div>
         <div class="tt" style="margin-top:10px;font-size:16px">Deine Ersteinschätzung ist fertig</div>
         <p class="mm" style="margin-top:8px;font-size:12.5px">Registriere dich <b>kostenlos</b>, um die möglichen Ursachen, die Preisorientierung und passende Werkstätten zu sehen. Deine Eingaben bleiben erhalten.</p>
         <div class="btnRow" style="justify-content:center;margin-top:16px">
@@ -4316,30 +4379,32 @@ function runDiagnose() {
   const recs = (allWorkshops || []).filter(ws => top.some(h => ws.categories.includes(h.cat))).slice(0, 3);
   const qs = top[0] ? `cat=${top[0].cat}&service=${encodeURIComponent(top[0].service)}&title=${encodeURIComponent(top[0].guess.slice(0, 60))}&desc=${encodeURIComponent(desc.slice(0, 300))}&urgency=${urgency}` : "";
 
-  $("dgResult").innerHTML = `
-  ${redAlert ? `<div class="warn" style="border-color:rgba(255,92,92,.5);color:#FF9C9C"><b>Sicherheitshinweis:</b> Bei roten Warnleuchten oder akuten Problemen nicht weiterfahren. ${urgency === "notfall" ? `<a href="#/notfall" style="color:#fff;font-weight:800">→ Zum Notfallmodus</a>` : `<a href="#/notfall" style="color:#fff;font-weight:800">Notfallmodus öffnen</a>`}</div>` : ""}
-  <div class="card" style="margin-bottom:14px">
-    <div class="tt">Unverbindliche Ersteinschätzung</div>
-    ${top.length === 0
-      ? `<p class="mm" style="margin-top:10px">Keine eindeutige Zuordnung möglich. Empfohlene Prüfung durch eine Fachwerkstatt – erstelle am besten eine Ausschreibung mit deiner Beschreibung.</p>`
-      : top.map(h => {
-        const pr = priceRange(h.service, car);
-        return `<div style="padding:13px 0;border-bottom:1px solid var(--line)">
-          <div style="font-size:13.5px"><b>Mögliche Ursache:</b> ${esc(h.guess)} <span class="badge ${h.conf === "hoch" ? "b-green" : "b-gold"}">${h.conf}e Wahrscheinlichkeit</span>${h.sev === "hoch" ? ' <span class="badge b-red">wichtig</span>' : ""}</div>
-          ${h.why ? `<div class="mm" style="margin-top:5px;font-size:12.5px;line-height:1.55">${ico("lightbulb")} ${esc(h.why)}</div>` : ""}
-          ${h.risk ? `<div class="mm" style="margin-top:4px;font-size:12.5px;line-height:1.55;color:#EBC172">${ico("alert")} ${esc(h.risk)}</div>` : ""}
-          ${h.action ? `<div class="mm" style="margin-top:4px;font-size:12.5px;line-height:1.55;color:#8FE7BF">${ico("arrowR")} ${esc(h.action)}</div>` : ""}
-          <div class="mm" style="margin-top:5px">Empfohlener Bereich: ${ico(h.cat)} ${CATS[h.cat].name} → ${esc(h.service)}</div>
-          ${pr ? `<div class="mm" style="margin-top:3px">${ico("euro")} Preisorientierung: häufig <b>${pr.lo}–${pr.hi} €</b>${pr.note ? " (" + esc(pr.note) + ")" : ""}</div>` : ""}
-        </div>`;
-      }).join("")}
-    <p class="mm" style="margin-top:10px;font-size:11px">Unverbindliche Ersteinschätzung – keine Diagnose und keine Preiszusage. Der endgültige Preis wird nach Prüfung durch die Werkstatt festgelegt.</p>
-    <div class="btnRow">
-      ${me && !myWorkshop ? `<a class="btn" href="#/new-request?${qs}">Ausschreibung mit diesen Angaben</a>` : `<a class="btn" href="#/${me ? "search" : "register"}">${me ? "Werkstatt suchen" : "Kostenlos registrieren & anfragen"}</a>`}
-      ${top[0] ? `<a class="btn ghost" href="#/teile?q=${encodeURIComponent(top[0].service)}">Passende Teile im Marktplatz</a>` : ""}
-      ${urgency !== "normal" ? `<a class="btn red" href="#/notfall">Notfallmodus</a>` : ""}
-    </div>
+  $("dgResult").innerHTML = `${dgResultHead()}
+  ${redAlert ? `<div class="warn" style="border-color:rgba(255,92,92,.5);color:#FF9C9C"><b>Sicherheitshinweis:</b> Bei roten Warnleuchten oder akuten Problemen nicht weiterfahren. <a href="#/notfall" style="color:#fff;font-weight:800">Notfallmodus öffnen</a></div>` : ""}
+  ${top.length === 0
+    ? `<div class="card dgCause"><b>Keine eindeutige Zuordnung möglich</b>
+        <p class="mm">Am besten prüft das eine Fachwerkstatt. Erstelle eine Ausschreibung mit deiner Beschreibung – passende Betriebe melden sich mit Angeboten.</p></div>`
+    : top.map((h, i) => {
+      const pr = priceRange(h.service, car);
+      return `<div class="card dgCause">
+        <div class="dgCauseTop"><span class="dgRank">${i + 1}</span><b>${esc(h.guess)}</b></div>
+        <div class="dgTags">
+          <span class="badge ${h.conf === "hoch" ? "b-green" : "b-gold"}">${h.conf}e Wahrscheinlichkeit</span>
+          ${h.sev === "hoch" ? '<span class="badge b-red">wichtig</span>' : ""}
+          <span class="badge b-blue">${ico(h.cat)} ${CATS[h.cat].name} · ${esc(h.service)}</span>
+        </div>
+        ${h.why ? `<p class="dgLine">${ico("lightbulb")}<span>${esc(h.why)}</span></p>` : ""}
+        ${h.risk ? `<p class="dgLine dgRisk">${ico("alert")}<span>${esc(h.risk)}</span></p>` : ""}
+        ${h.action ? `<p class="dgLine dgDo">${ico("arrowR")}<span>${esc(h.action)}</span></p>` : ""}
+        ${pr ? `<div class="dgPrice">${ico("euro")} häufig <b>${pr.lo}–${pr.hi} €</b>${pr.note ? `<span>${esc(pr.note)}</span>` : ""}</div>` : ""}
+      </div>`;
+    }).join("")}
+  <div class="btnRow dgActions">
+    ${me && !myWorkshop ? `<a class="btn" href="#/new-request?${qs}">Angebote einholen</a>` : `<a class="btn" href="#/${me ? "search" : "register"}">${me ? "Werkstatt suchen" : "Kostenlos registrieren & anfragen"}</a>`}
+    ${top[0] ? `<a class="btn ghost" href="#/teile?q=${encodeURIComponent(top[0].service)}">Passende Teile</a>` : ""}
+    ${urgency !== "normal" ? `<a class="btn red" href="#/notfall">Notfallmodus</a>` : ""}
   </div>
+  <p class="dgNote">Unverbindliche Ersteinschätzung – keine Diagnose und keine Preiszusage. Den endgültigen Preis legt die Werkstatt nach der Prüfung fest.</p>
   <div id="dgParts"></div>
   ${recs.length ? `<div class="card"><div class="tt">Passende Betriebe in der Nähe</div>
     <div style="margin-top:12px">${recs.map(ws => wsCardHtml({ ...ws, _dist: distKm(searchOrigin || CITY_CENTER, [ws.lat, ws.lng]) })).join("")}</div></div>` : ""}`;
