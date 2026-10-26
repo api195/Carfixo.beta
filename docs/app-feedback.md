@@ -54,3 +54,9 @@ Rand gehen (randlos, durchscheinend/verschwommen statt massiv schwarz).
    ändern“ führt zurück. Gilt für App und Website.
 3. Testkonten für Kunde und Werkstatt angelegt (siehe README, „Testkonten“).
    Passwörter stehen nicht im Repository. Admin bleibt das Inhaberkonto.
+
+## Rückmeldung zu Runde 2 (26.10.2026)
+- Die Unsplash-Fotos gefallen nicht. Gewünscht: Illustrationen im Cartoon-Stil wie bei
+  Uber, alle im selben Stil.
+- Umgesetzt: 8 eigene SVG-Illustrationen mit gemeinsamen Stilregeln
+  (`docs/bildnachweise.md`). KI-Bilder über Higgsfield waren nicht möglich (0 Credits).

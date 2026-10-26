@@ -151,7 +151,7 @@ python3 -m http.server 8000     # in einem zweiten Terminal
 npm i playwright && node tests/smoke.js
 ```
 
-`node tests/diagnose.js` prüft die Diagnose-Schritte und die Fotos der Home-Kacheln
+`node tests/diagnose.js` prüft die Diagnose-Schritte und die Bilder der Home-Kacheln
 (mit `SHOTS=ordner` entstehen Bildschirmfotos).
 
 Smoke-Test für Routing, Auth-Ansichten und Handler-Escaping. Prüft bewusst nur, was

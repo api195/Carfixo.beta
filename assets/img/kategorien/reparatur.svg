@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><radialGradient id="sh"><stop offset="0" stop-color="#000" stop-opacity=".45"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFC15A"/><stop offset="1" stop-color="#EE6C12"/></linearGradient>
+<linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#97A2B4"/></linearGradient>
+<mask id="m"><rect x="-60" y="-60" width="240" height="240" fill="#fff"/><rect x="88" y="53" width="24" height="14" rx="2" fill="#000"/><circle cx="25" cy="60" r="4.5" fill="#000"/></mask></defs><ellipse cx="60" cy="106" rx="38" ry="7" fill="url(#sh)"/>
+<g transform="translate(78 40)"><circle r="21" fill="url(#g)"/><circle r="24" fill="none" stroke="url(#g)" stroke-width="8" stroke-dasharray="9.4 9.4"/><circle r="8" fill="#B94D08"/></g>
+<g transform="rotate(-38 60 60) translate(0 8)"><g mask="url(#m)">
+<rect x="24" y="53" width="64" height="14" rx="7" fill="url(#w)"/><circle cx="90" cy="60" r="17" fill="url(#w)"/><circle cx="25" cy="60" r="11" fill="url(#w)"/>
+<rect x="34" y="55.5" width="44" height="3" rx="1.5" fill="#fff" opacity=".8"/></g></g></svg>

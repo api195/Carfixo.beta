@@ -1,4 +1,4 @@
-// Carfixo – Diagnose Schritt für Schritt und Fotos der Home-Kacheln.
+// Carfixo – Diagnose Schritt für Schritt und Bilder der Home-Kacheln.
 // Vorher:  python3 -m http.server 8000
 // Ausführen:  node tests/diagnose.js   (Bildschirmfotos mit SHOTS=ordner)
 const { chromium } = require("playwright");
@@ -16,12 +16,12 @@ const shot = (page, name) => SHOTS ? page.screenshot({ path: `${SHOTS}/${name}.p
   await page.route("**/rest/v1/**", r => r.fulfill({ status: 200, contentType: "application/json", body: "[]" }));
   await page.route("**/auth/v1/**", r => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
 
-  // ---------- Home: echte Fotos ----------
+  // ---------- Home: Illustrationen ----------
   await page.goto("http://localhost:8000/app.html?appui=1#/home");
   await page.waitForSelector(".hmTile img");
   await page.evaluate(() => Promise.all([...document.querySelectorAll(".hmTile img")].map(i => i.decode().catch(() => {}))));
   const bilder = await page.$$eval(".hmTile img", is => is.map(i => i.naturalWidth));
-  check("Home: 8 Kacheln mit geladenem Foto", bilder.length === 8 && bilder.every(w => w > 0), bilder.join(","));
+  check("Home: 8 Kacheln mit geladenem Bild", bilder.length === 8 && bilder.every(w => w > 0), bilder.join(","));
   await shot(page, "home");
 
   // ---------- Diagnose: Schritte ----------
