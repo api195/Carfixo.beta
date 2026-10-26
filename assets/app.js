@@ -2293,11 +2293,14 @@ function chatBinden(requestId) {
   };
   document.querySelectorAll("#msgQuick .chip").forEach(c => c.onclick = () => { $("msgIn").value = c.dataset.t; sendMsg(requestId); });
 }
+// Nur Dateien aus unserem eigenen Speicher anzeigen – sonst könnte jemand fremde
+// Bild-Links (z. B. Zählpixel) in den Chat schreiben.
+const eigenerSpeicher = (u) => typeof u === "string" && u.startsWith(CARFIXO.SUPABASE_URL + "/storage/v1/object/public/");
 async function loadMsgs(requestId) {
   const { data } = await sb.from("messages").select("*").eq("request_id", requestId).order("created_at");
   const box = $("msgs"); if (!box) return;
   box.innerHTML = (data || []).map(m => `
-    <div class="msg ${m.sender_id === me.id ? "me" : "them"}">${(m.attachments || []).map(u => `<img class="msgImg" src="${esc(u)}" loading="lazy" alt="Foto" onclick="openLightbox(this.src)">`).join("")}${m.body && !((m.attachments || []).length && m.body === "Foto") ? esc(m.body) : ""}<div class="mt">${fmtDateTime(m.created_at)}</div></div>`).join("")
+    <div class="msg ${m.sender_id === me.id ? "me" : "them"}">${(m.attachments || []).filter(eigenerSpeicher).map(u => `<img class="msgImg" src="${esc(u)}" loading="lazy" alt="Foto" onclick="openLightbox(this.src)">`).join("")}${m.body && !((m.attachments || []).length && m.body === "Foto") ? esc(m.body) : ""}<div class="mt">${fmtDateTime(m.created_at)}</div></div>`).join("")
     || '<p class="mm" style="text-align:center;padding:14px">Noch keine Nachrichten – stell hier Rückfragen.</p>';
   box.scrollTop = box.scrollHeight;
 }
