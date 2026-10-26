@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/diagnose.js": { "maxDuration": 60 }
+  },
   "redirects": [
     {
       "source": "/(.*)",
@@ -21,6 +24,15 @@
         { "key": "Access-Control-Allow-Origin", "value": "capacitor://localhost" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Authorization" },
+        { "key": "Access-Control-Max-Age", "value": "86400" }
+      ]
+    },
+    {
+      "source": "/api/diagnose",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "capacitor://localhost" },
+        { "key": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Authorization, Content-Type, apikey" },
         { "key": "Access-Control-Max-Age", "value": "86400" }
       ]
     },

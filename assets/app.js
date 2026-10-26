@@ -1547,7 +1547,7 @@ async function vNewRequest(_p, query) {
     // Migration 2026-10-18. Eine explizit genannte, fehlende Spalte ließe die
     // Abfrage scheitern und Direktanfragen bis dahin komplett ausfallen.
     const { data: ws } = await sb.from("workshops").select("*").eq("id", query.ws).maybeSingle();
-    if (ws?.is_demo) {
+    if (ws?.is_demo && !istTester()) {
       toast("Das ist ein Beispielbetrieb – deine Anfrage geht stattdessen an alle passenden Betriebe.");
     } else {
       nrTargetWs = ws;
@@ -1648,6 +1648,8 @@ async function vNewRequest(_p, query) {
   $("nDate").onchange = syncDateExclusive;
   syncDateExclusive();
   $("nFile").onchange = handleNrFiles;
+  // Fotos und Geräuschaufnahme aus der Diagnose mitnehmen
+  if (window._dgCarry?.length) { nrFiles = window._dgCarry.slice(0, 4); window._dgCarry = null; zeigeNrFiles(); }
   $("nAnalyze").onclick = runAiAnalyze;
   $("nCarAdd").onclick = () => openVehicleForm();
   $("nGo").onclick = () => submitRequest(cars || []);
@@ -1704,12 +1706,19 @@ function handleNrFiles() {
   // Bilder bis 8 MB, Videos bis 40 MB
   const files = [...$("nFile").files].slice(0, 4 - nrFiles.length);
   files.forEach(f => { const lim = f.type.startsWith("video") ? 40 : 8; if (f.size < lim * 1024 * 1024) nrFiles.push(f); });
+  zeigeNrFiles();
+}
+function zeigeNrFiles() {
   $("nThumbs").innerHTML = nrFiles.map(f => f.type.startsWith("video")
     ? `<span class="pill">${ico("camera")} ${esc(f.name.slice(0, 22))}</span>`
+    : f.type.startsWith("audio") ? `<audio src="${URL.createObjectURL(f)}" controls preload="metadata"></audio>`
     : `<img src="${URL.createObjectURL(f)}" loading="lazy" alt="">`).join("");
 }
 // Anhang als Bild oder Video darstellen (nach Dateiendung)
 function mediaTile(url) {
+  // Geräuschaufnahmen aus der Diagnose (Dateiname beginnt mit geraeusch_)
+  if (/geraeusch_|\.(m4a|mp3|wav|aac|oga)(\?|$)/i.test(url))
+    return `<div class="audioTile">${ico("bolt", 16)} Geräusch<audio src="${esc(url)}" controls preload="metadata"></audio></div>`;
   return /\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(url)
     ? `<video src="${esc(url)}" controls preload="metadata" style="width:130px;height:100px;object-fit:cover;border-radius:10px;border:1px solid var(--line2)"></video>`
     : `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" loading="lazy" alt="Anhang"></a>`;
@@ -2372,6 +2381,11 @@ function parseFahrzeugschein(raw) {
   if (seats) out.seats = +seats;
   const plate = U.match(/\b([A-ZÖÜÄ]{1,3})[-\s]([A-Z]{1,2})[-\s](\d{1,4})\b/);
   if (plate) out.plate = `${plate[1]}-${plate[2]} ${plate[3]}`;
+  // Schlüsselnummern: 2.1 = Hersteller (HSN, 4 Ziffern), 2.2 = Typ (TSN, erste 3 Zeichen)
+  const hsn = U.match(/\b2[.,]\s?1[^0-9]{0,4}(\d{4})\b/);
+  if (hsn) out.hsn = hsn[1];
+  const tsn = U.match(/\b2[.,]\s?2[^A-Z0-9]{0,4}([A-Z0-9]{3})/);
+  if (tsn) out.tsn = tsn[1];
   return out;
 }
 let _tesseractLoading = null;
@@ -2407,6 +2421,8 @@ function applyScheinData(d, statusEl) {
   if (d.fuel && $("cFuel")) setVal("cFuel", d.fuel, "Kraftstoff");
   if (d.seats && $("cSeats")) setVal("cSeats", d.seats, "Sitzplätze");
   setVal("cPlate", d.plate, "Kennzeichen");
+  setVal("cHsn", d.hsn, "HSN");
+  setVal("cTsn", d.tsn, "TSN");
   if (statusEl) statusEl.innerHTML = filled.length
     ? `<span style="color:var(--green)">${ico("check")} Übernommen: ${filled.join(", ")}. Bitte kurz prüfen und ergänzen.</span>`
     : `<span style="color:var(--gold)">${ico("alert")} Keine Felder sicher erkannt – bitte manuell ausfüllen (Foto möglichst gerade & scharf).</span>`;
@@ -2500,6 +2516,12 @@ async function openVehicleForm(editId) {
     <div class="label" style="margin-top:18px">Dokumente</div>
     <div class="split">
       <div><div class="label" style="margin-top:0">Kennzeichen (optional)</div><input id="cPlate" placeholder="K-XX 1234" value="${esc(v.license_plate || "")}"></div>
+      <div class="split" style="gap:8px">
+        <div><div class="label" style="margin-top:0" title="Feld 2.1 im Fahrzeugschein">HSN (2.1)</div><input id="cHsn" inputmode="numeric" maxlength="4" placeholder="0005" value="${esc(v.hsn || "")}"></div>
+        <div><div class="label" style="margin-top:0" title="Feld 2.2, erste drei Zeichen">TSN (2.2)</div><input id="cTsn" maxlength="3" placeholder="BJK" style="text-transform:uppercase" value="${esc(v.tsn || "")}"></div>
+      </div>
+    </div>
+    <div class="split">
       <div><div class="label" style="margin-top:0">Fahrzeugschein (optional)</div><input type="file" id="cDoc" accept="image/*,.pdf" style="padding:9px"></div>
     </div>
     ${v.registration_doc ? '<p class="mm" style="margin-top:5px">Bereits hinterlegt – neue Datei ersetzt die alte.</p>' : ""}
@@ -2634,6 +2656,8 @@ async function openVehicleForm(editId) {
       doors: $("cDoors").value || null, seats: +$("cSeats").value || null,
       color: $("cColor").value || null,
       license_plate: $("cPlate").value.trim() || null,
+      hsn: /^\d{4}$/.test($("cHsn").value.trim()) ? $("cHsn").value.trim() : null,
+      tsn: /^[A-Z0-9]{3}$/.test($("cTsn").value.trim().toUpperCase()) ? $("cTsn").value.trim().toUpperCase() : null,
       registration_doc: docPath,
     };
     const q = editId ? sb.from("vehicles").update(row).eq("id", editId) : sb.from("vehicles").insert(row);
@@ -4345,8 +4369,105 @@ async function saveWsProfile(getPriceLevel) {
 // KI-DIAGNOSE (Hauptfunktion, öffentlich – regelbasiert)
 // ============================================================
 let dgLights = [], dgSounds = [], dgFiles = [];
+let dgAudio = null;
+
+// ---------- Geräusch aufnehmen (bis 15 s) ----------
+let dgRecorder = null;
+async function geraeuschAufnehmen() {
+  const btn = $("dgRec");
+  if (dgRecorder) { dgRecorder.stop(); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { return toast("Kein Zugriff aufs Mikrofon – bitte in den Einstellungen erlauben."); }
+  const typ = ["audio/mp4", "audio/webm", "audio/ogg"].find(t => MediaRecorder.isTypeSupported?.(t)) || "";
+  const teile = [];
+  dgRecorder = new MediaRecorder(stream, typ ? { mimeType: typ } : undefined);
+  dgRecorder.ondataavailable = (e) => { if (e.data.size) teile.push(e.data); };
+  dgRecorder.onstop = () => {
+    stream.getTracks().forEach(t => t.stop());
+    clearTimeout(dgRecorder._stopp); dgRecorder = null;
+    const mime = (teile[0] && teile[0].type) || typ || "audio/webm";
+    const endung = mime.includes("mp4") ? "m4a" : mime.includes("ogg") ? "oga" : "webm";
+    dgAudio = new File(teile, `geraeusch_${Date.now()}.${endung}`, { type: mime });
+    if (!$("dgRec")) return;
+    $("dgRec").innerHTML = `${ico("bolt", 16)} Neu aufnehmen`;
+    $("dgRecInfo").textContent = "Aufnahme gespeichert – geht mit deiner Anfrage an die Werkstatt.";
+    $("dgRecPlay").src = URL.createObjectURL(dgAudio); $("dgRecPlay").hidden = false;
+    haptic("success");
+  };
+  dgRecorder.start();
+  dgRecorder._stopp = setTimeout(() => dgRecorder?.stop(), 15000);
+  btn.innerHTML = `<span class="recDot"></span> Aufnahme stoppen`;
+  $("dgRecInfo").textContent = "Halte das Handy in die Nähe des Geräuschs …";
+  haptic("medium");
+}
+// Fotos und Aufnahme in die Anfrage mitnehmen
+function dgMitnehmen() { window._dgCarry = [...dgFiles, dgAudio].filter(Boolean); }
+
+// ---------- KI-Einschätzung (Claude über /api/diagnose) ----------
+// Läuft zusätzlich zur regelbasierten Einschätzung. Ohne Schlüssel auf dem
+// Server (configured:false) oder bei Fehlern bleibt es still bei den Regeln.
+function bildVerkleinern(file, max = 1024) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const f = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * f); c.height = Math.round(img.height * f);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      resolve(c.toDataURL("image/jpeg", 0.8).split(",")[1]);
+    };
+    img.onerror = () => resolve(null);
+    img.src = URL.createObjectURL(file);
+  });
+}
+const KI_FAHREN = { ja: ["Weiterfahren möglich", "b-green"], eingeschraenkt: ["Nur vorsichtig weiterfahren", "b-gold"], nein: ["Nicht weiterfahren", "b-red"] };
+async function kiDiagnose(desc, car, urgency) {
+  const box = $("dgAi"); if (!box || !me) return;
+  box.innerHTML = `<div class="card dgAiCard"><div class="dgAiHead"><span class="badge b-purple">KI</span><b>KI schaut sich das an …</b></div>
+    <div class="sk" style="height:60px;margin-top:10px"></div></div>`;
+  let d = {};
+  try {
+    const images = (await Promise.all(dgFiles.filter(f => f.type.startsWith("image")).slice(0, 3).map(f => bildVerkleinern(f)))).filter(Boolean);
+    const { data: { session } } = await sb.auth.getSession();
+    const r = await fetch(API + "/api/diagnose", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + (session?.access_token || ""), apikey: CARFIXO.SUPABASE_KEY },
+      body: JSON.stringify({
+        desc, urgency, images,
+        lights: dgLights.map(k => WARNING_LIGHTS.find(w => w.k === k)?.name || k),
+        sounds: dgSounds.map(k => SOUNDS.find(x => x.k === k)?.name || k),
+        car: car ? { make: car.make, model: car.model, year: car.year, ps: car.power_ps } : null,
+      }),
+    });
+    d = await r.json();
+  } catch (e) { d = {}; }
+  if (!$("dgAi")) return;
+  if (!d.configured || !d.result) {
+    box.innerHTML = d.configured && d.error ? `<p class="mm" style="margin-bottom:12px">${esc(d.error)} Unten siehst du die Einschätzung nach unseren Regeln.</p>` : "";
+    return;
+  }
+  const k = d.result, fahren = KI_FAHREN[k.safe_to_drive];
+  const top = (k.causes || [])[0];
+  const qs = top ? `cat=${encodeURIComponent(top.category)}&service=${encodeURIComponent(top.service || "")}&title=${encodeURIComponent((top.title || "").slice(0, 60))}&desc=${encodeURIComponent(desc.slice(0, 300))}&urgency=${urgency}` : "";
+  box.innerHTML = `<div class="card dgAiCard">
+    <div class="dgAiHead"><span class="badge b-purple">KI</span><b>KI-Einschätzung</b>${fahren ? `<span class="badge ${fahren[1]}" style="margin-left:auto">${fahren[0]}</span>` : ""}</div>
+    <p style="margin-top:8px">${esc(k.summary || "")}</p>
+    ${k.photo_findings ? `<p class="dgLine" style="margin-top:8px">${ico("camera")}<span>${esc(k.photo_findings)}</span></p>` : ""}
+    ${(k.causes || []).map((c, i) => `<div class="dgAiCause">
+      <div class="dgCauseTop"><span class="dgRank">${i + 1}</span><b>${esc(c.title)}</b></div>
+      <div class="dgTags"><span class="badge ${c.likelihood === "hoch" ? "b-green" : c.likelihood === "mittel" ? "b-gold" : "b-grey"}">${esc(c.likelihood)}e Wahrscheinlichkeit</span>
+        ${CATS[c.category] ? `<span class="badge b-blue">${ico(c.category)} ${CATS[c.category].name}${c.service ? " · " + esc(c.service) : ""}</span>` : ""}</div>
+      ${c.explanation ? `<p class="dgLine">${ico("lightbulb")}<span>${esc(c.explanation)}</span></p>` : ""}
+      ${c.next_step ? `<p class="dgLine dgDo">${ico("arrowR")}<span>${esc(c.next_step)}</span></p>` : ""}
+    </div>`).join("")}
+    ${top && !myWorkshop ? `<a class="btn sm" style="margin-top:12px" href="#/new-request?${qs}" onclick="dgMitnehmen()">Angebote dafür einholen</a>` : ""}
+    <p class="dgNote">Erstellt von einer KI (Claude von Anthropic). Sie kann sich irren und ersetzt keine Prüfung in der Werkstatt.</p>
+  </div>`;
+}
 async function vDiagnose() {
-  dgLights = []; dgSounds = []; dgFiles = [];
+  dgLights = []; dgSounds = []; dgFiles = []; dgAudio = null;
   if (!allWorkshops) {
     sb.from("workshops").select("*").eq("is_verified", true).limit(200)
       .then(({ data }) => { allWorkshops = data || []; });
@@ -4385,7 +4506,13 @@ async function vDiagnose() {
         <div data-p="dgSounds">Geräusch <b id="dgCntS"></b></div>
       </div>
       <div class="chips dgChips" id="dgLights">${WARNING_LIGHTS.map(w => `<span class="chip" data-k="${w.k}"><span class="dgDot ${w.sev === "hoch" ? "rot" : ""}"></span>${w.name}</span>`).join("")}</div>
-      <div class="chips dgChips" id="dgSounds" hidden>${SOUNDS.map(s => `<span class="chip" data-k="${s.k}">${s.name}</span>`).join("")}</div>
+      <div id="dgSounds" hidden>
+        <div class="chips dgChips">${SOUNDS.map(s => `<span class="chip" data-k="${s.k}">${s.name}</span>`).join("")}</div>
+        ${window.MediaRecorder ? `<div class="recBox">
+          <button type="button" class="btn ghost sm" id="dgRec">${ico("bolt", 16)} Geräusch aufnehmen</button>
+          <span class="mm" id="dgRecInfo">bis 15 Sekunden – die Werkstatt kann es sich anhören</span>
+          <audio id="dgRecPlay" controls hidden></audio></div>` : ""}
+      </div>
     </section>
 
     <section class="dgStep" data-step="3" hidden>
@@ -4409,6 +4536,7 @@ async function vDiagnose() {
       </div>
       <input type="file" id="dgFile" accept="image/*,video/*" multiple class="hidden">
       <div class="thumbs" id="dgThumbs"></div>
+      <p class="dgHint">Mit Konto bekommst du zusätzlich eine KI-Einschätzung: Dafür gehen deine Beschreibung und bis zu drei Fotos an Anthropic (Claude). Details in der <a href="legal.html#datenschutz" style="color:var(--blue2)">Datenschutzerklärung</a>.</p>
     </section>
 
     <div class="err" id="dgErr"></div>
@@ -4420,6 +4548,7 @@ async function vDiagnose() {
   </div>
   <div id="dgResult"></div>
   </div>`;
+  if ($("dgRec")) $("dgRec").onclick = geraeuschAufnehmen;
   ["dgLights", "dgSounds"].forEach(boxId => document.querySelectorAll(`#${boxId} .chip`).forEach(c => c.onclick = () => {
     const arr = boxId === "dgLights" ? dgLights : dgSounds;
     const i = arr.indexOf(c.dataset.k);
@@ -4544,6 +4673,7 @@ function runDiagnose() {
   const qs = top[0] ? `cat=${top[0].cat}&service=${encodeURIComponent(top[0].service)}&title=${encodeURIComponent(top[0].guess.slice(0, 60))}&desc=${encodeURIComponent(desc.slice(0, 300))}&urgency=${urgency}` : "";
 
   $("dgResult").innerHTML = `${dgResultHead()}
+  <div id="dgAi"></div>
   ${redAlert ? `<div class="warn" style="border-color:rgba(255,92,92,.5);color:#FF9C9C"><b>Sicherheitshinweis:</b> Bei roten Warnleuchten oder akuten Problemen nicht weiterfahren. <a href="#/notfall" style="color:#fff;font-weight:800">Notfallmodus öffnen</a></div>` : ""}
   ${top.length === 0
     ? `<div class="card dgCause"><b>Keine eindeutige Zuordnung möglich</b>
@@ -4564,7 +4694,7 @@ function runDiagnose() {
       </div>`;
     }).join("")}
   <div class="btnRow dgActions">
-    ${me && !myWorkshop ? `<a class="btn" href="#/new-request?${qs}">Angebote einholen</a>` : `<a class="btn" href="#/${me ? "search" : "register"}">${me ? "Werkstatt suchen" : "Kostenlos registrieren & anfragen"}</a>`}
+    ${me && !myWorkshop ? `<a class="btn" href="#/new-request?${qs}" onclick="dgMitnehmen()">Angebote einholen</a>` : `<a class="btn" href="#/${me ? "search" : "register"}">${me ? "Werkstatt suchen" : "Kostenlos registrieren & anfragen"}</a>`}
     ${top[0] ? `<a class="btn ghost" href="#/teile?q=${encodeURIComponent(top[0].service)}">Passende Teile</a>` : ""}
     ${urgency !== "normal" ? `<a class="btn red" href="#/notfall">Notfallmodus</a>` : ""}
   </div>
@@ -4574,6 +4704,7 @@ function runDiagnose() {
     <div style="margin-top:12px">${recs.map(ws => wsCardHtml({ ...ws, _dist: distKm(searchOrigin || CITY_CENTER, [ws.lat, ws.lng]) })).join("")}</div></div>` : ""}`;
   // Passende Teile aus dem Marktplatz (direkt zum Teil)
   if (top[0]) loadDiagnoseParts(top);
+  kiDiagnose(desc, car, urgency);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 async function loadDiagnoseParts(top) {

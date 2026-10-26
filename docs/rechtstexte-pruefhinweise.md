@@ -91,3 +91,13 @@ der App keine Kacheln ohne API-Schlüssel ausliefert. Prüfen: Betreiber/Sitz f�
 Datenschutzerklärung ergänzen, Drittlandbezug klären, ob ein Auftragsverarbeitungsvertrag
 nötig/möglich ist (öffentlicher Dienst ohne Vertrag – ggf. als eigenständig Verantwortlicher
 einordnen). Eintrag steht in legal.html unter „Karten“.
+
+## KI-Diagnose mit Anthropic (26.10.2026)
+- Neu: Angemeldete Nutzer bekommen in der Diagnose zusätzlich eine KI-Einschätzung. Dafür gehen
+  Beschreibung, Warnleuchten/Geräusche, Fahrzeugmodell und bis zu drei Fotos an Anthropic (USA).
+- In `legal.html` als Auftragsverarbeiter eingetragen. Zu prüfen: Auftragsverarbeitungsvertrag
+  (Anthropic Commercial Terms + DPA), Übermittlungsgrundlage USA (DPF/SCC), ob Fotos mit Kennzeichen
+  oder Personen eine zusätzliche Information/Einwilligung brauchen, Hinweis „kann sich irren“ im
+  Ergebnis (umgesetzt).
+- Geräuschaufnahmen (Mikrofon) werden wie Fotos im Speicher `attachments` abgelegt und nur mit
+  einer Anfrage an Betriebe weitergegeben; sie gehen nicht an Anthropic.

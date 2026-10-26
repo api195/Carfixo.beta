@@ -721,3 +721,14 @@ html[data-theme="light"] .faceBtn{background:#fff;color:var(--ink)}
 .msgCam{width:47px!important;background:rgba(255,255,255,.07)!important;color:var(--ink)!important}
 .msgImg{display:block;max-width:100%;max-height:220px;border-radius:10px;margin-bottom:6px;cursor:zoom-in}
 #msgThumbs img{width:56px;height:56px}
+
+/* ---------- KI-Einschätzung, Geräuschaufnahme ---------- */
+.dgAiCard{margin-bottom:14px;border-color:rgba(167,139,255,.35);background:linear-gradient(160deg,rgba(167,139,255,.08),var(--panel))}
+.dgAiHead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dgAiCause{padding:12px 0;border-top:1px solid var(--line);margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.recBox{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:14px}
+.recBox audio{width:100%}
+.recDot{width:10px;height:10px;border-radius:50%;background:var(--red);display:inline-block;animation:hmCur 1s infinite}
+.audioTile{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:220px}
+.audioTile audio{width:220px;height:36px}
+#nThumbs audio{width:220px;height:36px}

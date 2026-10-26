@@ -66,6 +66,7 @@ html[data-theme="light"] .fpBook{background:rgba(15,23,42,.04)}
 html[data-theme="light"] .dayBtn,html[data-theme="light"] .slotBtn{background:rgba(15,23,42,.03)}
 html[data-theme="light"] .hmFp{background:rgba(255,255,255,0.82);border:1px solid rgba(15,23,42,.06)}
 html[data-theme="light"] .hmSteps i{background:rgba(15,23,42,.1)}
+html[data-theme="light"] .msgCam{background:rgba(15,23,42,.07)!important}
 @media(max-width:900px){
 html[data-theme="light"] .filterBox .sheetDone{box-shadow:0 -12px 22px rgba(255,255,255,0.85)}
 }
