@@ -538,11 +538,11 @@ html.appui .diagPromo{display:none}
   background:linear-gradient(135deg,#2E77FF,#0A47C2);box-shadow:0 6px 18px rgba(30,107,255,.4)}
 .hmTiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .hmTile{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#C9D3E3}
+/* wie Uber: neutrale Fläche, darauf ein 3D-Gegenstand – nur dunkel */
 .hmTileImg{position:relative;width:100%;aspect-ratio:1;border-radius:20px;overflow:hidden;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--c) 34%,#1A2233),#141B29 72%);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 6px 16px rgba(0,0,0,.3)}
-.hmTileImg img{width:84%;height:84%;object-fit:contain;display:block;transition:transform .2s}
-.hmTile:active .hmTileImg img{transform:scale(1.06) rotate(-3deg)}
+  background:linear-gradient(160deg,#222B3B,#171E2B);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.hmTileImg img{width:80%;height:80%;object-fit:contain;display:block;transition:transform .2s}
+.hmTile:active .hmTileImg img{transform:scale(1.06)}
 .hmTile:active .hmTileImg,.hmQ:active,.hmWs:active,.hmCar:active,.hmPromo:active,.hmLive:active{transform:scale(.97)}
 .hmLive{display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-radius:22px;
   background:linear-gradient(135deg,rgba(43,213,138,.14),rgba(17,23,37,.8));border:1px solid rgba(43,213,138,.25)}

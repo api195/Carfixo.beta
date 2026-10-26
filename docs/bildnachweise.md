@@ -2,30 +2,24 @@
 
 ## Kategorie-Kacheln auf Home (`assets/img/kategorien/`)
 
-Eigene Illustrationen für Carfixo, als SVG gezeichnet, im Stil der Uber-Kacheln:
-verspielte, leicht plastische Cartoon-Objekte. Keine Fremdbilder, keine Lizenz
-von Dritten nötig.
+Vorbild sind die Service-Kacheln der Uber-App: auf jeder Kachel ein einzelner,
+realistischer Gegenstand als kleines 3D-Rendering, leicht von oben aus einem
+3/4-Winkel, mit weichem Kontaktschatten, ohne Hintergrund. Die Kachel selbst ist
+eine ruhige, neutrale Fläche – bei Uber hellgrau, bei Carfixo dunkel.
 
-Damit alle gleich aussehen, gelten für jedes Bild dieselben Regeln:
+Die Bilder sind eigene 3D-Renderings (three.js), alle aus derselben Szene mit
+gleicher Kamera, gleichem Licht und gleichem Schatten. Keine Fremdbilder, keine
+Lizenz von Dritten nötig.
 
-- Zeichenfläche 120 × 120, Objekt mittig, etwa 80 % der Fläche
-- Licht von links oben: Verläufe hell (oben links) → dunkel (unten rechts),
-  ein weicher weißer Glanzstreifen
-- weicher Schatten als Ellipse unten (`cx=60 cy=106 rx=38 ry=7`)
-- kräftige, freundliche Farben, keine Konturlinien (Ausnahme: Blitz bei Tuning)
-- transparenter Hintergrund; den farbigen Schein liefert die Kachel (`.hmTileImg`)
-
-| Datei | Motiv |
+| Datei | Gegenstand |
 |---|---|
-| `reparatur.svg` | Schraubenschlüssel vor Zahnrad |
-| `inspektion.svg` | Ölkanne mit Tropfen |
-| `reifen.svg` | Reifen mit Felge |
-| `tuev.svg` | Prüfplakette mit grünem Haken |
-| `pflege.svg` | Eimer mit Schaum und Schwamm |
-| `karosserie.svg` | Auto mit Pflaster |
-| `klima.svg` | Schneeflocke mit Thermometer |
-| `tuning.svg` | Drehzahlmesser im roten Bereich mit Blitz |
+| `reparatur.webp` | roter Werkzeugkasten mit Schraubenschlüssel |
+| `inspektion.webp` | Motorölkanister (Etikett „5W-30“, keine Marke) |
+| `reifen.webp` | Reifen mit Alufelge |
+| `tuev.webp` | Prüfplakette mit grünem Haken |
+| `pflege.webp` | Eimer mit Schaum und Schwamm |
+| `karosserie.webp` | weißes Auto mit grundierter Stelle, Lackdose |
+| `klima.webp` | Schneeflocke aus Eis |
+| `tuning.webp` | Drehzahlmesser im roten Bereich |
 
-Ändern: SVG direkt im Editor bearbeiten. Neues Motiv nach den Regeln oben anlegen.
-
-Die Fotos aus der ersten Fassung (Unsplash) sind entfernt.
+Neu rendern oder ein Motiv ergänzen: siehe `tools/kacheln/README.md`.

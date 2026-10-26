@@ -60,3 +60,10 @@ Rand gehen (randlos, durchscheinend/verschwommen statt massiv schwarz).
   Uber, alle im selben Stil.
 - Umgesetzt: 8 eigene SVG-Illustrationen mit gemeinsamen Stilregeln
   (`docs/bildnachweise.md`). KI-Bilder über Higgsfield waren nicht möglich (0 Credits).
+
+## Rückmeldung zu den Illustrationen (26.10.2026)
+- Gefallen auch nicht. Vorgabe: so wie die Bilder in der Uber-App, nur im Carfixo-Stil.
+- Uber nutzt keine Icons und keine Fotos, sondern kleine 3D-Renderings einzelner
+  Gegenstände (Auto, Paket, Kalender, Einkaufskorb) auf einer neutralen Kachel.
+- Umgesetzt: 8 eigene 3D-Renderings aus einer gemeinsamen Szene (`tools/kacheln/`),
+  dunkle neutrale Kachel statt Farbschein.
