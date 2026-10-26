@@ -2,12 +2,13 @@
 // Kunde bucht Festpreis-Termin, Betrieb ändert Status, Kunde sieht es live,
 // Schnellantwort im Chat, am Ende wird die Buchung storniert.
 // Vorher:  python3 -m http.server 8000
-// Ausführen:  CFX_KUNDE_PW=… CFX_WERKSTATT_PW=… node tests/ausbau-e2e.js   (SHOTS=ordner für Bilder)
+// Ausführen:  CFX_KUNDE_PW=… CFX_WERKSTATT_PW=… node tests/ausbau-e2e.js   (SHOTS=ordner für Bilder,
+//             CFX_BASE=https://carfixo.de prüft die Live-Seite)
 const { chromium } = require("playwright");
 let pass = 0, fail = 0;
 const check = (n, ok, i = "") => { console.log(`${ok ? "OK  " : "FAIL"}  ${n}${i ? "  – " + i : ""}`); ok ? pass++ : fail++; };
 const SHOTS = process.env.SHOTS;
-const BASE = "http://localhost:8000/app.html?appui=1";
+const BASE = (process.env.CFX_BASE || "http://localhost:8000") + "/app.html?appui=1";
 const WS_ID = "eb4794fc-0f54-4eca-bb47-ac84a301f265";   // Carfixo Testwerkstatt
 if (!process.env.CFX_KUNDE_PW || !process.env.CFX_WERKSTATT_PW) { console.log("Passwörter fehlen (CFX_KUNDE_PW, CFX_WERKSTATT_PW)."); process.exit(2); }
 
