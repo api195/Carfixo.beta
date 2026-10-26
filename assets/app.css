@@ -647,3 +647,88 @@ html.appui body[data-route="home"] main{padding-top:calc(env(safe-area-inset-top
 .dgActions{margin-top:4px}
 html.appui .dgCard{border-radius:24px}
 html.appui .dgActions .btn{flex:1;justify-content:center;white-space:nowrap}
+
+/* ---------- Native-Gefühl ---------- */
+/* Seitenwechsel in der App: kurz einblenden statt hart umschalten */
+html.appui main.pgIn{animation:pgIn .22s ease-out}
+@keyframes pgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){html.appui main.pgIn{animation:none}}
+/* Ziehen zum Aktualisieren */
+.ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 4px);z-index:60;width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;background:var(--panel2);box-shadow:0 6px 18px rgba(0,0,0,.35);
+  transform:translate(-50%,-60px);opacity:0;transition:transform .2s,opacity .2s;pointer-events:none}
+.ptrRing{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--blue2);border-right-color:transparent}
+.ptr.spin .ptrRing{animation:ptrSpin .7s linear infinite}
+@keyframes ptrSpin{to{transform:rotate(360deg)}}
+/* App-Sperre */
+.lockScreen{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:var(--bg);padding:24px}
+.lockScreen .logo{font-size:34px}
+.lockScreen .btn{min-width:240px;justify-content:center}
+.faceBtn{margin-top:14px;justify-content:center;background:linear-gradient(135deg,#1F2533,#121722);border:1px solid var(--line2)}
+html[data-theme="light"] .faceBtn{background:#fff;color:var(--ink)}
+.terminRow{margin-top:10px}
+.terminRow .btn{display:inline-flex;align-items:center;gap:6px}
+
+/* ---------- Festpreis-Termine ---------- */
+.fpRow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.fpPrice{white-space:nowrap}
+.fpCard .tt{margin-bottom:0}
+.fpBook{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:12px 14px;border-radius:16px;cursor:pointer;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--ink);font:inherit;transition:background .15s}
+.fpBook:hover{background:rgba(30,107,255,.08)}
+.fpBook:disabled{opacity:.5;cursor:not-allowed}
+.fpBook b{display:block;font-size:14px}
+.fpBook .mm{display:block;font-size:12px}
+.fpBook svg:last-child{color:var(--muted)}
+.fpIco{flex:none;width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--blue2);background:rgba(30,107,255,.12)}
+.dayRail{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.dayRail::-webkit-scrollbar{display:none}
+.dayBtn,.slotBtn{flex:none;padding:10px 14px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.03);color:var(--ink);
+  font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.dayBtn.on,.slotBtn.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.slotGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:200px;overflow-y:auto}
+.slotBtn{padding:10px 0}
+.hmFp{flex:0 0 150px;scroll-snap-align:start;display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:20px;
+  background:rgba(17,23,37,.72);border:1px solid rgba(255,255,255,.06)}
+.hmFp b{font-size:14px;margin-top:4px}
+.hmFp .mm{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hmFpPrice{margin-top:4px;font-weight:800;color:var(--green)}
+
+/* ---------- Live-Auftrag, Nochmal buchen, TÜV-Hinweis ---------- */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hmSteps{display:flex;gap:4px;margin:4px 0 2px}
+.hmSteps i{flex:1;height:5px;border-radius:99px;background:rgba(255,255,255,.1)}
+.hmSteps i.done{background:var(--green)}
+.hmSteps i.cur{background:linear-gradient(90deg,var(--green),#38BDF8);animation:hmCur 1.6s ease-in-out infinite}
+@keyframes hmCur{50%{opacity:.55}}
+.hmTuev{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:20px;
+  background:linear-gradient(135deg,rgba(255,176,32,.16),rgba(255,176,32,.05));border:1px solid rgba(255,176,32,.3)}
+.hmTuev.late{background:linear-gradient(135deg,rgba(255,92,92,.18),rgba(255,92,92,.05));border-color:rgba(255,92,92,.35)}
+.hmTuev b{display:block;font-size:15px}
+.hmTuev .mm{font-size:12.5px}
+.hmTuev .fpIco{color:var(--gold);background:rgba(255,176,32,.14)}
+.hmTuev .btn{flex:none}
+.rvReply{margin-top:10px;padding:10px 12px;border-left:3px solid var(--blue2);border-radius:0 12px 12px 0;background:rgba(30,107,255,.07);font-size:13px}
+.rvReply p{margin-top:4px;color:var(--ink)}
+.dashRv{display:flex;align-items:center;gap:10px;margin-top:16px;color:var(--ink)}
+
+/* ---------- Chat: Fotos und Schnellantworten ---------- */
+.quickRow{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.quickRow::-webkit-scrollbar{display:none}
+.quickRow .chip{flex:none;font-size:12px;padding:7px 12px;border:1px solid var(--line2);font-family:inherit}
+.quickRow .chip::before{content:none}
+.msgCam{width:47px!important;background:rgba(255,255,255,.07)!important;color:var(--ink)!important}
+.msgImg{display:block;max-width:100%;max-height:220px;border-radius:10px;margin-bottom:6px;cursor:zoom-in}
+#msgThumbs img{width:56px;height:56px}
+
+/* ---------- KI-Einschätzung, Geräuschaufnahme ---------- */
+.dgAiCard{margin-bottom:14px;border-color:rgba(167,139,255,.35);background:linear-gradient(160deg,rgba(167,139,255,.08),var(--panel))}
+.dgAiHead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dgAiCause{padding:12px 0;border-top:1px solid var(--line);margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.recBox{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:14px}
+.recBox audio{width:100%}
+.recDot{width:10px;height:10px;border-radius:50%;background:var(--red);display:inline-block;animation:hmCur 1s infinite}
+.audioTile{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:220px}
+.audioTile audio{width:220px;height:36px}
+#nThumbs audio{width:220px;height:36px}

@@ -13,6 +13,15 @@
 <!-- start_url des Manifests ist diese Seite – ohne Verweis ist die App hier nicht installierbar -->
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="stylesheet" href="assets/app.css">
+<link rel="stylesheet" href="assets/light.css">
+<script>
+  // Design vor dem ersten Zeichnen setzen, sonst blitzt kurz das dunkle auf
+  try {
+    var t = localStorage.getItem("cfx_theme") || "dark";
+    if (t === "light" || (t === "system" && matchMedia("(prefers-color-scheme: light)").matches))
+      document.documentElement.dataset.theme = "light";
+  } catch (e) {}
+</script>
 </head>
 <body>
 <header class="topbar">

@@ -28,6 +28,10 @@
 	<string>Carfixo nutzt die Kamera, damit du Fotos vom Schaden oder deinen Fahrzeugschein direkt aufnehmen kannst.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Carfixo braucht Zugriff auf deine Fotos, damit du Bilder vom Schaden zu deiner Anfrage hinzufügen kannst.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Mit Face ID meldest du dich schnell und sicher bei Carfixo an.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Carfixo nimmt auf Wunsch das Geräusch deines Autos auf, damit die Werkstatt es sich anhören kann.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Carfixo nutzt deinen Standort, um Werkstätten und Hilfe in deiner Nähe zu finden.</string>
 	<key>LSRequiresIPhoneOS</key>

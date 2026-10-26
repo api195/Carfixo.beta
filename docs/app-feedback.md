@@ -67,3 +67,16 @@ Rand gehen (randlos, durchscheinend/verschwommen statt massiv schwarz).
   Gegenstände (Auto, Paket, Kalender, Einkaufskorb) auf einer neutralen Kachel.
 - Umgesetzt: 8 eigene 3D-Renderings aus einer gemeinsamen Szene (`tools/kacheln/`),
   dunkle neutrale Kachel statt Farbschein.
+
+## Runde 3: Ausbau (26.10.2026)
+Gewünscht: alle Punkte aus „Wie bei Uber“, „Diagnose klüger“, „Native-Feinschliff“,
+„Für Werkstätten“ und „Vertrauen“ – außer „Freunde einladen“.
+- Uber-Ablauf: Festpreis-Termine direkt buchen, laufender Auftrag live (Home + Auftrag),
+  „Nochmal buchen“, Fahrzeugschein mit HSN/TSN. **Nicht** umgesetzt: Live-Aktivität auf dem
+  Sperrbildschirm – braucht Widget-Erweiterung und APNs (siehe mobile/README).
+- Diagnose: KI-Einschätzung mit Fotos (Claude), Geräusch aufnehmen.
+- Native: Vibration, Ziehen zum Aktualisieren, Wisch zurück, Face ID + App-Sperre,
+  Kalender (.ics) und Apple Karten, helles Design. **Nicht** umgesetzt: Apple Wallet –
+  braucht ein Pass-Zertifikat aus dem Apple-Developer-Konto.
+- Werkstätten: eigene Tabs in der App, Schnellangebot, Schnellantworten und Fotos im Chat.
+- Vertrauen: Antworten auf Bewertungen (Fotos gab es schon), TÜV-Hinweis auf Home.

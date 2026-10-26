@@ -26,18 +26,21 @@ fs.cpSync(path.join(ROOT, "assets"), path.join(WWW, "assets"), {
 });
 
 // Capacitor-Laufzeit und Plugins als fertige Browser-Skripte (kein Bundler nötig)
-const PLUGINS = ["app", "browser", "status-bar", "splash-screen"];
+const PLUGINS = ["app", "browser", "status-bar", "splash-screen", "haptics"];
 fs.copyFileSync(path.join(NM, "core", "dist", "capacitor.js"), path.join(WWW, "assets", "native", "capacitor.js"));
 for (const p of PLUGINS) {
   fs.copyFileSync(path.join(NM, p, "dist", "plugin.js"), path.join(WWW, "assets", "native", `${p}.js`));
 }
+// Face ID (Anbieter capgo, nicht @capacitor)
+fs.copyFileSync(path.join(__dirname, "node_modules", "@capgo", "capacitor-native-biometric", "dist", "plugin.js"),
+  path.join(WWW, "assets", "native", "biometric.js"));
 
 // Vektorkarte für die App (assets/maps.js lädt sie nur in der App)
 for (const f of ["maplibre-gl.js", "maplibre-gl.css"]) {
   fs.copyFileSync(path.join(__dirname, "node_modules", "maplibre-gl", "dist", f), path.join(WWW, "assets", "vendor", f));
 }
 
-const capTags = ["capacitor", ...PLUGINS].map(n => `<script src="assets/native/${n}.js"></script>`).join("\n");
+const capTags = ["capacitor", ...PLUGINS, "biometric"].map(n => `<script src="assets/native/${n}.js"></script>`).join("\n");
 
 function einbinden(datei) {
   const p = path.join(WWW, datei);

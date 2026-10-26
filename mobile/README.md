@@ -37,8 +37,22 @@ Nach jeder Änderung an der Web-App: `npm run ios` (oder `npm run build && npx c
 
 Test ohne Mac: `node tests/app-ios.js` (vorher `npm install && npm run build` hier im Ordner).
 
+## Native Funktionen (seit 26.10.2026)
+
+| Funktion | Umsetzung |
+| --- | --- |
+| Vibration | `@capacitor/haptics` |
+| Face ID (Anmeldung, App-Sperre) | `@capgo/capacitor-native-biometric`, Zugangsdaten im iOS-Schlüsselbund; `NSFaceIDUsageDescription` in `Info.plist` |
+| Wisch vom Rand zurück | `CarfixoViewController` in `AppDelegate.swift` (`allowsBackForwardNavigationGestures`), im Storyboard eingetragen |
+| Geräusch aufnehmen | Web-API `MediaRecorder`; `NSMicrophoneUsageDescription` in `Info.plist` |
+| Route | `maps://` öffnet Apple Karten |
+
+Nach dem Holen dieser Änderungen einmal `npm install` und `npm run ios` – sonst fehlen die
+neuen Plugins in Xcode.
+
 ## Nächste Schritte
 
 - Native Push über APNs (`@capacitor/push-notifications`, Schlüssel aus dem Apple-Developer-Konto)
+- Live-Aktivität auf dem Sperrbildschirm / Dynamic Island für den laufenden Auftrag: braucht
+  eine Widget-Erweiterung in Xcode (ActivityKit) und Updates per APNs – erst nach dem Push
 - Universal Links, damit E-Mail-Links direkt die App öffnen
-- Fahrzeugschein-Scan und Schadensfotos mit der Kamera
