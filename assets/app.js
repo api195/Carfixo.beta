@@ -818,6 +818,7 @@ async function vHome() {
     </div>
 
     <div id="hmLive"></div>
+    <div id="hmFest"></div>
 
     <a class="hmPromo" href="#/${kunde ? "new-request" : me ? "search" : "register"}">
       <div class="hmPromoTxt">
@@ -871,8 +872,9 @@ async function vHome() {
     </a>`).join("") : `<div class="mm">Noch keine Betriebe in deiner Nähe.</div>`;
   })();
 
-  if (kunde) await Promise.all([top, hmLive(), hmGarage()]);
-  else await top;
+  const fest = hmFestpreise();
+  if (kunde) await Promise.all([top, fest, hmLive(), hmGarage()]);
+  else await Promise.all([top, fest]);
 }
 
 // Laufender Auftrag – wie eine Fahrt bei Uber: Status und Fortschritt
@@ -1366,7 +1368,7 @@ async function vWorkshopProfile(id) {
     <div class="right">
       <button class="btn ghost sm" id="wsFav">Merken</button>
       <button class="btn ghost sm" onclick="openReportModal('workshop','${ws.id}','${ws.id}',${jsArg(ws.name)})" title="Betrieb melden" aria-label="Betrieb melden">${ico("flag")}</button>
-      <button class="btn" id="wsAsk" ${ws.is_demo ? "disabled" : ""}>Anfrage stellen</button>
+      <button class="btn" id="wsAsk" ${ws.is_demo && !istTester() ? "disabled" : ""}>Anfrage stellen</button>
     </div>
   </div>
   ${ws.is_demo ? `<div class="note" style="margin-bottom:14px"><b>Das ist ein Beispielbetrieb.</b>
@@ -1392,6 +1394,7 @@ async function vWorkshopProfile(id) {
         <div class="offerLine" style="margin-top:8px"><span>Abgeschlossene Aufträge über Carfixo</span><span><b>${ws.rating_count || 0}</b></span></div>
         ${(ws.payment_methods || []).length ? `<div class="offerLine"><span>Zahlungsmöglichkeiten</span><span>${ws.payment_methods.map(esc).join(" · ")}</span></div>` : ""}
       </div>
+      <div class="card fpCard" style="margin-bottom:14px" id="fpBox" hidden></div>
       <div class="card" style="margin-bottom:14px" id="gBox" hidden></div>
       ${(ws.gallery || []).length ? `<div class="card" style="margin-bottom:14px">
         <div class="tt">Einblicke & Referenzen</div>
@@ -1448,6 +1451,7 @@ async function vWorkshopProfile(id) {
   $("wsFav").onclick = () => toggleFavorite(ws.id, $("wsFav"));
   document.querySelectorAll("#wsGallery img, #revList .rvThumbs img").forEach(im => im.onclick = () => openLightbox(im.dataset.full));
   ladeGoogle(ws);
+  ladeFestpreiseProfil(ws);
   if (me) {
     sb.from("favorites").select("workshop_id").eq("user_id", me.id).eq("workshop_id", ws.id).maybeSingle()
       .then(({ data }) => { if (data && $("wsFav")) $("wsFav").textContent = "Gemerkt"; });
@@ -3741,7 +3745,7 @@ let profCats = [], profServices = [], profBrands = [], profLatLng = null, profMa
 // Betriebsprofil in Reitern statt einer langen Seite. Alle Felder bleiben im DOM,
 // damit "Speichern" unabhängig vom offenen Reiter alles mitnimmt.
 let profTab = "allg";
-const PROF_TABS = [["allg", "Allgemein"], ["leist", "Leistungen"], ["zeiten", "Zeiten & Ausstattung"], ["bilder", "Bilder"], ["zahl", "Zahlungen & Premium"], ["team", "Team"]];
+const PROF_TABS = [["allg", "Allgemein"], ["leist", "Leistungen"], ["fest", "Festpreise"], ["zeiten", "Zeiten & Ausstattung"], ["bilder", "Bilder"], ["zahl", "Zahlungen & Premium"], ["team", "Team"]];
 // Was fehlt, damit Kunden den Betrieb finden und ihm vertrauen – Punkt am Reiter.
 function profLuecken(w) {
   return {
@@ -3766,7 +3770,7 @@ function zeigeProfTab(tab) {
   document.querySelectorAll("[data-ptab]").forEach(b => { b.classList.toggle("on", b.dataset.ptab === tab); b.setAttribute("aria-selected", b.dataset.ptab === tab); });
   document.querySelectorAll("#profPanes .pCard").forEach(c => { c.hidden = c.dataset.tab !== tab; });
   // Team und Zahlungen speichern sich selbst – dort keine Speichern-Leiste.
-  const bar = $("pSaveBar"); if (bar) bar.hidden = tab === "team" || tab === "zahl";
+  const bar = $("pSaveBar"); if (bar) bar.hidden = tab === "team" || tab === "zahl" || tab === "fest";
 }
 async function vWsProfile() {
   if (needWorkshop()) return;
@@ -3896,6 +3900,7 @@ async function vWsProfile() {
         <div class="chips" id="pPay">${["Bar","EC-Karte","Kreditkarte","Überweisung","PayPal","Rechnung"].map(p => `
           <span class="chip ${(w.payment_methods || []).includes(p) ? "on" : ""}" data-p="${p}">${p}</span>`).join("")}</div>
       </div>
+      ${festpreisPaneHtml(w)}
       <div class="card pCard" data-tab="team">
         <div class="tt">Team-Zugänge</div>
         <p class="mm" style="margin-top:4px">Mitarbeiter mit eigenem Carfixo-Konto erhalten Zugriff auf deinen Betrieb (Rollen-Feinsteuerung folgt).</p>
@@ -3965,6 +3970,7 @@ async function vWsProfile() {
   loadPayCard();
   renderGoogleCard();
   loadTeamList();
+  festpreisFormBinden();
   $("pMemberAdd").onclick = addTeamMember;
   $("pPremToggle").onclick = async () => {
     const nv = !myWorkshop.is_premium;
@@ -5347,6 +5353,184 @@ document.addEventListener("click", async (e) => {
     $("bellBtn")?.setAttribute("aria-expanded", "false");
   }
 });
+
+// ============================================================
+// FESTPREIS-TERMINE
+// Betriebe pflegen Festpreise (Ölwechsel, Reifenwechsel, HU …), Kunden
+// buchen direkt einen freien Termin – ohne Ausschreibung und Warten.
+// Freie Termine liefert free_slots() (stündlich innerhalb der Öffnungszeiten,
+// Kapazität je Zeitfenster), gebucht wird transaktional über book_fixed_price().
+// ============================================================
+const FEST_VORSCHLAEGE = [
+  ["inspektion", "Ölwechsel", 89], ["reifen", "Reifenwechsel", 39], ["tuev", "HU + AU", 139],
+  ["inspektion", "Kleine Inspektion", 189], ["klima", "Klimaservice", 99], ["pflege", "Außenwäsche", 29],
+];
+const istTester = () => /@carfixo-test\.de$/i.test(me?.email || "");
+
+// ---------- Betrieb: Festpreise pflegen (Reiter im Betriebsprofil) ----------
+async function ladeFestpreiseWs() {
+  const box = $("fpList"); if (!box) return;
+  const { data } = await sb.from("fixed_price_services").select("*").eq("workshop_id", myWorkshop.id).order("created_at");
+  if (!$("fpList")) return;
+  box.innerHTML = (data || []).length ? data.map(f => `
+    <div class="fpRow">
+      <div style="flex:1;min-width:0"><b>${esc(f.service)}</b>
+        <div class="mm">${CATS[f.category]?.name || esc(f.category)} · ${f.duration_min} Min.${f.note ? " · " + esc(f.note) : ""}</div></div>
+      <b class="fpPrice">${fmtEur(f.price)}</b>
+      <label class="inline" style="margin:0" title="Online buchbar"><input type="checkbox" ${f.active ? "checked" : ""} onchange="festpreisAktiv('${f.id}', this.checked)"> aktiv</label>
+      <button class="btn ghost sm" onclick="festpreisLoeschen('${f.id}')" aria-label="Löschen">${ico("trash", 16)}</button>
+    </div>`).join("")
+    : `<p class="mm">Noch keine Festpreise. Lege die Leistungen an, die Kunden ohne Rückfrage buchen können – das sind meist die häufigsten.</p>`;
+}
+async function festpreisAktiv(id, an) {
+  const { error } = await sb.from("fixed_price_services").update({ active: an }).eq("id", id);
+  if (error) return toast(error.message);
+  toast(an ? "Online buchbar ✓" : "Pausiert.");
+}
+async function festpreisLoeschen(id) {
+  if (!(await frage("Diesen Festpreis entfernen? Bestehende Buchungen bleiben erhalten.", { ja: "Entfernen", gefahr: true }))) return;
+  const { error } = await sb.from("fixed_price_services").delete().eq("id", id);
+  if (error) return toast(error.message);
+  ladeFestpreiseWs();
+}
+function festpreisFormBinden() {
+  const cats = myWorkshop.categories?.length ? myWorkshop.categories : Object.keys(CATS);
+  $("fpVorschlag").innerHTML = FEST_VORSCHLAEGE.filter(([c]) => cats.includes(c)).map(([c, s, p]) =>
+    `<span class="chip" data-c="${c}" data-s="${esc(s)}" data-p="${p}">${esc(s)}</span>`).join("");
+  document.querySelectorAll("#fpVorschlag .chip").forEach(ch => ch.onclick = () => {
+    $("fpCat").value = ch.dataset.c; $("fpService").value = ch.dataset.s; $("fpPrice").value = ch.dataset.p;
+  });
+  $("fpAdd").onclick = async () => {
+    const service = $("fpService").value.trim(), price = Number(String($("fpPrice").value).replace(",", "."));
+    if (service.length < 2) return toast("Bitte eine Leistung angeben.");
+    if (!(price > 0 && price < 10000)) return toast("Bitte einen Preis zwischen 1 und 9.999 € angeben.");
+    const { error } = await sb.from("fixed_price_services").insert({
+      workshop_id: myWorkshop.id, category: $("fpCat").value, service, price,
+      duration_min: +$("fpDur").value, note: $("fpNote").value.trim() || null,
+    });
+    if (error) return toast(String(error.message).includes("duplicate") ? "Diese Leistung hast du schon angelegt." : error.message);
+    $("fpService").value = ""; $("fpPrice").value = ""; $("fpNote").value = "";
+    toast("Festpreis angelegt ✓");
+    ladeFestpreiseWs();
+  };
+  $("fpCap").onchange = async () => {
+    const n = +$("fpCap").value;
+    const { error } = await sb.from("workshops").update({ slot_capacity: n }).eq("id", myWorkshop.id);
+    if (error) return toast(error.message);
+    myWorkshop.slot_capacity = n;
+    toast("Gespeichert ✓");
+  };
+  ladeFestpreiseWs();
+}
+function festpreisPaneHtml(w) {
+  const cats = w.categories?.length ? w.categories : Object.keys(CATS);
+  return `<div class="card pCard" data-tab="fest">
+    <div class="tt">Festpreise & Online-Termine</div>
+    <p class="mm" style="margin-top:4px">Kunden buchen diese Leistungen direkt mit Termin – freie Zeiten ergeben sich aus deinen Öffnungszeiten.
+      ${w.is_verified ? "" : "<b>Sichtbar, sobald dein Betrieb verifiziert ist.</b>"}</p>
+    <div id="fpList" style="margin-top:10px"><div class="sk" style="height:40px"></div></div>
+    <div class="label">Neuer Festpreis</div>
+    <div class="chips" id="fpVorschlag" style="margin-bottom:8px"></div>
+    <div class="split">
+      <select id="fpCat">${cats.map(c => `<option value="${c}">${esc(CATS[c]?.name || c)}</option>`).join("")}</select>
+      <input id="fpService" placeholder="Leistung, z. B. Ölwechsel" maxlength="80">
+    </div>
+    <div class="split" style="margin-top:8px">
+      <input id="fpPrice" inputmode="decimal" placeholder="Preis in € (inkl. MwSt.)">
+      <select id="fpDur">${[30, 60, 90, 120, 180, 240].map(m => `<option value="${m}" ${m === 60 ? "selected" : ""}>${m} Min.</option>`).join("")}</select>
+    </div>
+    <input id="fpNote" style="margin-top:8px" maxlength="200" placeholder="Hinweis (optional), z. B. inkl. 5 l Markenöl">
+    <button class="btn sm" id="fpAdd" style="margin-top:10px">Festpreis anlegen</button>
+    <div class="label">Fahrzeuge pro Zeitfenster</div>
+    <select id="fpCap" style="max-width:220px">${[1, 2, 3, 4, 5, 6, 8, 10].map(n => `<option value="${n}" ${n === (w.slot_capacity || 1) ? "selected" : ""}>${n} gleichzeitig</option>`).join("")}</select>
+  </div>`;
+}
+
+// ---------- Kunde: Festpreise auf dem Werkstattprofil ----------
+async function ladeFestpreiseProfil(ws) {
+  const box = $("fpBox"); if (!box) return;
+  const { data } = await sb.from("fixed_price_services").select("*").eq("workshop_id", ws.id).eq("active", true).order("price");
+  if (!$("fpBox") || !(data || []).length) return;
+  const buchbar = !ws.is_demo || istTester();
+  box.hidden = false;
+  box.innerHTML = `<div class="tt">Sofort buchen · Festpreis</div>
+    <p class="mm" style="margin-top:2px">Termin wählen, fertig – ohne Angebot abwarten.</p>
+    ${data.map(f => `<button class="fpBook" type="button" data-id="${f.id}" ${buchbar ? "" : "disabled"}>
+      <span class="fpIco">${ico(f.category, 20)}</span>
+      <span style="flex:1;min-width:0;text-align:left"><b>${esc(f.service)}</b><span class="mm">${f.duration_min} Min.${f.note ? " · " + esc(f.note) : ""}</span></span>
+      <b class="fpPrice">${fmtEur(f.price)}</b>${ico("chev", 16)}</button>`).join("")}`;
+  box.querySelectorAll(".fpBook").forEach(b => b.onclick = () => {
+    if (!requireAuth()) return;
+    if (myWorkshop) return toast("Als Betrieb kannst du keine Termine buchen.");
+    oeffneTerminwahl(data.find(f => f.id === b.dataset.id), ws);
+  });
+}
+
+async function oeffneTerminwahl(f, ws) {
+  openModal(`<h2>${esc(f.service)} · ${fmtEur(f.price)}</h2>
+    <p class="mm">${esc(ws.name)} · Festpreis inkl. MwSt.</p>
+    <div id="twBody" style="margin-top:12px"><div class="sk" style="height:120px"></div></div>`);
+  const [{ data: slots, error }, { data: cars }] = await Promise.all([
+    sb.rpc("free_slots", { p_service: f.id, p_days: 14 }),
+    sb.from("vehicles").select("id,make,model,license_plate").eq("owner_id", me.id).order("created_at"),
+  ]);
+  const body = $("twBody"); if (!body) return;
+  if (error) { body.innerHTML = `<div class="warn">${esc(error.message)}</div>`; return; }
+  const liste = (slots || []).map(s => typeof s === "string" ? s : s.free_slots).filter(Boolean);
+  if (!liste.length) { body.innerHTML = `<div class="note">In den nächsten zwei Wochen ist leider nichts frei. Stell gern eine <a href="#/new-request?ws=${ws.id}" style="color:var(--blue2)" onclick="closeModal()">Anfrage</a>.</div>`; return; }
+  // nach Tag gruppieren
+  const tage = new Map();
+  for (const s of liste) {
+    const d = new Date(s); const k = d.toDateString();
+    if (!tage.has(k)) tage.set(k, []); tage.get(k).push(s);
+  }
+  let tag = [...tage.keys()][0], wahl = null;
+  const tagLabel = (k) => { const d = new Date(k); const heute = new Date().toDateString(), morgen = new Date(Date.now() + 864e5).toDateString();
+    return k === heute ? "Heute" : k === morgen ? "Morgen" : d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }); };
+  const zeichne = () => {
+    body.innerHTML = `
+      <div class="label" style="margin-top:0">Tag</div>
+      <div class="dayRail">${[...tage.keys()].map(k => `<button type="button" class="dayBtn ${k === tag ? "on" : ""}" data-k="${k}">${tagLabel(k)}</button>`).join("")}</div>
+      <div class="label">Uhrzeit</div>
+      <div class="slotGrid">${tage.get(tag).map(s => `<button type="button" class="slotBtn ${s === wahl ? "on" : ""}" data-s="${s}">${new Date(s).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}</button>`).join("")}</div>
+      ${(cars || []).length ? `<div class="label">Fahrzeug</div><select id="twCar">${cars.map(c => `<option value="${c.id}">${esc(c.make + " " + c.model)}${c.license_plate ? " · " + esc(c.license_plate) : ""}</option>`).join("")}</select>` : ""}
+      <div class="label">Hinweis für den Betrieb (optional)</div>
+      <input id="twNote" maxlength="300" placeholder="z. B. Bitte auch Scheibenwischer prüfen">
+      <div class="err" id="twErr"></div>
+      <button class="btn wide" id="twGo" style="margin-top:14px" ${wahl ? "" : "disabled"}>${wahl ? `Verbindlich buchen · ${new Date(wahl).toLocaleString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "Uhrzeit wählen"}</button>
+      <p class="mm" style="font-size:11px;margin-top:8px">Der Vertrag kommt mit dem Betrieb zustande. ${esc(STORNO_HINWEIS)}</p>`;
+    body.querySelectorAll(".dayBtn").forEach(b => b.onclick = () => { tag = b.dataset.k; wahl = null; zeichne(); });
+    body.querySelectorAll(".slotBtn").forEach(b => b.onclick = () => { wahl = b.dataset.s; zeichne(); });
+    if (wahl) $("twGo").onclick = async () => {
+      $("twGo").disabled = true;
+      const { data: res, error: e2 } = await sb.rpc("book_fixed_price", {
+        p_service: f.id, p_slot: wahl, p_vehicle: $("twCar")?.value || null, p_note: $("twNote").value.trim() || null,
+      });
+      if (e2) { $("twGo").disabled = false; return showErr($("twErr"), e2.message); }
+      closeModal();
+      toast("Termin gebucht ✓");
+      go("request/" + res.request_id);
+    };
+  };
+  zeichne();
+}
+
+// ---------- Home: Festpreise in der Nähe ----------
+async function hmFestpreise() {
+  const box = $("hmFest"); if (!box) return;
+  const { data } = await sb.from("fixed_price_services")
+    .select("id,service,price,category,workshop_id,workshops!inner(id,name,district,city,is_verified,is_demo)")
+    .eq("active", true).eq("workshops.is_verified", true).order("price").limit(12);
+  if (!$("hmFest")) return;
+  const liste = (data || []).filter(f => !f.workshops.is_demo || istTester());
+  if (!liste.length) return;
+  box.innerHTML = `<div class="hmSec"><h2>Sofort buchen</h2><span class="mm">Festpreis · freie Termine</span></div>
+    <div class="hmRail">${liste.map(f => `<a class="hmFp" href="#/workshop/${f.workshop_id}">
+      <span class="fpIco">${ico(f.category, 20)}</span>
+      <b>${esc(f.service)}</b>
+      <span class="mm">${esc(f.workshops.name)}</span>
+      <span class="hmFpPrice">${fmtEur(f.price)}</span></a>`).join("")}</div>`;
+}
 
 // ============================================================
 // NATIVE-GEFÜHL
