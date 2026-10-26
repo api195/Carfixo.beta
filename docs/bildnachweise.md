@@ -2,26 +2,30 @@
 
 ## Kategorie-Kacheln auf Home (`assets/img/kategorien/`)
 
-Alle Fotos stammen von [Unsplash](https://unsplash.com) und stehen unter der
-[Unsplash-Lizenz](https://unsplash.com/license): kostenlos, auch kommerziell,
-Bearbeiten erlaubt, Namensnennung nicht Pflicht. **Keine** Unsplash+-Bilder
-(die wären kostenpflichtig). Die Lizenz verbietet nur, die Fotos unverändert
-als eigene Bildersammlung weiterzuverkaufen oder einen Konkurrenzdienst damit
-aufzubauen – beides trifft hier nicht zu.
+Eigene Illustrationen für Carfixo, als SVG gezeichnet, im Stil der Uber-Kacheln:
+verspielte, leicht plastische Cartoon-Objekte. Keine Fremdbilder, keine Lizenz
+von Dritten nötig.
 
-Die Dateien liegen lokal (240 × 240 px, WebP). Es geht also keine Anfrage an
-Unsplash, und die App braucht dafür kein Netz.
+Damit alle gleich aussehen, gelten für jedes Bild dieselben Regeln:
 
-| Datei | Foto | Fotograf/in |
-|---|---|---|
-| `reparatur.webp` | [Mechaniker am Motor](https://unsplash.com/photos/UZUzvJEvKnI) | Sten Rademaker |
-| `inspektion.webp` | [Motoröl nachfüllen](https://unsplash.com/photos/V37iTrYZz2E) | Tim Mossholder |
-| `reifen.webp` | [Reifen in der Werkstatt](https://unsplash.com/photos/9uHal2Dd9aE) | Jimmy Nilsson Masth |
-| `tuev.webp` | [Prüfung unter der Hebebühne](https://unsplash.com/photos/6AbkEt7-lCA) | Mehmet Talha Onuk |
-| `pflege.webp` | [Autowäsche mit Schaum](https://unsplash.com/photos/kQdY2pR-ic8) | Clarence Tioh |
-| `karosserie.webp` | [Karosseriearbeit](https://unsplash.com/photos/zyLW2erHdRg) | Zoshua Colah |
-| `klima.webp` | [Klimabedienung](https://unsplash.com/photos/e_c6jDnvpRg) | Luca Freddi |
-| `tuning.webp` | [Turbo-Motorraum](https://unsplash.com/photos/b8UAynGJoVE) | Shoham Avisrur |
+- Zeichenfläche 120 × 120, Objekt mittig, etwa 80 % der Fläche
+- Licht von links oben: Verläufe hell (oben links) → dunkel (unten rechts),
+  ein weicher weißer Glanzstreifen
+- weicher Schatten als Ellipse unten (`cx=60 cy=106 rx=38 ry=7`)
+- kräftige, freundliche Farben, keine Konturlinien (Ausnahme: Blitz bei Tuning)
+- transparenter Hintergrund; den farbigen Schein liefert die Kachel (`.hmTileImg`)
 
-Neues Bild tauschen: gleiche Datei ersetzen (quadratisch, ca. 240 px, WebP),
-Zeile hier anpassen.
+| Datei | Motiv |
+|---|---|
+| `reparatur.svg` | Schraubenschlüssel vor Zahnrad |
+| `inspektion.svg` | Ölkanne mit Tropfen |
+| `reifen.svg` | Reifen mit Felge |
+| `tuev.svg` | Prüfplakette mit grünem Haken |
+| `pflege.svg` | Eimer mit Schaum und Schwamm |
+| `karosserie.svg` | Auto mit Pflaster |
+| `klima.svg` | Schneeflocke mit Thermometer |
+| `tuning.svg` | Drehzahlmesser im roten Bereich mit Blitz |
+
+Ändern: SVG direkt im Editor bearbeiten. Neues Motiv nach den Regeln oben anlegen.
+
+Die Fotos aus der ersten Fassung (Unsplash) sind entfernt.

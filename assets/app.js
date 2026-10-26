@@ -778,8 +778,8 @@ let allWorkshops = null, searchMap = null, compareSet = [];
 // Aufbau nach Uber und CHECK24: große Frage mit Suchfeld, Kacheln für die
 // häufigsten Leistungen, der laufende Auftrag wie eine Fahrt im Blick,
 // dann Vergleichen, Garage und Top-Betriebe in der Nähe.
-// Kachelbilder: Unsplash-Lizenz, lokal unter assets/img/kategorien/
-// (Nachweis in docs/bildnachweise.md).
+// Kachelbilder: eigene Illustrationen (SVG) unter assets/img/kategorien/,
+// alle im selben Stil – siehe docs/bildnachweise.md.
 // ============================================================
 const HOME_TILES = [
   ["reparatur", "Reparatur", "#4D8DFF"], ["inspektion", "Inspektion", "#38BDF8"],
@@ -810,7 +810,7 @@ async function vHome() {
 
     <div class="hmTiles">
       ${HOME_TILES.map(([k, label, farbe]) => `<a class="hmTile" href="#/search?cat=${k}" style="--c:${farbe}">
-        <span class="hmTileImg"><img src="assets/img/kategorien/${k}.webp" alt="" loading="lazy" decoding="async"></span><span>${label}</span></a>`).join("")}
+        <span class="hmTileImg"><img src="assets/img/kategorien/${k}.svg" alt="" loading="lazy" decoding="async"></span><span>${label}</span></a>`).join("")}
     </div>
 
     <div id="hmLive"></div>
