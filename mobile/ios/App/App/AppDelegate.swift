@@ -42,3 +42,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return config
     }
 }
+
+// Wisch vom linken Rand = zurück, wie in Safari und nativen Apps.
+// Die Web-App navigiert über den Hash, jeder Seitenwechsel ist ein
+// Eintrag im Verlauf – der Wisch geht also genau eine Seite zurück.
+class CarfixoViewController: CAPBridgeViewController {
+    override func capacitorDidLoad() {
+        super.capacitorDidLoad()
+        webView?.allowsBackForwardNavigationGestures = true
+    }
+}

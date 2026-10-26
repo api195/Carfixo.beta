@@ -647,3 +647,25 @@ html.appui body[data-route="home"] main{padding-top:calc(env(safe-area-inset-top
 .dgActions{margin-top:4px}
 html.appui .dgCard{border-radius:24px}
 html.appui .dgActions .btn{flex:1;justify-content:center;white-space:nowrap}
+
+/* ---------- Native-Gefühl ---------- */
+/* Seitenwechsel in der App: kurz einblenden statt hart umschalten */
+html.appui main.pgIn{animation:pgIn .22s ease-out}
+@keyframes pgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){html.appui main.pgIn{animation:none}}
+/* Ziehen zum Aktualisieren */
+.ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 4px);z-index:60;width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;background:var(--panel2);box-shadow:0 6px 18px rgba(0,0,0,.35);
+  transform:translate(-50%,-60px);opacity:0;transition:transform .2s,opacity .2s;pointer-events:none}
+.ptrRing{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--blue2);border-right-color:transparent}
+.ptr.spin .ptrRing{animation:ptrSpin .7s linear infinite}
+@keyframes ptrSpin{to{transform:rotate(360deg)}}
+/* App-Sperre */
+.lockScreen{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:var(--bg);padding:24px}
+.lockScreen .logo{font-size:34px}
+.lockScreen .btn{min-width:240px;justify-content:center}
+.faceBtn{margin-top:14px;justify-content:center;background:linear-gradient(135deg,#1F2533,#121722);border:1px solid var(--line2)}
+html[data-theme="light"] .faceBtn{background:#fff;color:var(--ink)}
+.terminRow{margin-top:10px}
+.terminRow .btn{display:inline-flex;align-items:center;gap:6px}

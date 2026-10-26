@@ -32,13 +32,14 @@ function oeffneExtern(url) {
 // ---------- UI-Helfer ----------
 let toastTimer = null;
 function toast(msg) {
+  if (/✓/.test(msg)) haptic("success");
   const t = $("toast");
   t.textContent = msg;
   t.classList.add("show");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
 }
-function showErr(el, msg) { if (el) { el.textContent = msg; el.style.display = "block"; } else toast(msg); }
+function showErr(el, msg) { haptic("error"); if (el) { el.textContent = msg; el.style.display = "block"; } else toast(msg); }
 function openModal(html) {
   $("modalHost").innerHTML = `<div class="modal" onclick="if(event.target===this)closeModal()"><div class="modalBox">${html}</div></div>`;
 }
@@ -349,6 +350,7 @@ async function route() {
     return go(APP_UI ? "home" : "search");
   }
   document.body.dataset.route = name;
+  if (APP_UI) { main.classList.remove("pgIn"); void main.offsetWidth; main.classList.add("pgIn"); }
   const view = routes[name] || vNotFound;
   renderNav(name);
   try { await view(param, query); mountFilterSheet(); } catch (e) {
@@ -506,6 +508,7 @@ async function vLogin() {
     <p class="mm" style="margin-top:16px;text-align:center">Noch kein Konto? <a href="#/register" style="color:var(--blue2);font-weight:700">Jetzt registrieren</a></p>
   </div></div>`;
   $("lPass").onkeydown = (e) => { if (e.key === "Enter") $("lGo").click(); };
+  faceIdLoginKnopf();
   $("lGo").onclick = async () => {
     const err = $("lErr"); err.style.display = "none";
     const email = $("lEmail").value.trim(), pass = $("lPass").value;
@@ -518,6 +521,7 @@ async function vLogin() {
     if (error) return showErr(err, authFehler(error));
     await loadSession();
     toast("Angemeldet ✓");
+    await faceIdAnbieten(email, pass);
     go(afterAuth(""));
   };
 }
@@ -2009,6 +2013,7 @@ async function loadBookingBox(r) {
       <div style="margin-top:6px"><span class="badge ${pay[1]}">${pay[0]}</span> ${bk.no_show ? `<span class="badge b-red">${bk.no_show === "customer" ? "Als nicht erschienen markiert" : "Werkstatt nicht erschienen"}</span>` : ""}</div></div>
       <span class="badge ${s[1]}">${s[0]}</span></div>
     ${bookingTimeline(bk.status)}
+    ${active ? terminLinks(`${r.title} – ${w.name || "Werkstatt"}`, bk.scheduled_at, w) : ""}
     ${payBoxHtml(bk, w, Number(bk.total_price) + (approvals || []).filter(a => a.status === "approved").reduce((n, a) => n + Number(a.extra_cost || 0), 0))}
     ${bk.proposed_date && bk.reschedule_by === "workshop" ? `
       <div class="note" style="margin-top:12px">Die Werkstatt schlägt einen neuen Termin vor: <b>${fmtDateTime(bk.proposed_date)}</b>
@@ -3083,8 +3088,10 @@ async function vAccount() {
           <button class="btn red sm" onclick="confirmDeleteAccount()">Konto löschen</button>
         </div>
       </div>
+      ${appEinstellungenHtml()}
     </div>
   </div>`;
+  appEinstellungenBinden();
   $("accSave").onclick = async () => {
     const { error } = await sb.from("profiles").update({ full_name: $("accName").value.trim() || null, phone: $("accPhone").value.trim() || null }).eq("id", me.id);
     if (error) return toast(error.message);
@@ -5342,6 +5349,188 @@ document.addEventListener("click", async (e) => {
 });
 
 // ============================================================
+// NATIVE-GEFÜHL
+// Vibration, Ziehen zum Aktualisieren, Face ID, App-Sperre, Design-Wahl.
+// Vibration und Face ID gibt es nur in der iPhone-App (assets/native.js
+// stellt window.CarfixoNative bereit); im Browser passiert dort nichts.
+// ============================================================
+function haptic(kind = "light") { window.CarfixoNative?.haptic(kind); }
+
+// Kurzes Antippen bei allem, was man drückt – wie in nativen Apps
+document.addEventListener("click", (e) => {
+  const t = e.target.closest?.(".tabbar a, .chip, .seg div, .hmTile, .hmQ, .slotBtn, .btn:not([disabled])");
+  if (t) haptic(t.closest(".tabbar, .seg") ? "select" : "light");
+}, true);
+
+// ---------- Ziehen zum Aktualisieren (nur App-Ansicht) ----------
+(function ziehenZumAktualisieren() {
+  if (!APP_UI) return;
+  const SCHWELLE = 70;
+  const ind = document.createElement("div");
+  ind.className = "ptr";
+  ind.innerHTML = '<span class="ptrRing"></span>';
+  document.body.appendChild(ind);
+  let start = null, weg = 0, scharf = false, laeuft = false;
+  const gesperrt = (el) => document.body.classList.contains("sheetOpen") || $("modalHost").innerHTML ||
+    document.querySelector(".modal, #lockScreen") || el.closest?.(".mapWrap, .hmRail, .notifPanel, textarea, .maplibregl-map, .leaflet-container");
+  window.addEventListener("touchstart", (e) => {
+    if (laeuft || window.scrollY > 0 || e.touches.length !== 1 || gesperrt(e.target)) { start = null; return; }
+    start = e.touches[0].clientY; weg = 0; scharf = false;
+  }, { passive: true });
+  window.addEventListener("touchmove", (e) => {
+    if (start == null) return;
+    weg = Math.max(0, (e.touches[0].clientY - start) * 0.5);
+    if (weg <= 0) return;
+    ind.style.transform = `translate(-50%, ${Math.min(weg, 90)}px)`;
+    ind.style.opacity = Math.min(1, weg / SCHWELLE);
+    ind.firstChild.style.transform = `rotate(${weg * 4}deg)`;
+    if (!scharf && weg >= SCHWELLE) { scharf = true; haptic("medium"); }
+    if (scharf && weg < SCHWELLE) scharf = false;
+  }, { passive: true });
+  window.addEventListener("touchend", async () => {
+    if (start == null) return;
+    start = null;
+    if (!scharf) { ind.style.transform = ""; ind.style.opacity = 0; return; }
+    laeuft = true;
+    ind.classList.add("spin");
+    ind.style.transform = "translate(-50%, 56px)";
+    try { await route(); } finally {
+      ind.classList.remove("spin");
+      ind.style.transform = ""; ind.style.opacity = 0;
+      laeuft = false;
+    }
+  });
+})();
+
+// ---------- Face ID: schnell wieder anmelden ----------
+// Zugangsdaten liegen im iOS-Schlüsselbund (nur nach Face ID lesbar),
+// im Gerät gemerkt wird nur die E-Mail, damit der Knopf erscheinen kann.
+const FACEID_KEY = "cfx_faceid";
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) { /* privat */ } };
+
+async function faceIdLoginKnopf() {
+  const email = lsGet(FACEID_KEY);
+  if (!NATIVE || !email || !window.CarfixoNative || !$("lGo")) return;
+  const btn = document.createElement("button");
+  btn.className = "btn wide faceBtn";
+  btn.type = "button";
+  btn.innerHTML = `${ico("user", 18)} Mit Face ID anmelden`;
+  $("lGo").parentNode.insertBefore(btn, $("lGo"));
+  $("lEmail").value = email;
+  btn.onclick = async () => {
+    if (!(await window.CarfixoNative.verify("Bei Carfixo anmelden"))) return;
+    const z = await window.CarfixoNative.getLogin();
+    if (!z) { lsSet(FACEID_KEY, null); btn.remove(); return toast("Face ID ist nicht mehr eingerichtet – bitte mit Passwort anmelden."); }
+    btn.disabled = true;
+    const { error } = await sb.auth.signInWithPassword({ email: z.email, password: z.password });
+    btn.disabled = false;
+    if (error) {
+      // z. B. Passwort inzwischen geändert: alte Daten verwerfen
+      await window.CarfixoNative.removeLogin(); lsSet(FACEID_KEY, null); btn.remove();
+      return showErr($("lErr"), authFehler(error) + " Face ID wurde zurückgesetzt.");
+    }
+    await loadSession();
+    toast("Angemeldet ✓");
+    go(afterAuth(""));
+  };
+  btn.click();   // gleich anbieten, wie bei Banking-Apps
+}
+
+async function faceIdAnbieten(email, pass) {
+  if (!NATIVE || !window.CarfixoNative || lsGet(FACEID_KEY) === email) return;
+  if (lsGet("cfx_faceid_nein") === email || !(await window.CarfixoNative.biometryAvailable())) return;
+  const ja = await frage("Beim nächsten Mal meldest du dich mit einem Blick an – ohne Passwort.",
+    { titel: "Face ID verwenden?", ja: "Face ID aktivieren", nein: "Nicht jetzt" });
+  if (!ja) return lsSet("cfx_faceid_nein", email);
+  try { await window.CarfixoNative.saveLogin(email, pass); lsSet(FACEID_KEY, email); toast("Face ID aktiviert ✓"); }
+  catch (e) { toast("Face ID konnte nicht eingerichtet werden."); }
+}
+
+// ---------- App-Sperre ----------
+// Auf Wunsch verlangt die App beim Öffnen und nach einer Minute im
+// Hintergrund Face ID (siehe native.js, appStateChange).
+window.appLock = async function () {
+  if (!NATIVE || !me || lsGet("cfx_applock") !== "1" || $("lockScreen") || !window.CarfixoNative) return;
+  const d = document.createElement("div");
+  d.id = "lockScreen";
+  d.className = "lockScreen";
+  d.innerHTML = `<div class="logo">car<b>fixo</b></div>
+    <p class="mm">Carfixo ist gesperrt.</p>
+    <button class="btn" id="lockGo" type="button">Mit Face ID entsperren</button>
+    <button class="btn ghost sm" id="lockOut" type="button">Abmelden</button>`;
+  document.body.appendChild(d);
+  const entsperren = async () => {
+    if (await window.CarfixoNative.verify("Carfixo entsperren")) { d.remove(); haptic("success"); }
+  };
+  $("lockGo").onclick = entsperren;
+  $("lockOut").onclick = async () => { d.remove(); await signOut(); };
+  entsperren();
+};
+
+// ---------- Design: Dunkel, Hell oder wie das System ----------
+const THEME_KEY = "cfx_theme";
+const systemHell = window.matchMedia ? matchMedia("(prefers-color-scheme: light)") : null;
+function applyTheme() {
+  const wahl = lsGet(THEME_KEY) || "dark";
+  const hell = wahl === "light" || (wahl === "system" && !!systemHell?.matches);
+  document.documentElement.dataset.theme = hell ? "light" : "dark";
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", hell ? "#F3F5F9" : "#05070D");
+  window.CarfixoNative?.statusBar?.(hell);
+}
+systemHell?.addEventListener?.("change", applyTheme);
+applyTheme();
+
+// Einstellungen im Konto: Design, Face ID, App-Sperre
+function appEinstellungenHtml() {
+  const wahl = lsGet(THEME_KEY) || "dark";
+  return `<div class="card" style="margin-top:14px" id="appSettings">
+    <div class="tt">Darstellung${NATIVE ? " & Sicherheit" : ""}</div>
+    <div class="label">Design</div>
+    <div class="seg" id="themeSeg" style="margin:4px 0 0">
+      ${[["dark", "Dunkel"], ["light", "Hell"], ["system", "Wie System"]].map(([k, l]) => `<div data-t="${k}" class="${wahl === k ? "on" : ""}">${l}</div>`).join("")}
+    </div>
+    ${NATIVE ? `
+    <label class="inline" style="margin-top:14px"><input type="checkbox" id="setFace" ${lsGet(FACEID_KEY) ? "checked" : ""}> Mit Face ID anmelden</label>
+    <label class="inline"><input type="checkbox" id="setLock" ${lsGet("cfx_applock") === "1" ? "checked" : ""}> App mit Face ID sperren</label>
+    <p class="mm" style="font-size:12px;margin-top:6px">Die Sperre greift beim Öffnen und wenn die App länger als eine Minute im Hintergrund war.</p>` : ""}
+  </div>`;
+}
+function appEinstellungenBinden() {
+  document.querySelectorAll("#themeSeg div").forEach(d => d.onclick = () => {
+    document.querySelectorAll("#themeSeg div").forEach(x => x.classList.toggle("on", x === d));
+    lsSet(THEME_KEY, d.dataset.t);
+    applyTheme();
+  });
+  if ($("setFace")) $("setFace").onchange = async (e) => {
+    if (e.target.checked) {
+      e.target.checked = false;
+      return toast("Melde dich einmal ab und mit Passwort wieder an – dann bietet Carfixo Face ID an.");
+    }
+    await window.CarfixoNative?.removeLogin(); lsSet(FACEID_KEY, null); lsSet("cfx_faceid_nein", null);
+    toast("Face ID-Anmeldung ausgeschaltet.");
+  };
+  if ($("setLock")) $("setLock").onchange = async (e) => {
+    if (e.target.checked && !(await window.CarfixoNative?.verify("App-Sperre einschalten"))) { e.target.checked = false; return; }
+    lsSet("cfx_applock", e.target.checked ? "1" : null);
+    toast(e.target.checked ? "App-Sperre an ✓" : "App-Sperre aus.");
+  };
+}
+
+// ---------- Kalender und Route für einen Termin ----------
+function terminLinks(titel, iso, ws, dauerMin = 60) {
+  if (!iso) return "";
+  const ort = [ws?.street, [ws?.zip, ws?.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  const kal = `${API}/api/termin?` + new URLSearchParams({ t: titel, s: new Date(iso).toISOString(), m: String(dauerMin), o: ort });
+  // In der App direkt Apple Karten, sonst Google Maps im Browser
+  const route = NATIVE && ort ? "maps://?daddr=" + encodeURIComponent(ort) : (ws ? mapsDirUrl(ws) : null);
+  return `<div class="btnRow terminRow">
+    <a class="btn ghost sm" href="${esc(kal)}" target="_blank" rel="noopener">${ico("calendar", 16)} In Kalender</a>
+    ${route ? `<a class="btn ghost sm" href="${esc(route)}" target="_blank" rel="noopener">${ico("pin", 16)} Route</a>` : ""}
+  </div>`;
+}
+
+// ============================================================
 // Start
 // ============================================================
 window.addEventListener("hashchange", route);
@@ -5360,6 +5549,7 @@ sb.auth.onAuthStateChange((event) => {
 });
 (async () => {
   await loadSession();
+  window.appLock();
   if (authLinkError) {
     // z.B. abgelaufener oder bereits benutzter Link
     history.replaceState(null, "", location.pathname + "#/forgot");
