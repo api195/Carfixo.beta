@@ -101,6 +101,8 @@ const routes = {
 };
 const CUSTOMER_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"], ["requests", "megaphone", "Aufträge"], ["vehicles", "car", "Fahrzeuge"]];
 const WS_NAV = [["ws/dashboard", "gauge", "Dashboard"], ["ws/leads", "megaphone", "Anfragen"], ["ws/jobs", "box", "Aufträge"], ["ws/parts", "puzzle", "Teile"], ["ws/calendar", "calendar", "Kalender"], ["ws/profile", "shop", "Profil"]];
+// App für Betriebe: höchstens fünf Tabs; Profil, Teile und Statistik über den Start
+const WS_APP_NAV = [["ws/dashboard", "home", "Start"], ["ws/leads", "megaphone", "Anfragen"], ["ws/jobs", "box", "Aufträge"], ["ws/calendar", "calendar", "Kalender"]];
 const ANON_NAV = [["search", "search", "Suche"], ["diagnose", "robot", "Diagnose"], ["teile", "puzzle", "Teile"], ["notfall", "alert", "Notfall"]];
 // App: Home vorne, höchstens fünf Tabs (mit Login/Konto). Notfall, Aufträge
 // und Fahrzeuge sind über die Startseite erreichbar.
@@ -361,7 +363,7 @@ async function route() {
 
 function renderNav(active) {
   const isWs = myProfile?.role === "workshop_owner" || myProfile?.role === "workshop_staff";
-  const items = isWs ? WS_NAV : APP_UI ? APP_NAV : me ? CUSTOMER_NAV : ANON_NAV;
+  const items = isWs ? (APP_UI ? WS_APP_NAV : WS_NAV) : APP_UI ? APP_NAV : me ? CUSTOMER_NAV : ANON_NAV;
   const nav = items.map(([r, ic, label]) =>
     `<a href="#/${r}" class="${active === r ? "on" : ""}">${label}</a>`).join("");
   $("topNav").innerHTML = nav + (me
@@ -817,8 +819,10 @@ async function vHome() {
         <span class="hmTileImg"><img src="assets/img/kategorien/${k}.webp" alt="" loading="lazy" decoding="async"></span><span>${label}</span></a>`).join("")}
     </div>
 
+    <div id="hmTuev"></div>
     <div id="hmLive"></div>
     <div id="hmFest"></div>
+    <div id="hmAgain"></div>
 
     <a class="hmPromo" href="#/${kunde ? "new-request" : me ? "search" : "register"}">
       <div class="hmPromoTxt">
@@ -873,14 +877,14 @@ async function vHome() {
   })();
 
   const fest = hmFestpreise();
-  if (kunde) await Promise.all([top, fest, hmLive(), hmGarage()]);
+  if (kunde) await Promise.all([top, fest, hmLive(), hmGarage(), hmNochmal(), hmTuev()]);
   else await Promise.all([top, fest]);
 }
 
 // Laufender Auftrag – wie eine Fahrt bei Uber: Status und Fortschritt
 async function hmLive() {
   const [{ data: bks }, { data: reqs }] = await Promise.all([
-    sb.from("bookings").select("id,status,booking_no,offers(request_id)").eq("customer_id", me.id)
+    sb.from("bookings").select("id,status,booking_no,scheduled_at,offers(request_id,requests(title),workshops(name))").eq("customer_id", me.id)
       .not("status", "in", "(completed,cancelled)").order("created_at", { ascending: false }).limit(1),
     sb.from("requests").select("id,title,category,status,offers(count)").eq("customer_id", me.id)
       .eq("status", "open").order("created_at", { ascending: false }).limit(1),
@@ -888,15 +892,27 @@ async function hmLive() {
   const box = $("hmLive");
   if (!box) return;
   const bk = bks?.[0], r = reqs?.[0];
+  window._hmStatus = bk?.status;
   if (bk && BK_STATUS[bk.status]) {
     const schritt = Math.max(0, BK_FLOW.indexOf(bk.status));
     const anteil = Math.round(((schritt + 1) / BK_FLOW.length) * 100);
+    const naechster = BK_FLOW[schritt + 1] && bk.status !== "approval_needed" ? BK_STATUS[BK_FLOW[schritt + 1]][0] : null;
     const ziel = bk.offers?.request_id ? `request/${bk.offers.request_id}` : "requests";
+    const titel = [bk.offers?.requests?.title, bk.offers?.workshops?.name].filter(Boolean).map(esc).join(" · ");
     box.innerHTML = `<a class="hmLive" href="#/${ziel}">
-      <div class="hmLiveTop"><span class="hmPulse"></span><span class="hmKicker">Dein Auftrag ${esc(bk.booking_no || "")}</span></div>
+      <div class="hmLiveTop"><span class="hmPulse"></span><span class="hmKicker">Live · ${esc(bk.booking_no || "Dein Auftrag")}</span></div>
       <b>${BK_STATUS[bk.status][0]}</b>
-      <div class="hmBar"><i style="width:${anteil}%"></i></div>
-      <span class="mm">Tippen für Details ${ico("chev", 13)}</span></a>`;
+      ${titel ? `<span class="mm">${titel}</span>` : ""}
+      <div class="hmSteps">${BK_FLOW.map((st, i) => `<i class="${i < schritt ? "done" : i === schritt ? "cur" : ""}"></i>`).join("")}</div>
+      <span class="mm">${bk.status === "approval_needed" ? "Deine Freigabe wird gebraucht" : bk.scheduled_at && schritt <= 1 ? "Termin " + fmtDateTime(bk.scheduled_at) : naechster ? "Als Nächstes: " + naechster : "Fertig zur Abholung"} ${ico("chev", 13)}</span>
+      <span class="sr-only">${anteil} % erledigt</span></a>`;
+    // Live: jede Statusänderung der Werkstatt sofort zeigen
+    if (!rtChannels.some(c => c.topic === "realtime:hm-live")) {
+      rtChannels.push(sb.channel("hm-live")
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "bookings", filter: "customer_id=eq." + me.id },
+          (p) => { if (p.new?.status && p.new.status !== window._hmStatus) haptic("success"); hmLive(); })
+        .subscribe());
+    }
   } else if (r) {
     const n = r.offers?.[0]?.count || 0;
     box.innerHTML = `<a class="hmLive" href="#/request/${r.id}">
@@ -904,6 +920,43 @@ async function hmLive() {
       <b>${esc(r.title)}</b>
       <span class="mm">${n ? `${n} Angebot${n > 1 ? "e" : ""} zum Vergleichen` : "Betriebe schauen sich deine Anfrage an"} ${ico("chev", 13)}</span></a>`;
   }
+}
+
+// "Nochmal buchen": letzter abgeschlossener Auftrag mit einem Tipp
+async function hmNochmal() {
+  const { data } = await sb.from("bookings")
+    .select("id,offers(workshop_id,request_id,requests(title,category,extras),workshops(id,name,is_demo))")
+    .eq("customer_id", me.id).eq("status", "completed").order("created_at", { ascending: false }).limit(3);
+  const box = $("hmAgain"); if (!box) return;
+  const gesehen = new Set();
+  const liste = (data || []).filter(b => b.offers?.workshops && b.offers?.requests).filter(b => {
+    const k = b.offers.workshop_id + b.offers.requests.title; if (gesehen.has(k)) return false; gesehen.add(k); return true;
+  });
+  if (!liste.length) return;
+  box.innerHTML = `<div class="hmSec"><h2>Nochmal buchen</h2></div>
+    <div class="hmRail">${liste.map(b => {
+      const rq = b.offers.requests, w = b.offers.workshops;
+      const ziel = rq.extras?.fixed_price_service ? `workshop/${w.id}`
+        : `new-request?ws=${w.id}&cat=${encodeURIComponent(rq.category)}&title=${encodeURIComponent(rq.title)}`;
+      return `<a class="hmFp" href="#/${ziel}"><span class="fpIco">${ico(rq.category, 20)}</span>
+        <b>${esc(rq.title)}</b><span class="mm">${esc(w.name)}</span><span class="hmFpPrice">Erneut buchen ${ico("chev", 13)}</span></a>`;
+    }).join("")}</div>`;
+}
+
+// TÜV fällig: Hinweis mit Buchung in einem Tipp
+async function hmTuev() {
+  const { data } = await sb.from("vehicles").select("id,make,model,license_plate,tuev_until")
+    .eq("owner_id", me.id).not("tuev_until", "is", null).order("tuev_until").limit(1);
+  const v = data?.[0], box = $("hmTuev");
+  if (!box || !v) return;
+  const tage = Math.ceil((new Date(v.tuev_until) - new Date()) / 864e5);
+  if (tage > 45) return;
+  const text = tage < 0 ? `seit ${-tage} Tag${tage === -1 ? "" : "en"} überfällig` : tage === 0 ? "heute fällig" : `fällig in ${tage} Tag${tage === 1 ? "" : "en"}`;
+  box.innerHTML = `<div class="hmTuev ${tage < 0 ? "late" : ""}">
+    <span class="fpIco">${ico("tuev", 22)}</span>
+    <div style="flex:1;min-width:0"><b>TÜV ${text}</b>
+      <span class="mm">${esc(v.make)} ${esc(v.model)}${v.license_plate ? " · " + esc(v.license_plate) : ""}</span></div>
+    <a class="btn sm" href="#/search?cat=tuev">Termin finden</a></div>`;
 }
 
 // Garage: Fahrzeuge mit TÜV-Hinweis, plus "Meine Aufträge"
@@ -1417,6 +1470,8 @@ async function vWorkshopProfile(id) {
                 <button class="btn ghost sm" style="float:right;padding:4px 8px;letter-spacing:0" onclick="openReportModal('review','${r.id}','${ws.id}','Bewertung melden')" title="Bewertung melden" aria-label="Bewertung melden">${ico("flag")}</button></div>
               ${r.comment ? `<p class="mm" style="margin-top:5px;font-size:13px">${esc(r.comment)}</p>` : ""}
               ${(r.images || []).length ? `<div class="thumbs rvThumbs" style="margin-top:8px">${r.images.map(u => `<img src="${esc(u)}" loading="lazy" data-full="${esc(u)}" style="width:74px;height:74px;cursor:zoom-in" alt="Bewertungsfoto">`).join("")}</div>` : ""}
+              ${r.reply ? `<div class="rvReply"><b>Antwort von ${esc(ws.name)}</b><span class="mm"> · ${fmtDate(r.reply_at)}</span><p>${esc(r.reply)}</p></div>` : ""}
+              ${myWorkshop?.id === ws.id ? `<button class="btn ghost sm" style="margin-top:8px" onclick="openReplyModal('${r.id}','${ws.id}')">${r.reply ? "Antwort bearbeiten" : "Antworten"}</button>` : ""}
             </div>`).join("")}</div>
       </div>
     </div>
@@ -1826,7 +1881,7 @@ async function vRequestDetail(id) {
     <div class="card">
       <div class="tt">Chat</div>
       <div class="msgs" id="msgs"></div>
-      <div class="msgRow"><input id="msgIn" placeholder="Nachricht schreiben…"><button id="msgGo" aria-label="Nachricht senden">${ico("send")}</button></div>
+      ${chatEingabeHtml(false)}
     </div>
   </div>`;
   if ($("rCancel")) $("rCancel").onclick = async () => {
@@ -1834,12 +1889,17 @@ async function vRequestDetail(id) {
     const { error } = await sb.from("requests").update({ status: "cancelled" }).eq("id", r.id);
     if (error) toast(error.message); else { toast("Zurückgezogen."); go("requests"); }
   };
-  $("msgGo").onclick = () => sendMsg(r.id);
-  $("msgIn").onkeydown = (e) => { if (e.key === "Enter") sendMsg(r.id); };
+  chatBinden(r.id);
   await Promise.all([loadOffers(r), loadMsgs(r.id), booked ? loadBookingBox(r) : Promise.resolve()]);
   const ch = sb.channel("req:" + r.id)
     .on("postgres_changes", { event: "*", schema: "public", table: "offers", filter: "request_id=eq." + r.id }, () => loadOffers(r))
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: "request_id=eq." + r.id }, () => loadMsgs(r.id))
+    // Status vom Betrieb live übernehmen (Uber-Prinzip: man sieht es passieren)
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "bookings", filter: "customer_id=eq." + me.id }, (p) => {
+      if (!booked || !$("bookingBox")) return;
+      if (p.new?.status && p.new.status !== window._bkStatus) { haptic("success"); toast("Neuer Status: " + (BK_STATUS[p.new.status]?.[0] || p.new.status)); }
+      loadBookingBox(r);
+    })
     .subscribe();
   rtChannels.push(ch);
 }
@@ -1992,6 +2052,7 @@ async function loadBookingBox(r) {
     .select("*, offers!inner(request_id,total_price,is_fixed_price,workshops(*))")
     .eq("offers.request_id", r.id).eq("customer_id", me.id).maybeSingle();
   const box = $("bookingBox"); if (!box || !bk) return;
+  window._bkStatus = bk.status;
   const s = BK_STATUS[bk.status] || ["?", "b-grey"];
   const pay = PAY_LABELS[bk.payment_status] || PAY_LABELS.none;
   const w = bk.offers?.workshops || {};
@@ -2126,6 +2187,27 @@ async function completeBooking(bkId, reqId, wsId, wsName) {
 
 // ---------- Bewertung ----------
 let revRating = 0;
+// Antwort des Betriebs auf eine Bewertung (öffentlich sichtbar)
+async function openReplyModal(reviewId, wsId) {
+  const { data: rv } = await sb.from("reviews").select("rating,comment,reply").eq("id", reviewId).maybeSingle();
+  if (!rv) return;
+  openModal(`<h2>Auf Bewertung antworten</h2>
+    <div class="note" style="margin-top:10px"><span style="color:var(--gold)">${stars(rv.rating)}</span> ${rv.comment ? esc(rv.comment) : "<span class=\"mm\">ohne Kommentar</span>"}</div>
+    <div class="label">Deine Antwort (öffentlich)</div>
+    <textarea id="rpText" maxlength="1000" placeholder="Danke für dein Feedback! …">${esc(rv.reply || "")}</textarea>
+    <p class="mm" style="font-size:12px;margin-top:6px">Sachlich und freundlich bleiben – andere Kunden lesen mit. Leer lassen und speichern entfernt die Antwort.</p>
+    <div class="btnRow"><button class="btn" id="rpGo">Antwort speichern</button><button class="btn ghost" onclick="closeModal()">Abbrechen</button></div>
+    <div class="err" id="rpErr"></div>`);
+  $("rpGo").onclick = async () => {
+    $("rpGo").disabled = true;
+    const { error } = await sb.from("reviews").update({ reply: $("rpText").value.trim() || null }).eq("id", reviewId);
+    $("rpGo").disabled = false;
+    if (error) return showErr($("rpErr"), error.message);
+    closeModal(); toast("Antwort gespeichert ✓");
+    vWorkshopProfile(wsId);
+  };
+}
+
 function openReviewModal(bookingId, workshopId, wsName, reqId) {
   revRating = 0;
   openModal(`
@@ -2135,7 +2217,7 @@ function openReviewModal(bookingId, workshopId, wsName, reqId) {
     <div class="label">Kommentar (optional)</div>
     <textarea id="revComment" placeholder="Wie lief Kommunikation, Preis, Qualität?"></textarea>
     <div class="label">Fotos (optional, bis 4)</div>
-    <input type="file" id="revImgs" accept="image/*" multiple style="padding:9px">
+    <input type="file" id="revImgs" accept="image/*" multiple style="padding:9px" aria-label="Fotos aufnehmen oder auswählen">
     <div class="thumbs" id="revThumbs" style="margin-top:8px"></div>
     <div class="btnRow">
       <button class="btn" id="revGo">Bewertung abschicken</button>
@@ -2172,20 +2254,56 @@ function openReviewModal(bookingId, workshopId, wsName, reqId) {
 }
 
 // ---------- Chat ----------
+// Schnellantworten: ein Tipp statt Tippen – für Betriebe in der Halle
+const SCHNELL_WS = ["Ihr Auto ist fertig und kann abgeholt werden.", "Das Ersatzteil ist bestellt – ich melde mich.",
+  "Können Sie kurz zurückrufen?", "Wir haben mit der Arbeit begonnen.", "Termin passt, bis dann!"];
+const SCHNELL_KUNDE = ["Wann ist mein Auto fertig?", "Bitte rufen Sie mich kurz an.", "Danke!", "Ich bin etwas später da."];
+function chatEingabeHtml(alsBetrieb) {
+  return `<div class="quickRow" id="msgQuick">${(alsBetrieb ? SCHNELL_WS : SCHNELL_KUNDE).map(t => `<button type="button" class="chip" data-t="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+    <div class="thumbs" id="msgThumbs"></div>
+    <div class="msgRow">
+      <button type="button" id="msgCam" class="msgCam" aria-label="Foto senden">${ico("camera")}</button>
+      <input type="file" id="msgFile" accept="image/*" multiple class="hidden">
+      <input id="msgIn" placeholder="Nachricht schreiben…">
+      <button id="msgGo" aria-label="Nachricht senden">${ico("send")}</button></div>`;
+}
+let msgFiles = [];
+function chatBinden(requestId) {
+  msgFiles = [];
+  $("msgGo").onclick = () => sendMsg(requestId);
+  $("msgIn").onkeydown = (e) => { if (e.key === "Enter") sendMsg(requestId); };
+  $("msgCam").onclick = () => $("msgFile").click();
+  $("msgFile").onchange = () => {
+    msgFiles = [...$("msgFile").files].filter(f => f.size < 10 * 1024 * 1024).slice(0, 4);
+    $("msgThumbs").innerHTML = msgFiles.map(f => `<img src="${URL.createObjectURL(f)}" alt="">`).join("");
+  };
+  document.querySelectorAll("#msgQuick .chip").forEach(c => c.onclick = () => { $("msgIn").value = c.dataset.t; sendMsg(requestId); });
+}
 async function loadMsgs(requestId) {
   const { data } = await sb.from("messages").select("*").eq("request_id", requestId).order("created_at");
   const box = $("msgs"); if (!box) return;
   box.innerHTML = (data || []).map(m => `
-    <div class="msg ${m.sender_id === me.id ? "me" : "them"}">${esc(m.body)}<div class="mt">${fmtDateTime(m.created_at)}</div></div>`).join("")
+    <div class="msg ${m.sender_id === me.id ? "me" : "them"}">${(m.attachments || []).map(u => `<img class="msgImg" src="${esc(u)}" loading="lazy" alt="Foto" onclick="openLightbox(this.src)">`).join("")}${m.body && !((m.attachments || []).length && m.body === "Foto") ? esc(m.body) : ""}<div class="mt">${fmtDateTime(m.created_at)}</div></div>`).join("")
     || '<p class="mm" style="text-align:center;padding:14px">Noch keine Nachrichten – stell hier Rückfragen.</p>';
   box.scrollTop = box.scrollHeight;
 }
 async function sendMsg(requestId) {
   const inp = $("msgIn");
-  const body = inp.value.trim(); if (!body) return;
-  inp.value = "";
-  const { error } = await sb.from("messages").insert({ request_id: requestId, sender_id: me.id, body });
-  if (error) toast(error.message); else loadMsgs(requestId);
+  const text = inp.value.trim();
+  if (!text && !msgFiles.length) return;
+  $("msgGo").disabled = true;
+  const attachments = [];
+  for (const f of msgFiles) {
+    const path = `${me.id}/chat_${Date.now()}_${f.name.replace(/[^\w.\-]/g, "_")}`;
+    const { error: upErr } = await sb.storage.from("attachments").upload(path, f);
+    if (!upErr) attachments.push(sb.storage.from("attachments").getPublicUrl(path).data.publicUrl);
+  }
+  const { error } = await sb.from("messages").insert({ request_id: requestId, sender_id: me.id, body: text || "Foto", attachments });
+  $("msgGo").disabled = false;
+  if (error) return toast(error.message);
+  inp.value = ""; msgFiles = []; $("msgFile").value = ""; $("msgThumbs").innerHTML = "";
+  haptic("light");
+  loadMsgs(requestId);
 }
 
 // ============================================================
@@ -3164,6 +3282,7 @@ async function vWsDashboard() {
     <div><h1>${esc(myWorkshop.name)}</h1>
     <div class="sub">${myWorkshop.is_verified ? "✓ Verifiziert – du siehst passende Ausschreibungen live." : "Noch nicht verifiziert – ein Admin prüft deinen Betrieb. Vervollständige solange dein Profil."}</div></div>
     <div class="right">
+      ${APP_UI ? `<a class="btn ghost sm" href="#/ws/parts">Teile</a>` : ""}
       <a class="btn ghost sm" href="#/ws/stats">Statistiken</a>
       <a class="btn ghost sm" href="#/ws/archive">Archiv</a>
       <a class="btn ghost sm" href="#/ws/profile">Profil</a>
@@ -3181,7 +3300,11 @@ async function vWsDashboard() {
       <a class="btn ghost sm" style="margin-top:6px" href="#/ws/leads">Alle Anfragen →</a></div>
     <div class="card"><div class="tt">Aktuelle Aufträge</div><div id="dashJobs" style="margin-top:12px"><div class="sk" style="height:80px"></div></div>
       <a class="btn ghost sm" style="margin-top:6px" href="#/ws/jobs">Alle Aufträge →</a></div>
-  </div>`;
+  </div>
+  <div id="dashReviews"></div>`;
+  sb.from("reviews").select("id", { count: "exact", head: true }).eq("workshop_id", myWorkshop.id).is("reply", null)
+    .then(({ count }) => { if (count && $("dashReviews")) $("dashReviews").innerHTML = `<a class="note dashRv" href="#/workshop/${myWorkshop.id}">
+      ${ico("star", 18)} <span><b>${count} Bewertung${count > 1 ? "en" : ""} ohne Antwort.</b> Eine kurze Antwort zeigt Kunden, dass du dich kümmerst.</span> ${ico("chev", 16)}</a>`; });
   const [{ data: leads }, { data: offers }, { data: jobs }] = await Promise.all([
     sb.from("requests").select("*").eq("status", "open").order("created_at", { ascending: false }).limit(6),
     sb.from("offers").select("id,status").eq("workshop_id", myWorkshop.id),
@@ -3275,11 +3398,19 @@ async function vWsLead(id) {
   main.innerHTML = `<div class="sk" style="height:220px"></div>`;
   const { data: r } = await sb.from("requests").select("*").eq("id", id).maybeSingle();
   if (!r) { main.innerHTML = `<div class="warn">Anfrage nicht gefunden (evtl. bereits vergeben).</div>`; return; }
-  const [{ data: myOffer }, { data: templates }] = await Promise.all([
+  const [{ data: myOffer }, { data: templates }, { data: festpreise }] = await Promise.all([
     sb.from("offers").select("*").eq("request_id", id).eq("workshop_id", myWorkshop.id).maybeSingle(),
     sb.from("offer_templates").select("*").eq("workshop_id", myWorkshop.id).order("name"),
+    sb.from("fixed_price_services").select("service,price,category").eq("workshop_id", myWorkshop.id).eq("active", true),
   ]);
   window._oTemplates = templates || [];
+  // Schnellangebot: eigene Festpreise (passende Kategorie zuerst) und Vorlagen
+  window._oQuick = [
+    ...(festpreise || []).sort((a, b) => (b.category === r.category) - (a.category === r.category))
+      .map(f => ({ name: f.service, total: Number(f.price), line_items: [{ label: f.service, price: Number(f.price) }], fixed: true })),
+    ...(templates || []).map(t => ({ name: t.name, total: (t.line_items || []).reduce((n, li) => n + Number(li.price || 0), 0),
+      line_items: t.line_items || [], pricing: t.pricing, fixed: t.is_fixed_price !== false })),
+  ].filter(q => q.total > 0).slice(0, 8);
   const c = CATS[r.category] || { icon: "", name: r.category };
   const partsLabel = (PARTS_OPTIONS.find(p => p[0] === r.parts_preference) || [])[1];
   main.innerHTML = `
@@ -3317,15 +3448,20 @@ async function vWsLead(id) {
     <div class="card">
       <div class="tt">Rückfragen an den Kunden</div>
       <div class="msgs" id="msgs"></div>
-      <div class="msgRow"><input id="msgIn" placeholder="Nachricht schreiben…"><button id="msgGo" aria-label="Nachricht senden">${ico("send")}</button></div>
+      ${chatEingabeHtml(true)}
     </div>
   </div>`;
   if ($("oGo")) bindOfferForm(r.id);
-  $("msgGo").onclick = () => sendMsg(r.id);
-  $("msgIn").onkeydown = (e) => { if (e.key === "Enter") sendMsg(r.id); };
+  chatBinden(r.id);
   await loadMsgs(r.id);
   const ch = sb.channel("ws-lead:" + r.id)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: "request_id=eq." + r.id }, () => loadMsgs(r.id))
+    // Status vom Betrieb live übernehmen (Uber-Prinzip: man sieht es passieren)
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "bookings", filter: "customer_id=eq." + me.id }, (p) => {
+      if (!booked || !$("bookingBox")) return;
+      if (p.new?.status !== p.old?.status) { haptic("success"); toast("Neuer Status: " + (BK_STATUS[p.new.status]?.[0] || p.new.status)); }
+      loadBookingBox(r);
+    })
     .subscribe();
   rtChannels.push(ch);
 }
@@ -3336,6 +3472,8 @@ function offerFormHtml() {
   const tpl = window._oTemplates || [];
   return `
     <div class="tt">Angebot kalkulieren</div>
+    ${(window._oQuick || []).length ? `<div class="label">Schnellangebot – antippen, prüfen, senden</div>
+    <div class="quickRow" id="oQuick">${window._oQuick.map((q, i) => `<button type="button" class="chip" data-i="${i}">${esc(q.name)} · ${fmtEur(q.total)}</button>`).join("")}</div>` : ""}
     ${tpl.length ? `<div class="label">Vorlage laden</div>
     <div class="split"><select id="oTpl">${opt("Vorlage wählen…", tpl.map(t => t.name), "")}</select>
     <button class="btn ghost sm" id="oTplDel" style="flex:0 0 auto" title="Gewählte Vorlage löschen" aria-label="Vorlage löschen">${ico("trash")}</button></div>` : ""}
@@ -3412,6 +3550,19 @@ function bindOfferForm(requestId) {
   }
   calcOfferSum();
   $("oGo").onclick = () => sendOffer(requestId);
+  document.querySelectorAll("#oQuick .chip").forEach(c => c.onclick = async () => {
+    const q = window._oQuick[+c.dataset.i];
+    if (!(await frage(`${q.name} für ${fmtEur(q.total)} (${q.fixed ? "Festpreis" : "Schätzung"}) an den Kunden senden?`,
+      { titel: "Schnellangebot senden", ja: "Angebot senden" }))) return;
+    const { error } = await sb.from("offers").insert({
+      request_id: requestId, workshop_id: myWorkshop.id, line_items: q.line_items, pricing: q.pricing || null,
+      is_fixed_price: q.fixed, total_price: Math.round(q.total * 100) / 100, vat_rate: 19,
+      message: $("oMsg").value.trim() || null, status: "sent",
+    });
+    if (error) return toast(String(error.message).includes("duplicate") ? "Du hast hier schon ein Angebot abgegeben." : error.message);
+    toast("Angebot gesendet ✓");
+    vWsLead(requestId);
+  });
 }
 function collectOffer() {
   const hours = parseFloat(($("oHours").value || "").replace(",", ".")) || 0;

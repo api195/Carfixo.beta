@@ -694,3 +694,30 @@ html[data-theme="light"] .faceBtn{background:#fff;color:var(--ink)}
 .hmFp b{font-size:14px;margin-top:4px}
 .hmFp .mm{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hmFpPrice{margin-top:4px;font-weight:800;color:var(--green)}
+
+/* ---------- Live-Auftrag, Nochmal buchen, TÜV-Hinweis ---------- */
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hmSteps{display:flex;gap:4px;margin:4px 0 2px}
+.hmSteps i{flex:1;height:5px;border-radius:99px;background:rgba(255,255,255,.1)}
+.hmSteps i.done{background:var(--green)}
+.hmSteps i.cur{background:linear-gradient(90deg,var(--green),#38BDF8);animation:hmCur 1.6s ease-in-out infinite}
+@keyframes hmCur{50%{opacity:.55}}
+.hmTuev{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:20px;
+  background:linear-gradient(135deg,rgba(255,176,32,.16),rgba(255,176,32,.05));border:1px solid rgba(255,176,32,.3)}
+.hmTuev.late{background:linear-gradient(135deg,rgba(255,92,92,.18),rgba(255,92,92,.05));border-color:rgba(255,92,92,.35)}
+.hmTuev b{display:block;font-size:15px}
+.hmTuev .mm{font-size:12.5px}
+.hmTuev .fpIco{color:var(--gold);background:rgba(255,176,32,.14)}
+.hmTuev .btn{flex:none}
+.rvReply{margin-top:10px;padding:10px 12px;border-left:3px solid var(--blue2);border-radius:0 12px 12px 0;background:rgba(30,107,255,.07);font-size:13px}
+.rvReply p{margin-top:4px;color:var(--ink)}
+.dashRv{display:flex;align-items:center;gap:10px;margin-top:16px;color:var(--ink)}
+
+/* ---------- Chat: Fotos und Schnellantworten ---------- */
+.quickRow{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.quickRow::-webkit-scrollbar{display:none}
+.quickRow .chip{flex:none;font-size:12px;padding:7px 12px;border:1px solid var(--line2);font-family:inherit}
+.quickRow .chip::before{content:none}
+.msgCam{width:47px!important;background:rgba(255,255,255,.07)!important;color:var(--ink)!important}
+.msgImg{display:block;max-width:100%;max-height:220px;border-radius:10px;margin-bottom:6px;cursor:zoom-in}
+#msgThumbs img{width:56px;height:56px}
