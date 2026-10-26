@@ -343,7 +343,11 @@ function vNotFound() {
   </div>`;
 }
 
+// Zählt Seitenwechsel: eine langsame Seite, die erst nach dem Weiternavigieren
+// fertig wird (oder scheitert), darf die neue Seite nicht überschreiben.
+let routeNr = 0;
 async function route() {
+  const nr = ++routeNr;
   cleanRT();
   const { name, param, query } = parseHash();
   window.scrollTo(0, 0);
@@ -355,8 +359,9 @@ async function route() {
   if (APP_UI) { main.classList.remove("pgIn"); void main.offsetWidth; main.classList.add("pgIn"); }
   const view = routes[name] || vNotFound;
   renderNav(name);
-  try { await view(param, query); mountFilterSheet(); } catch (e) {
+  try { await view(param, query); if (nr === routeNr) mountFilterSheet(); } catch (e) {
     console.error(e);
+    if (nr !== routeNr) return;
     main.innerHTML = `<div class="warn">Fehler beim Laden: ${esc(e.message || e)}</div>`;
   }
 }

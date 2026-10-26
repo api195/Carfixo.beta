@@ -30,7 +30,14 @@ ausfällt – das spart jedem Besucher 158 KB (siehe „Karten").
 - Werkstatt-Suche mit Filtern (Kategorie, Leistung, Marke, Stadtteil, Bewertung, mobil), Karte + Liste
 - Vollständige Werkstattprofile mit Bewertungen und Öffnungszeiten
 - Direktanfrage an einen Betrieb **oder** öffentliche Ausschreibung an alle passenden Betriebe
-- Diagnose (regelbasiert, bewusst nicht „KI“ genannt) mit Foto-Upload
+- Diagnose in drei Schritten (regelbasiert) mit Foto-Upload und **Geräuschaufnahme**; angemeldet
+  zusätzlich eine **KI-Einschätzung mit Fotos** (Claude, siehe „KI-Diagnose“)
+- **Festpreis-Termine:** Ölwechsel, Reifenwechsel, HU usw. direkt mit freiem Termin buchen –
+  ohne Ausschreibung (Reihe „Sofort buchen“ auf Home, Abschnitt auf dem Werkstattprofil)
+- Laufender Auftrag **live** auf Home und im Auftrag (Status kommt per Realtime),
+  „Nochmal buchen“, Hinweis bei fälligem TÜV, Termin in den Kalender (`/api/termin`, .ics)
+- Chat mit Fotos und Schnellantworten
+- Fahrzeugschein-Scan liest jetzt auch HSN/TSN (Felder 2.1/2.2)
 - Angebotsvergleich (Einzelpositionen, „Bester Preis"), verbindliche Annahme
 - Chat mit dem Betrieb, Auftragsabschluss, Bewertung (1–5 ★)
 - Premium: Erinnerungen für TÜV/Service/Reifenwechsel (in der Beta kostenlos aktivierbar)
@@ -41,10 +48,36 @@ ausfällt – das spart jedem Besucher 158 KB (siehe „Karten").
 - Dashboard mit KPIs, offene Ausschreibungen (nach Kategorien gefiltert) + Direktanfragen
 - Angebote mit Einzelpositionen, Auftragsverwaltung mit Status, Wochenkalender, Kundenchat
 - Teile verkaufen über den Teile-Marktplatz (Fotos, Preis, Zustand, OE-Nummer, Versand/Einbau-Option, pausierbar)
+- **Festpreise** pflegen (Betriebsprofil → Festpreise): Leistung, Preis, Dauer, Fahrzeuge pro
+  Zeitfenster. Freie Termine ergeben sich aus den Öffnungszeiten (`free_slots`), gebucht wird
+  transaktional über `book_fixed_price` (Anfrage + angenommenes Angebot + Buchung in einem Schritt)
+- **Schnellangebot**: Festpreis oder Vorlage antippen, bestätigen, gesendet
+- Auf Bewertungen öffentlich **antworten** (Werkstattprofil; Hinweis im Dashboard)
+- In der App eigene Tab-Leiste: Start · Anfragen · Aufträge · Kalender · Konto
 - Sichtbar in der Suche erst nach **Verifizierung durch einen Admin**
 
 **Admin** (`admin.html`)
 - Plattform-KPIs, Werkstätten verifizieren/sperren, Nutzerliste, Anfragen-Monitor
+
+**App & Design**
+- Vibration beim Tippen, Ziehen zum Aktualisieren, Wisch vom Rand zurück, Seitenübergänge
+- Face ID: Anmeldung ohne Passwort (Schlüsselbund) und optionale App-Sperre (Konto → Darstellung & Sicherheit)
+- Helles Design, Dunkel oder „Wie System“ (Konto). `assets/light.css` wird aus `app.css`
+  erzeugt: nach Änderungen an `app.css` einmal `node tools/theme/make-light.js` ausführen.
+
+## KI-Diagnose (Claude)
+
+`/api/diagnose` schickt Beschreibung, Warnleuchten/Geräusche, Fahrzeugmodell und bis zu drei
+verkleinerte Fotos an Claude (Modell `claude-opus-5-5`, Aufwand „low“, Antwort als festes
+JSON-Schema). Nur für angemeldete Nutzer; das Supabase-Token wird geprüft.
+
+- **Einschalten:** in Vercel die Umgebungsvariable `ANTHROPIC_API_KEY` setzen (Schlüssel aus
+  der Anthropic Console). Ohne Schlüssel bleibt es still bei der regelbasierten Einschätzung.
+- **Kosten:** grob einige Cent pro Einschätzung (mit Fotos mehr). In der Anthropic Console ein
+  Ausgabenlimit setzen. Die Funktion bremst je Nutzer auf eine Anfrage alle 20 Sekunden; ein
+  echtes Tageskontingent bräuchte eine Zähltabelle in der Datenbank.
+- **Datenschutz:** Anthropic ist in `legal.html` als Auftragsverarbeiter eingetragen; offene
+  Prüfpunkte in `docs/rechtstexte-pruefhinweise.md`.
 
 ## Karten (Google Maps)
 
@@ -154,6 +187,13 @@ npm i playwright && node tests/smoke.js
 `node tests/diagnose.js` prüft die Diagnose-Schritte und die Bilder der Home-Kacheln
 (mit `SHOTS=ordner` entstehen Bildschirmfotos).
 
+`tests/ausbau-e2e.js` spielt gegen die echte Datenbank mit beiden Testkonten durch: Festpreis
+buchen, Status live, Schnellantwort im Chat, am Ende stornieren. Passwörter nur über die
+Umgebung: `CFX_KUNDE_PW=… CFX_WERKSTATT_PW=… node tests/ausbau-e2e.js`.
+
+`push.js` und `install-push.js` melden im kopflosen Chromium zwei Fehler, weil der Browser
+dort Mitteilungen blockiert – das ist vom Testumfeld, nicht vom Code.
+
 Smoke-Test für Routing, Auth-Ansichten und Handler-Escaping. Prüft bewusst nur, was
 ohne Backend läuft – datengetriebene Inhalte brauchen eine erreichbare Supabase-Instanz.
 
@@ -198,6 +238,9 @@ ersetzt werden und `'unsafe-inline'` verschwindet. Das ist ein eigenes Vorhaben.
 ## Vor dem Launch – offene Punkte
 
 Diese Schritte lassen sich nicht im Code erledigen:
+
+- **`ANTHROPIC_API_KEY`** in Vercel setzen, wenn die KI-Diagnose laufen soll (siehe oben).
+- **Migration `db/2026-10-26_app_ausbau.sql`** ist eingespielt (26.10.2026).
 
 - **Auth → URL Configuration:** `https://carfixo.de` als Site-URL und als Redirect-URL
   eintragen (zusätzlich `http://localhost:8000/app.html` fürs lokale Testen).

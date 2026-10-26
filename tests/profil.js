@@ -28,7 +28,7 @@ const check = (n, ok, i = "") => { console.log(`${ok ? "OK  " : "FAIL"}  ${n}${i
   const sichtbar = () => page.evaluate(() => [...document.querySelectorAll("#profPanes .pCard")].filter(c => !c.hidden).map(c => c.querySelector(".tt").textContent));
 
   // ---------- Reiter ----------
-  check("Sechs Reiter vorhanden", await page.locator(".pTabs [data-ptab]").count() === 6);
+  check("Sieben Reiter vorhanden (mit Festpreise)", await page.locator(".pTabs [data-ptab]").count() === 7);
   check("Start: nur „Allgemein“ sichtbar", JSON.stringify(await sichtbar()) === JSON.stringify(["Stammdaten", "Adresse & Standort", "Google-Eintrag"]), JSON.stringify(await sichtbar()));
   const punkte = await page.evaluate(() => [...document.querySelectorAll(".pTabs .pDot")].map(d => d.parentElement.dataset.ptab));
   check("Punkte markieren Lücken (Telefon, Zeiten, Bilder)", JSON.stringify(punkte) === JSON.stringify(["allg", "zeiten", "bilder"]), JSON.stringify(punkte));
